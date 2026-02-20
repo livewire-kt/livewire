@@ -20,68 +20,74 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
+import com.r0adkll.livewire.protocol.Envelope
+import com.r0adkll.livewire.protocol.SimpleMessage
 import com.r0adkll.livewire.runtime.HostConnectionState
 import com.r0adkll.livewire.runtime.LivewireHostConnection
 import kotlinx.coroutines.launch
 
 fun main() = application {
-    val connection = remember { LivewireHostConnection() }
-    val scope = rememberCoroutineScope()
-    val state by connection.connectionState.collectAsState()
-    val messages = remember { mutableStateListOf<String>() }
+  val connection = remember { LivewireHostConnection(SimpleMessage) }
+  val scope = rememberCoroutineScope()
+  val state by connection.connectionState.collectAsState()
+  val messages = remember { mutableStateListOf<String>() }
 
-    // Collect incoming messages
-    scope.launch {
-        connection.incomingMessages.collect { msg ->
-            messages.add(msg)
-        }
+  // Collect incoming messages
+  scope.launch {
+    connection.incomingMessages.collect { envelope ->
+      messages.add("$envelope")
     }
+  }
 
-    Window(
-        onCloseRequest = {
-            connection.close()
-            exitApplication()
-        },
-        title = "Livewire Host",
-    ) {
-        MaterialTheme {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text("Connection: $state", style = MaterialTheme.typography.titleMedium)
+  Window(
+    onCloseRequest = {
+      connection.close()
+      exitApplication()
+    },
+    title = "Livewire Host",
+  ) {
+    MaterialTheme {
+      Column(
+        modifier = Modifier.fillMaxSize().padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+      ) {
+        Text("Connection: $state", style = MaterialTheme.typography.titleMedium)
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { connection.connect() },
-                        enabled = state == HostConnectionState.DISCONNECTED || state == HostConnectionState.ERROR,
-                    ) {
-                        Text("Connect")
-                    }
-                    Button(
-                        onClick = { scope.launch { connection.send("ping") } },
-                        enabled = state == HostConnectionState.CONNECTED,
-                    ) {
-                        Text("Send Ping")
-                    }
-                    Button(
-                        onClick = { connection.disconnect() },
-                        enabled = state == HostConnectionState.CONNECTED,
-                    ) {
-                        Text("Disconnect")
-                    }
-                }
-
-                Text("Messages:", style = MaterialTheme.typography.titleSmall)
-                LazyColumn(
-                    modifier = Modifier.fillMaxWidth().weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    items(messages) { msg ->
-                        Text(msg, style = MaterialTheme.typography.bodyMedium)
-                    }
-                }
-            }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          Button(
+            onClick = { connection.connect() },
+            enabled = state == HostConnectionState.DISCONNECTED || state == HostConnectionState.ERROR,
+          ) {
+            Text("Connect")
+          }
+          Button(
+            onClick = {
+              scope.launch {
+                connection.send(Envelope(SimpleMessage("ping")))
+              }
+            },
+            enabled = state == HostConnectionState.CONNECTED,
+          ) {
+            Text("Send Ping")
+          }
+          Button(
+            onClick = { connection.disconnect() },
+            enabled = state == HostConnectionState.CONNECTED,
+          ) {
+            Text("Disconnect")
+          }
         }
+
+        Text("Messages:", style = MaterialTheme.typography.titleSmall)
+        LazyColumn(
+          modifier = Modifier.fillMaxWidth().weight(1f),
+          verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+          items(messages) { msg ->
+            Text(msg, style = MaterialTheme.typography.bodyMedium)
+          }
+        }
+      }
     }
+  }
 }

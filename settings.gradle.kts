@@ -35,7 +35,6 @@ plugins {
 include(":composeApp")
 include(":localserver")
 include(":shared")
-include(":host-runtime")
 include(":host")
-include(":client-runtime")
+include(":runtime")
 include(":client")

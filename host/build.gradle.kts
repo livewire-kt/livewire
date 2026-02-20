@@ -5,6 +5,7 @@ plugins {
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
   alias(libs.plugins.composeHotReload)
+  alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -28,7 +29,11 @@ kotlin {
     jvmMain.dependencies {
       implementation(compose.desktop.currentOs)
       implementation(libs.kotlinx.coroutinesSwing)
-      implementation(projects.hostRuntime)
+      implementation(projects.runtime)
+      implementation(libs.kotlinx.serialization.json)
+      implementation(libs.ktor.clientCore)
+      implementation(libs.ktor.clientCio)
+      implementation(libs.ktor.clientWebsockets)
     }
   }
 }

@@ -21,58 +21,63 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.r0adkll.livewire.runtime.LivewireServer
+import com.r0adkll.livewire.client.LivewireServer
+import com.r0adkll.livewire.protocol.SimpleMessage
 
 class MainActivity : ComponentActivity() {
 
-    private val livewireServer = LivewireServer()
+  private val livewireServer = LivewireServer(
+    SimpleMessage
+  )
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
-        super.onCreate(savedInstanceState)
+  override fun onCreate(savedInstanceState: Bundle?) {
+    enableEdgeToEdge()
+    super.onCreate(savedInstanceState)
 
-        livewireServer.start()
+    livewireServer.start()
 
-        setContent {
-            MaterialTheme {
-                val connectionState by livewireServer.connectionState.collectAsState()
-                val messages = remember { mutableStateListOf<String>() }
+    setContent {
+      MaterialTheme {
+        val connectionState by livewireServer.connectionState.collectAsState()
+        val messages = remember { mutableStateListOf<String>() }
 
-                LaunchedEffect(Unit) {
-                    livewireServer.incomingMessages.collect { msg ->
-                        messages.add(msg)
-                    }
-                }
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .safeContentPadding()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Text(
-                        text = "Livewire Server: $connectionState",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-
-                    Text("Messages:", style = MaterialTheme.typography.titleSmall)
-
-                    LazyColumn(
-                        modifier = Modifier.fillMaxWidth().weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        items(messages) { msg ->
-                            Text(msg, style = MaterialTheme.typography.bodyMedium)
-                        }
-                    }
-                }
-            }
+        LaunchedEffect(Unit) {
+          livewireServer.incomingMessages.collect { envelope ->
+            messages.add("$envelope")
+          }
         }
-    }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        livewireServer.stop()
+        Column(
+          modifier = Modifier
+            .fillMaxSize()
+            .safeContentPadding()
+            .padding(16.dp),
+          verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+          Text(
+            text = "Livewire Server: $connectionState",
+            style = MaterialTheme.typography.titleMedium,
+          )
+
+          Text("Messages:", style = MaterialTheme.typography.titleSmall)
+
+          LazyColumn(
+            modifier = Modifier
+              .fillMaxWidth()
+              .weight(1f),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+          ) {
+            items(messages) { msg ->
+              Text(msg, style = MaterialTheme.typography.bodyMedium)
+            }
+          }
+        }
+      }
     }
+  }
+
+  override fun onDestroy() {
+    super.onDestroy()
+    livewireServer.stop()
+  }
 }
