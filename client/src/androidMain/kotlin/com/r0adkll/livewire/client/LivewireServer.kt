@@ -98,6 +98,10 @@ class LivewireServer(
     activeSession?.send(Frame.Text(EnvelopeJson.encodeToString(envelope)))
   }
 
+  suspend fun sendRaw(envelope: String) {
+    activeSession?.send(Frame.Text(envelope))
+  }
+
   fun stop() {
     server?.stop(1000, 2000)
     server = null

@@ -9,6 +9,7 @@ import app.cash.molecule.launchMolecule
 import com.r0adkll.livewire.DataConnector
 import com.r0adkll.livewire.client.connector.DataConnectorContent
 import com.r0adkll.livewire.protocol.Boundary
+import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.transport.ClientEvent
 import com.r0adkll.livewire.transport.DefaultDecoders
 import com.r0adkll.livewire.transport.HostEvent
@@ -95,12 +96,20 @@ class LivewireClient private constructor(
     val ingestor = configuration.ingestors[connector] ?: error("Plugin ingestor not found! Please check your host configuration")
     ingestor.ingest(server)
   }
+
+  @Suppress("UNCHECKED_CAST")
+  suspend fun <H : HostEvent> send(connector: DataConnector<*, *>, event: H) {
+    val hostEventSink = configuration.hostEventSinks[connector] as? PluginHostEventSink<H>
+      ?: error("Client event $connector not found")
+    hostEventSink.send(server, event)
+  }
 }
 
 @LivewireClientDsl
 class LivewireClientBuilder {
   val dataConnectors = mutableMapOf<String, DataConnector<*, *>>()
   val ingestors = mutableMapOf<DataConnector<*, *>, PluginEventIngestor<*>>()
+  val hostEventSinks = mutableMapOf<DataConnector<*, *>, PluginHostEventSink<*>>()
   val decoders = mutableSetOf<PayloadDecoder<*>>()
 
   @Suppress("UNCHECKED_CAST")
@@ -110,6 +119,7 @@ class LivewireClientBuilder {
     dataConnectors[C::class.qualifiedName!!] = dataConnector
     decoders += C::class.companionObjectInstance as PayloadDecoder<C>
     ingestors[dataConnector] = PluginEventIngestor(dataConnector, C::class)
+    hostEventSinks[dataConnector] = PluginHostEventSink(H::class.companionObjectInstance as PayloadDecoder<H>)
   }
 
 
@@ -118,6 +128,7 @@ class LivewireClientBuilder {
       dataConnectors = dataConnectors,
       decoders = decoders,
       ingestors = ingestors,
+      hostEventSinks = hostEventSinks,
     )
   }
 }
@@ -126,6 +137,7 @@ class LivewireClientConfiguration(
   val dataConnectors: Map<String, DataConnector<*, *>>,
   val decoders: Set<PayloadDecoder<*>>,
   val ingestors: Map<DataConnector<*, *>, PluginEventIngestor<*>>,
+  val hostEventSinks: Map<DataConnector<*, *>, PluginHostEventSink<*>>,
 )
 
 @DslMarker
@@ -142,5 +154,15 @@ class PluginEventIngestor<C : ClientEvent>(
       .collect { event ->
         connector.emitEvent(event)
       }
+  }
+}
+
+class PluginHostEventSink<H : HostEvent>(
+  val payloadDecoder: PayloadDecoder<H>,
+) {
+
+  suspend fun send(server: LivewireServer, event: H) {
+    val eventJson = EnvelopeJson.encodeToString(payloadDecoder.serializer(), event)
+    server.sendRaw(eventJson)
   }
 }

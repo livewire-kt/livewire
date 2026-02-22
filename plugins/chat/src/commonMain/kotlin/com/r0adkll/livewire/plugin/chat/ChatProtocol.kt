@@ -12,8 +12,8 @@ sealed class ChatHostEvent : HostEvent {
   @Serializable
   data class Message(val message: String) : ChatHostEvent()
 
+  // TODO: Either code-gen or automate this
   companion object : PayloadDecoder<ChatHostEvent> {
-
     override suspend fun Json.decodePayload(rawPayload: String): ChatHostEvent? {
       return decodeFromString(rawPayload)
     }
