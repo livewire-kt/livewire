@@ -1,14 +1,9 @@
 package com.r0adkll.livewire.client
 
-import android.util.Log
-import com.r0adkll.livewire.livewire.LIVEWIRE_PORT
-import com.r0adkll.livewire.livewire.LIVEWIRE_WS_PATH
-import com.r0adkll.livewire.protocol.Envelope
+import com.r0adkll.livewire.LIVEWIRE_PORT
+import com.r0adkll.livewire.LIVEWIRE_WS_PATH
 import com.r0adkll.livewire.protocol.EnvelopeJson
-import com.r0adkll.livewire.protocol.Payload
 import com.r0adkll.livewire.protocol.SimpleMessage
-import com.r0adkll.livewire.protocol.payloadEnvelopeFromJsonString
-import com.r0adkll.livewire.protocol.toJsonString
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
 import io.ktor.server.application.*
@@ -27,6 +22,8 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 
 enum class ConnectionState {
   STOPPED,
@@ -36,16 +33,21 @@ enum class ConnectionState {
 }
 
 class LivewireServer(
-  vararg decoders: PayloadDecoder,
+  vararg decoders: PayloadDecoder<*>,
+  context: CoroutineContext = Dispatchers.IO,
 ) {
+  constructor(
+    decoders: Collection<PayloadDecoder<*>>,
+    context: CoroutineContext = Dispatchers.IO
+  ) : this (*decoders.toTypedArray(), context = context)
 
-  private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+  private val scope = CoroutineScope(context + SupervisorJob())
 
   private val _connectionState = MutableStateFlow(ConnectionState.STOPPED)
   val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
-  private val _incomingMessages = MutableSharedFlow<Payload>(extraBufferCapacity = 64)
-  val incomingMessages: SharedFlow<Payload> = _incomingMessages.asSharedFlow()
+  private val _incomingMessages = MutableSharedFlow<Any>(extraBufferCapacity = 64)
+  val incomingMessages: SharedFlow<Any> = _incomingMessages.asSharedFlow()
 
   private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
   var activeSession: WebSocketSession? = null
@@ -65,15 +67,17 @@ class LivewireServer(
           try {
             for (frame in incoming) {
               if (frame is Frame.Text) {
+
                 val text = frame.readText()
                 val payload = envelopeDecoder.decode(text)
                 if (payload != null) {
                   _incomingMessages.tryEmit(payload)
+                } else {
+                  _incomingMessages.tryEmit(SimpleMessage(text))
                 }
 
                 // Echo back for initial testing
-                val echo = Envelope(SimpleMessage("pong!"))
-                send(Frame.Text(echo.toJsonString()))
+                send(Frame.Text(EnvelopeJson.encodeToString(SimpleMessage("pong!"))))
               }
             }
           } catch (e: Exception) {
@@ -90,8 +94,8 @@ class LivewireServer(
     }
   }
 
-  suspend inline fun <reified T> send(envelope: Envelope<T>) {
-    activeSession?.send(Frame.Text(envelope.toJsonString()))
+  suspend inline fun <reified T> send(envelope: T) {
+    activeSession?.send(Frame.Text(EnvelopeJson.encodeToString(envelope)))
   }
 
   fun stop() {

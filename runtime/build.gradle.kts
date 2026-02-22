@@ -4,6 +4,8 @@ plugins {
   alias(libs.plugins.kotlinMultiplatform)
   alias(libs.plugins.androidLibrary)
   alias(libs.plugins.kotlinSerialization)
+  alias(libs.plugins.composeMultiplatform)
+  alias(libs.plugins.composeCompiler)
 }
 
 kotlin {
@@ -17,14 +19,18 @@ kotlin {
 
   sourceSets {
     androidMain.dependencies {
+      api(libs.kotlinx.coroutines.android)
     }
     commonMain.dependencies {
+      api(libs.compose.runtime)
       api(libs.kotlinx.serialization.json)
+      api(libs.kotlinx.coroutines.core)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
     }
     jvmMain.dependencies {
+      api(libs.kotlinx.coroutinesSwing)
     }
   }
 }

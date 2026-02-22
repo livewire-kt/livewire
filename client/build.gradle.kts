@@ -2,11 +2,17 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
   alias(libs.plugins.kotlinMultiplatform)
-  alias(libs.plugins.androidLibrary)
   alias(libs.plugins.kotlinSerialization)
+  alias(libs.plugins.androidLibrary)
+  alias(libs.plugins.composeMultiplatform)
+  alias(libs.plugins.composeCompiler)
 }
 
 kotlin {
+  compilerOptions {
+    freeCompilerArgs.add("-Xcontext-parameters")
+  }
+
   androidTarget {
     compilerOptions {
       jvmTarget.set(JvmTarget.JVM_11)
@@ -19,10 +25,12 @@ kotlin {
     androidMain.dependencies {
       implementation(libs.ktor.serverCio)
       implementation(libs.ktor.serverWebsockets)
+      implementation(libs.compose.runtime)
+      implementation(libs.kotlin.reflect)
+      implementation(libs.molecule.runtime)
     }
     commonMain.dependencies {
       api(projects.runtime)
-      implementation(projects.shared)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)

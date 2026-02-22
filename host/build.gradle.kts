@@ -21,19 +21,23 @@ kotlin {
       implementation(libs.compose.uiToolingPreview)
       implementation(libs.androidx.lifecycle.viewmodelCompose)
       implementation(libs.androidx.lifecycle.runtimeCompose)
-      implementation(projects.shared)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
     }
     jvmMain.dependencies {
-      implementation(compose.desktop.currentOs)
-      implementation(libs.kotlinx.coroutinesSwing)
       implementation(projects.runtime)
+      implementation(compose.desktop.currentOs)
+
+      implementation(libs.kotlin.reflect)
+      implementation(libs.kotlinx.coroutinesSwing)
       implementation(libs.kotlinx.serialization.json)
       implementation(libs.ktor.clientCore)
       implementation(libs.ktor.clientCio)
       implementation(libs.ktor.clientWebsockets)
+      implementation(libs.dadb)
+
+      implementation(projects.plugins.chat)
     }
   }
 }

@@ -33,8 +33,9 @@ plugins {
 }
 
 include(":composeApp")
-include(":localserver")
-include(":shared")
 include(":host")
+include(":host-runtime")
 include(":runtime")
 include(":client")
+
+include(":plugins:chat")

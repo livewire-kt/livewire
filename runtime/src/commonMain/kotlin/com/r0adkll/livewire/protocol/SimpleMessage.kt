@@ -7,21 +7,18 @@ import kotlinx.serialization.json.Json
 @Serializable
 data class SimpleMessage(
   val message: String,
-) : Payload("simple") {
+) {
 
   override fun toString(): String {
     return "Simple($message)"
   }
 
   // TODO: We should probably generate this?
-  companion object : PayloadDecoder {
-    override suspend fun Json.decode(
-      type: String,
+  companion object : PayloadDecoder<SimpleMessage> {
+    override suspend fun Json.decodePayload(
       rawPayload: String
-    ): Payload? = when (type) {
-      "simple" -> decodeFromEnvelope<SimpleMessage>(rawPayload)
-      else -> null
-    }
+    ): SimpleMessage = decodeFromString<SimpleMessage>(rawPayload)
+
   }
 }
 

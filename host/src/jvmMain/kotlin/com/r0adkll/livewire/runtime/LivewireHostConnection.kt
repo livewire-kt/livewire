@@ -1,13 +1,8 @@
 package com.r0adkll.livewire.runtime
 
-import com.r0adkll.livewire.livewire.LIVEWIRE_PORT
-import com.r0adkll.livewire.livewire.LIVEWIRE_WS_PATH
-import com.r0adkll.livewire.protocol.Envelope
+import com.r0adkll.livewire.LIVEWIRE_PORT
+import com.r0adkll.livewire.LIVEWIRE_WS_PATH
 import com.r0adkll.livewire.protocol.EnvelopeJson
-import com.r0adkll.livewire.protocol.Payload
-import com.r0adkll.livewire.protocol.SimpleMessage
-import com.r0adkll.livewire.protocol.payloadEnvelopeFromJsonString
-import com.r0adkll.livewire.protocol.toJsonString
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
 import io.ktor.client.*
@@ -16,6 +11,7 @@ import io.ktor.client.plugins.websocket.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -25,7 +21,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import kotlin.coroutines.CoroutineContext
+import kotlin.reflect.KClass
 
 enum class HostConnectionState {
   DISCONNECTED,
@@ -36,19 +34,27 @@ enum class HostConnectionState {
 }
 
 class LivewireHostConnection(
-  vararg decoders: PayloadDecoder,
+  vararg decoders: PayloadDecoder<*>,
   context: CoroutineContext = Dispatchers.IO,
 ) {
+
+  constructor(
+    decoders: Collection<PayloadDecoder<*>>,
+    context: CoroutineContext = Dispatchers.IO,
+  ) : this(*decoders.toTypedArray(), context = context)
 
   private val scope = CoroutineScope(context + SupervisorJob())
 
   private val _connectionState = MutableStateFlow(HostConnectionState.DISCONNECTED)
   val connectionState: StateFlow<HostConnectionState> = _connectionState.asStateFlow()
 
-  private val _incomingMessages = MutableSharedFlow<Payload>(extraBufferCapacity = 64)
-  val incomingMessages: SharedFlow<Payload> = _incomingMessages.asSharedFlow()
+  private val _incomingMessages = MutableSharedFlow<Any>(extraBufferCapacity = 64)
+  val incomingMessages: SharedFlow<Any> = _incomingMessages.asSharedFlow()
 
   private var client: HttpClient? = null
+  private var activeDadb: dadb.Dadb? = null
+  private var activeForwarder: AutoCloseable? = null
+  private var activeJob: Job? = null
   var session: WebSocketSession? = null
     private set
 
@@ -56,11 +62,12 @@ class LivewireHostConnection(
     payloadDecoders = decoders.toSet()
   )
 
-  fun connect() {
-    scope.launch {
+  fun connect(device: AdbDevice) {
+    activeJob = scope.launch {
       try {
         _connectionState.value = HostConnectionState.FORWARDING
-        AdbForwarder.forward(LIVEWIRE_PORT).getOrThrow()
+        activeDadb = device.connection
+        activeForwarder = device.connection.tcpForward(LIVEWIRE_PORT, LIVEWIRE_PORT)
 
         _connectionState.value = HostConnectionState.CONNECTING
         val httpClient = HttpClient(CIO) {
@@ -77,12 +84,16 @@ class LivewireHostConnection(
           _connectionState.value = HostConnectionState.CONNECTED
           try {
             for (frame in incoming) {
-              if (frame is Frame.Text) {
-                val text = frame.readText()
-                val payload = envelopeDecoder.decode(text)
-                if (payload != null) {
-                  _incomingMessages.tryEmit(payload)
+              when (frame) {
+                is Frame.Text -> {
+                  val text = frame.readText()
+                  val payload = envelopeDecoder.decode(text)
+                  if (payload != null) {
+                    _incomingMessages.tryEmit(payload)
+                  }
                 }
+
+                else -> Unit
               }
             }
           } finally {
@@ -90,14 +101,30 @@ class LivewireHostConnection(
             _connectionState.value = HostConnectionState.DISCONNECTED
           }
         }
+
       } catch (e: Exception) {
+        e.printStackTrace()
         _connectionState.value = HostConnectionState.ERROR
       }
     }
+
+    activeJob?.invokeOnCompletion {
+      activeForwarder?.close()
+      activeForwarder = null
+      activeDadb?.close()
+      activeDadb = null
+    }
   }
 
-  suspend inline fun <reified T> send(envelope: Envelope<T>) {
-    session?.send(Frame.Text(envelope.toJsonString()))
+  suspend inline fun <reified T> send(
+    payload: T,
+    json: Json = EnvelopeJson,
+  ) {
+    session?.send(Frame.Text(json.encodeToString(payload)))
+  }
+
+  suspend fun sendRaw(payload: String) {
+    session?.send(Frame.Text(payload))
   }
 
   fun disconnect() {
@@ -105,7 +132,10 @@ class LivewireHostConnection(
       session?.close(CloseReason(CloseReason.Codes.NORMAL, "User disconnected"))
       client?.close()
       client = null
-      AdbForwarder.removeForward(LIVEWIRE_PORT)
+      activeForwarder?.close()
+      activeForwarder = null
+      activeDadb?.close()
+      activeDadb = null
       _connectionState.value = HostConnectionState.DISCONNECTED
     }
   }
