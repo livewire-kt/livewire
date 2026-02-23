@@ -1,28 +1,35 @@
 package com.r0adkll.livewire
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -35,14 +42,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.r0adkll.livewire.com.r0adkll.livewire.theme.LivewireTheme
-import com.r0adkll.livewire.plugin.host.ChatHostPlugin
 import com.r0adkll.livewire.protocol.SimpleMessage
 import com.r0adkll.livewire.runtime.AdbDevice
 import com.r0adkll.livewire.runtime.AdbDeviceManager
@@ -53,21 +58,26 @@ import com.r0adkll.livewire.runtime.HostConnectionState.DISCONNECTED
 import com.r0adkll.livewire.runtime.HostConnectionState.ERROR
 import com.r0adkll.livewire.runtime.HostConnectionState.FORWARDING
 import com.r0adkll.livewire.runtime.LivewireHost
+import com.r0adkll.livewire.ui.PluginDrawerItem
+import com.r0adkll.livewire.ui.PluginInfo
+import com.r0adkll.livewire.ui.data.ClientManifest
+import com.r0adkll.livewire.ui.data.PluginSelected
+import com.r0adkll.livewire.ui.data.UiProtocol
+import com.r0adkll.livewire.ui.icons.Connected
+import com.r0adkll.livewire.ui.icons.Disconnected
 import com.r0adkll.livewire.ui.layout.HostScaffold
-import com.r0adkll.livewire.ui.plugin.PluginContent
+import com.r0adkll.livewire.ui.layout.LayoutNodeContent
+import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 fun main() = application {
-  val host = remember {
-    LivewireHost {
-      // TODO: Do we need manual installation, Could we use a java service locator or other-such to gather these
-      install(ChatHostPlugin())
-    }
-  }
+  val host = remember { LivewireHost() }
 
   val scope = rememberCoroutineScope()
   val state by host.connection.connectionState.collectAsState()
-  val messages = remember { mutableStateListOf<String>() }
 
   var devices by remember { mutableStateOf<List<AdbDevice>>(emptyList()) }
   var selectedDevice by remember { mutableStateOf<AdbDevice?>(null) }
@@ -88,10 +98,22 @@ fun main() = application {
     refreshDevices()
   }
 
-  // Collect incoming messages
+  // Collect the current manifest
+  var clientManifest by remember { mutableStateOf<ClientManifest?>(null) }
+  var selectedPlugin by remember { mutableStateOf<PluginInfo?>(null) }
+
+  // Always collect the client manifest regardless of connection state
   LaunchedEffect(Unit) {
-    host.connection.incomingMessages.collect { envelope ->
-      messages.add("$envelope")
+    host.connection.incomingMessages
+      .filterIsInstance<ClientManifest>()
+      .collect { clientManifest = it }
+  }
+
+  // Clear the plugin if we ever become disconnected from the server
+  LaunchedEffect(state) {
+    if (state != CONNECTED) {
+      selectedPlugin = null
+      clientManifest = null
     }
   }
 
@@ -105,7 +127,6 @@ fun main() = application {
       size = DpSize(1200.dp, 800.dp),
     )
   ) {
-    var selectedPlugin by remember { mutableStateOf<HostPlugin<*, *>?>(null) }
 
     LivewireTheme(host) {
       HostScaffold(
@@ -120,76 +141,62 @@ fun main() = application {
               host.connection.connect(it)
             },
             onDisconnectClick = { host.connection.disconnect() },
-            onPingClick = {
-              scope.launch {
-                host.connection.send(SimpleMessage("Ping"))
-              }
-            },
-            onClearClick = {
-              selectedPlugin = null
-            }
           )
         },
         drawer = {
           Column {
-            host.configuration.plugins.forEach {
-              PluginNavItem(
-                plugin = it,
-                onClick = {
-                  selectedPlugin = it
-                },
+            Row(
+              modifier = Modifier
+                .height(48.dp)
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text(
+                text = "Plugins",
+                style = MaterialTheme.typography.titleMediumEmphasized
               )
             }
-          }
 
-          Text("Messages:", style = MaterialTheme.typography.titleSmall)
-          LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-          ) {
-            items(messages) { msg ->
-              Text(msg, style = MaterialTheme.typography.bodyMedium)
+            LazyColumn(
+              modifier = Modifier.weight(1f),
+              contentPadding = PaddingValues(
+                horizontal = 16.dp,
+              ),
+              verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+              clientManifest?.availablePlugins?.let { availablePlugins ->
+                items(
+                  items = availablePlugins.toList(),
+                  key = { it.pluginId },
+                ) { plugin ->
+                  PluginDrawerItem(
+                    selected = plugin == selectedPlugin,
+                    info = plugin,
+                    onClick = {
+                      selectedPlugin = plugin
+                      scope.launch {
+                        val msg: UiProtocol = PluginSelected(plugin)
+                        host.connection.send(msg)
+                      }
+                    },
+                  )
+                }
+              }
+
+
             }
           }
         }
       ) {
-        selectedPlugin?.let { plugin ->
-          PluginContent(
-            plugin = plugin,
-            modifier = Modifier.fillMaxSize()
-          )
-        }
+
+        val layoutNode by host.connection.incomingLayoutNodes.collectAsState()
+        LayoutNodeContent(
+          node = layoutNode,
+          modifier = Modifier.fillMaxSize(),
+        )
       }
     }
-  }
-}
-
-@OptIn(ExperimentalMaterial3ExpressiveApi::class)
-@Composable
-private fun PluginNavItem(
-  plugin: HostPlugin<*, *>,
-  onClick: () -> Unit,
-  modifier: Modifier = Modifier,
-) {
-  val presentation = plugin.createPresentation()
-  Row(
-    modifier = modifier
-      .fillMaxWidth()
-      .clickable(onClick = onClick)
-      .padding(horizontal = 16.dp, vertical = 8.dp),
-    verticalAlignment = Alignment.CenterVertically,
-    horizontalArrangement = Arrangement.spacedBy(16.dp),
-  ) {
-    Icon(
-      presentation.icon,
-      contentDescription = presentation.title,
-    )
-
-    Text(
-      text = presentation.title,
-      style = MaterialTheme.typography.titleMedium,
-      fontWeight = FontWeight.SemiBold,
-    )
   }
 }
 
@@ -202,8 +209,6 @@ private fun DeviceTopBar(
   onRefreshClick: () -> Unit,
   onConnectClick: (AdbDevice) -> Unit,
   onDisconnectClick: () -> Unit,
-  onPingClick: () -> Unit,
-  onClearClick: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   var dropdownExpanded by remember { mutableStateOf(false) }
@@ -213,29 +218,26 @@ private fun DeviceTopBar(
     tonalElevation = 1.dp,
   ) {
     Row(
-      horizontalArrangement = Arrangement.spacedBy(8.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
       Box(
-        Modifier
-          .padding(16.dp)
-          .size(40.dp)
-          .background(
-            color = when (hostConnectionState) {
-              DISCONNECTED -> Color.Gray
-              FORWARDING -> Color.Blue
-              CONNECTING -> Color.Yellow
-              CONNECTED -> Color.Green
-              ERROR -> Color.Red
-            },
-            shape = CircleShape,
-          )
-          .border(
-            width = 2.dp,
-            color = Color.Black,
-            shape = CircleShape,
-          )
-      )
+        modifier = Modifier
+          .size(56.dp),
+        contentAlignment = Alignment.Center,
+      ) {
+        val tint by animateColorAsState(
+          if (hostConnectionState == CONNECTED) Color(0xff118F00) else MaterialTheme.colorScheme.error
+        )
+        Icon(
+          if (hostConnectionState == CONNECTED) {
+            Connected
+          } else {
+            Disconnected
+          },
+          contentDescription = null,
+          tint = tint,
+        )
+      }
 
       Box {
         OutlinedButton(onClick = { dropdownExpanded = true }) {
@@ -259,9 +261,13 @@ private fun DeviceTopBar(
         }
       }
 
+      Spacer(Modifier.width(8.dp))
+
       Button(onClick = onRefreshClick) {
         Text("Refresh")
       }
+
+      Spacer(Modifier.width(8.dp))
 
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
@@ -276,22 +282,10 @@ private fun DeviceTopBar(
           Text("Connect")
         }
         Button(
-          onClick = onPingClick,
-          enabled = hostConnectionState == HostConnectionState.CONNECTED,
-        ) {
-          Text("Send Ping")
-        }
-        Button(
           onClick = onDisconnectClick,
           enabled = hostConnectionState == HostConnectionState.CONNECTED,
         ) {
           Text("Disconnect")
-        }
-        Button(
-          onClick = onClearClick,
-          enabled = hostConnectionState == HostConnectionState.CONNECTED,
-        ) {
-          Text("Clear")
         }
       }
     }

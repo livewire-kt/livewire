@@ -33,9 +33,12 @@ plugins {
 }
 
 include(":composeApp")
+
 include(":host")
-include(":host-runtime")
 include(":runtime")
 include(":client")
+include(":ui")
 
-include(":plugins:chat")
+include(
+  ":plugins:database",
+)

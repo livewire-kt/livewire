@@ -2,10 +2,10 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
   alias(libs.plugins.kotlinMultiplatform)
-  alias(libs.plugins.androidApplication)
+  alias(libs.plugins.androidLibrary)
+  alias(libs.plugins.kotlinSerialization)
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
-  alias(libs.plugins.composeHotReload)
 }
 
 kotlin {
@@ -19,38 +19,32 @@ kotlin {
 
   sourceSets {
     androidMain.dependencies {
-      implementation(libs.compose.uiToolingPreview)
-      implementation(libs.androidx.activity.compose)
-
-      implementation(projects.client)
-      implementation(projects.plugins.database)
+      api(libs.kotlinx.coroutines.android)
     }
     commonMain.dependencies {
-      implementation(libs.compose.runtime)
-      implementation(libs.compose.foundation)
-      implementation(libs.compose.material3)
-      implementation(libs.compose.ui)
-      implementation(libs.compose.components.resources)
-      implementation(libs.compose.uiToolingPreview)
-      implementation(libs.androidx.lifecycle.viewmodelCompose)
-      implementation(libs.androidx.lifecycle.runtimeCompose)
+      api(projects.runtime)
+      api(libs.compose.runtime)
+      api(libs.kotlinx.serialization.json)
+      api(libs.kotlinx.coroutines.core)
+      api(libs.molecule.runtime)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
     }
+    jvmMain.dependencies {
+      api(libs.kotlinx.coroutinesSwing)
+    }
   }
 }
 
+
 android {
-  namespace = "com.r0adkll.livewire"
+  namespace = "com.r0adkll.livewire.ui"
   compileSdk = libs.versions.android.compileSdk.get().toInt()
 
   defaultConfig {
-    applicationId = "com.r0adkll.livewire"
     minSdk = libs.versions.android.minSdk.get().toInt()
     targetSdk = libs.versions.android.targetSdk.get().toInt()
-    versionCode = 1
-    versionName = "1.0"
   }
   packaging {
     resources {
@@ -66,8 +60,4 @@ android {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
   }
-}
-
-dependencies {
-  debugImplementation(libs.compose.uiTooling)
 }

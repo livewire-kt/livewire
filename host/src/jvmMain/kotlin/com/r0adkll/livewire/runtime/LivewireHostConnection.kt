@@ -5,6 +5,9 @@ import com.r0adkll.livewire.LIVEWIRE_WS_PATH
 import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
+import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.RootNode
+import com.r0adkll.livewire.ui.data.LivewireUiJson
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.plugins.websocket.*
@@ -23,7 +26,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import kotlin.coroutines.CoroutineContext
-import kotlin.reflect.KClass
 
 enum class HostConnectionState {
   DISCONNECTED,
@@ -50,6 +52,9 @@ class LivewireHostConnection(
 
   private val _incomingMessages = MutableSharedFlow<Any>(extraBufferCapacity = 64)
   val incomingMessages: SharedFlow<Any> = _incomingMessages.asSharedFlow()
+
+  private val _incomingLayoutNodes = MutableStateFlow<LayoutNode>(RootNode())
+  val incomingLayoutNodes: StateFlow<LayoutNode> = _incomingLayoutNodes.asStateFlow()
 
   private var client: HttpClient? = null
   private var activeDadb: dadb.Dadb? = null
@@ -87,10 +92,20 @@ class LivewireHostConnection(
               when (frame) {
                 is Frame.Text -> {
                   val text = frame.readText()
+                  println("Frame -- $text")
                   val payload = envelopeDecoder.decode(text)
                   if (payload != null) {
+                    println("Payload -- $payload")
                     _incomingMessages.tryEmit(payload)
                   }
+                }
+
+                is Frame.Binary -> {
+                  val bytes = frame.readBytes()
+                  val jsonText = bytes.toString(Charsets.UTF_8)
+                  println(jsonText)
+                  val layoutNode = LivewireUiJson.decodeFromString<LayoutNode>(jsonText)
+                  _incomingLayoutNodes.emit(layoutNode)
                 }
 
                 else -> Unit
@@ -99,6 +114,7 @@ class LivewireHostConnection(
           } finally {
             session = null
             _connectionState.value = HostConnectionState.DISCONNECTED
+            _incomingLayoutNodes.emit(RootNode())
           }
         }
 
@@ -137,6 +153,7 @@ class LivewireHostConnection(
       activeDadb?.close()
       activeDadb = null
       _connectionState.value = HostConnectionState.DISCONNECTED
+      _incomingLayoutNodes.emit(RootNode())
     }
   }
 

@@ -1,11 +1,14 @@
 package com.r0adkll.livewire.client
 
+import android.util.Log
 import com.r0adkll.livewire.LIVEWIRE_PORT
 import com.r0adkll.livewire.LIVEWIRE_WS_PATH
 import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.protocol.SimpleMessage
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
+import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.data.LivewireUiJson
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
@@ -23,7 +26,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlin.coroutines.CoroutineContext
-import kotlin.coroutines.EmptyCoroutineContext
 
 enum class ConnectionState {
   STOPPED,
@@ -95,11 +97,21 @@ class LivewireServer(
   }
 
   suspend inline fun <reified T> send(envelope: T) {
-    activeSession?.send(Frame.Text(EnvelopeJson.encodeToString(envelope)))
+    val envelopeJson = EnvelopeJson.encodeToString(envelope)
+    Log.d("Livewire", "Sending $envelopeJson")
+    activeSession?.send(Frame.Text(envelopeJson))
   }
 
   suspend fun sendRaw(envelope: String) {
     activeSession?.send(Frame.Text(envelope))
+  }
+
+  suspend fun sendLayoutNode(node: LayoutNode) {
+    val nodeBinary = LivewireUiJson.encodeToString(node)
+    Log.d("Livewire", "Layout: $nodeBinary")
+    activeSession?.send(
+      Frame.Binary(true, nodeBinary.toByteArray())
+    )
   }
 
   fun stop() {

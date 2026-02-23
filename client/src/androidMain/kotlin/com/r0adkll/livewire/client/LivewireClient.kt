@@ -1,28 +1,40 @@
 package com.r0adkll.livewire.client
 
 import android.util.Log
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateSetOf
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.launchMolecule
-import com.r0adkll.livewire.DataConnector
-import com.r0adkll.livewire.client.connector.DataConnectorContent
-import com.r0adkll.livewire.protocol.Boundary
-import com.r0adkll.livewire.protocol.EnvelopeJson
-import com.r0adkll.livewire.transport.ClientEvent
+import app.cash.molecule.moleculeFlow
 import com.r0adkll.livewire.transport.DefaultDecoders
-import com.r0adkll.livewire.transport.HostEvent
 import com.r0adkll.livewire.transport.PayloadDecoder
+import com.r0adkll.livewire.ui.Plugin
+import com.r0adkll.livewire.ui.PluginInfo
+import com.r0adkll.livewire.ui.composition.livewireFlow
+import com.r0adkll.livewire.ui.data.ClearPlugin
+import com.r0adkll.livewire.ui.data.ClientManifest
+import com.r0adkll.livewire.ui.data.PluginSelected
+import com.r0adkll.livewire.ui.data.UiDecoders
+import com.r0adkll.livewire.ui.data.UiProtocol
+import io.ktor.util.reflect.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
-import kotlin.reflect.KClass
-import kotlin.reflect.full.companionObjectInstance
 
 class LivewireClient private constructor(
   val configuration: LivewireClientConfiguration,
@@ -36,133 +48,106 @@ class LivewireClient private constructor(
   private val scope = CoroutineScope(context + SupervisorJob())
 
   val server = LivewireServer(
-    decoders = configuration.decoders + DefaultDecoders,
+    decoders = configuration.decoders + DefaultDecoders + UiDecoders,
   )
 
-  private var activeServerJob: Job? = null
-
+  @OptIn(ExperimentalCoroutinesApi::class)
   fun start() {
     server.start()
-    activeServerJob = scope.launch {
-      launchMolecule(RecompositionMode.Immediate) {
-        val connectors = remember {
-          mutableStateSetOf<DataConnector<*, *>>()
-        }
 
-        LaunchedEffect(Unit) {
-          server.incomingMessages.collect { message ->
-            Log.d("LivewireClient", "Received message from server: $message")
-            when (message) {
-              is Boundary.Start -> {
-                // Find data connector and push it into service
-                val dataConnector = configuration.dataConnectors[message.eventFqName]
-                  ?: return@collect
+    scope.launch {
+      server.connectionState.collect { connectionState ->
+        when (connectionState) {
+          ConnectionState.STARTED,
+          ConnectionState.STOPPED,
+          ConnectionState.ERROR -> Unit
 
-                connectors.add(dataConnector)
-              }
-              is Boundary.End -> {
-                // Remove data connector
-                val dataConnector = configuration.dataConnectors[message.eventFqName]
-                  ?: return@collect
+          ConnectionState.CONNECTED -> {
+            // Send ClientManifest to the new host connection
+            val manifest: UiProtocol = ClientManifest(
+              configuration.plugins
+                .map { it.info }
+                .toSet()
+            )
 
-                connectors.remove(dataConnector)
-              }
-            }
+            server.send(manifest)
           }
         }
-
-        connectors.forEach { connector ->
-          DataConnectorContent(this@LivewireClient, connector)
-        }
-
       }
     }
 
-    activeServerJob?.invokeOnCompletion {
-      server.stop()
+    scope.launchMolecule(RecompositionMode.Immediate) {
+      val connectionState by server.connectionState.collectAsState()
+      var activePluginInfo by remember { mutableStateOf<PluginInfo?>(null) }
+
+      LaunchedEffect(Unit) {
+        server.incomingMessages.collect { message ->
+          when (message) {
+            is PluginSelected -> {
+              activePluginInfo = message.info
+            }
+
+            is ClearPlugin -> {
+              activePluginInfo = null
+            }
+          }
+        }
+      }
+
+      LaunchedEffect(activePluginInfo, connectionState) {
+        if (activePluginInfo != null && connectionState == ConnectionState.CONNECTED) {
+          val plugin = configuration.plugins.find { plugin ->
+            plugin.info.pluginId == activePluginInfo?.pluginId
+          }
+
+          if (plugin != null) {
+            livewireFlow {
+              DisposableEffect(Unit) {
+                Log.d("LivewireCompose", "Plugin Entered Composition: ${plugin.info.pluginId}")
+                onDispose {
+                  Log.d("LivewireCompose", "Plugin Exited Composition: ${plugin.info.pluginId}")
+                }
+              }
+              plugin.Content()
+            }.collect { layoutNode ->
+              server.sendLayoutNode(layoutNode)
+            }
+          }
+        } else if (activePluginInfo != null) {
+          // If we disconnect, be sure to clear the active plugin state
+          activePluginInfo = null
+        }
+      }
     }
   }
 
   fun stop() {
-    activeServerJob?.cancel()
-  }
-
-  inline fun <reified T : DataConnector<*, *>> connector(): T? {
-    return configuration.dataConnectors.values
-      .find { it is T } as? T
-  }
-
-  suspend fun ingestMessages(connector: DataConnector<*, *>) {
-    val ingestor = configuration.ingestors[connector] ?: error("Plugin ingestor not found! Please check your host configuration")
-    ingestor.ingest(server)
-  }
-
-  @Suppress("UNCHECKED_CAST")
-  suspend fun <H : HostEvent> send(connector: DataConnector<*, *>, event: H) {
-    val hostEventSink = configuration.hostEventSinks[connector] as? PluginHostEventSink<H>
-      ?: error("Client event $connector not found")
-    hostEventSink.send(server, event)
+    scope.cancel()
+    server.stop()
   }
 }
 
 @LivewireClientDsl
 class LivewireClientBuilder {
-  val dataConnectors = mutableMapOf<String, DataConnector<*, *>>()
-  val ingestors = mutableMapOf<DataConnector<*, *>, PluginEventIngestor<*>>()
-  val hostEventSinks = mutableMapOf<DataConnector<*, *>, PluginHostEventSink<*>>()
+  val plugins = mutableSetOf<Plugin>()
   val decoders = mutableSetOf<PayloadDecoder<*>>()
 
-  @Suppress("UNCHECKED_CAST")
-  inline fun<reified H : HostEvent, reified C: ClientEvent> install(
-    dataConnector: DataConnector<H, C>
-  ) {
-    dataConnectors[C::class.qualifiedName!!] = dataConnector
-    decoders += C::class.companionObjectInstance as PayloadDecoder<C>
-    ingestors[dataConnector] = PluginEventIngestor(dataConnector, C::class)
-    hostEventSinks[dataConnector] = PluginHostEventSink(H::class.companionObjectInstance as PayloadDecoder<H>)
+  fun install(plugin: Plugin) {
+    plugins.add(plugin)
   }
-
 
   fun build(): LivewireClientConfiguration {
     return LivewireClientConfiguration(
-      dataConnectors = dataConnectors,
+      plugins = plugins,
       decoders = decoders,
-      ingestors = ingestors,
-      hostEventSinks = hostEventSinks,
     )
   }
 }
 
 class LivewireClientConfiguration(
-  val dataConnectors: Map<String, DataConnector<*, *>>,
+  val plugins: Set<Plugin>,
   val decoders: Set<PayloadDecoder<*>>,
-  val ingestors: Map<DataConnector<*, *>, PluginEventIngestor<*>>,
-  val hostEventSinks: Map<DataConnector<*, *>, PluginHostEventSink<*>>,
 )
 
 @DslMarker
 annotation class LivewireClientDsl
-
-class PluginEventIngestor<C : ClientEvent>(
-  val connector: DataConnector<*, C>,
-  val clientEventClass: KClass<C>,
-) {
-
-  suspend fun ingest(server: LivewireServer) {
-    server.incomingMessages
-      .filterIsInstance(clientEventClass)
-      .collect { event ->
-        connector.emitEvent(event)
-      }
-  }
-}
-
-class PluginHostEventSink<H : HostEvent>(
-  val payloadDecoder: PayloadDecoder<H>,
-) {
-
-  suspend fun send(server: LivewireServer, event: H) {
-    val eventJson = EnvelopeJson.encodeToString(payloadDecoder.serializer(), event)
-    server.sendRaw(eventJson)
-  }
-}

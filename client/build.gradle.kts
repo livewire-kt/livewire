@@ -23,10 +23,15 @@ kotlin {
 
   sourceSets {
     androidMain.dependencies {
+      api(projects.ui)
+
       implementation(libs.ktor.serverCio)
       implementation(libs.ktor.serverWebsockets)
-      implementation(libs.compose.runtime)
       implementation(libs.kotlin.reflect)
+
+      implementation(libs.compose.runtime)
+
+      // Still needed??
       implementation(libs.molecule.runtime)
     }
     commonMain.dependencies {

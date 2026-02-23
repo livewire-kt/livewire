@@ -18,7 +18,6 @@ data class SimpleMessage(
     override suspend fun Json.decodePayload(
       rawPayload: String
     ): SimpleMessage = decodeFromString<SimpleMessage>(rawPayload)
-
   }
 }
 
