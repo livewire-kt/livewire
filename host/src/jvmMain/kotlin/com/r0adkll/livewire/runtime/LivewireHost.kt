@@ -2,6 +2,8 @@ package com.r0adkll.livewire.runtime
 
 import com.r0adkll.livewire.transport.DefaultDecoders
 import com.r0adkll.livewire.transport.PayloadDecoder
+import com.r0adkll.livewire.ui.actions.LivewireAction
+import com.r0adkll.livewire.ui.actions.LivewireActionDispatcher
 import com.r0adkll.livewire.ui.data.UiDecoders
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +13,7 @@ import kotlin.coroutines.CoroutineContext
 class LivewireHost private constructor(
   val configuration: LivewireHostConfiguration,
   context: CoroutineContext = Dispatchers.IO,
-) {
+) : LivewireActionDispatcher {
 
   constructor(configure: LivewireHostBuilder.() -> Unit = {}) : this(
     LivewireHostBuilder().apply(configure).build()
@@ -23,6 +25,10 @@ class LivewireHost private constructor(
     decoders = configuration.decoders + DefaultDecoders + UiDecoders,
     context = context,
   )
+
+  override suspend fun dispatch(action: LivewireAction) {
+    connection.send(action)
+  }
 }
 
 @LivewireHostDsl

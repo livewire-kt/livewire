@@ -1,20 +1,26 @@
 package com.r0adkll.livewire.plugin.database
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.unit.dp
-import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.Plugin
+import com.r0adkll.livewire.ui.PluginInfo
+import com.r0adkll.livewire.ui.actions.clickAction
+import com.r0adkll.livewire.ui.layout.Alignment
 import com.r0adkll.livewire.ui.layout.Column
+import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
+import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.Text
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlin.time.Duration.Companion.seconds
+import com.r0adkll.livewire.ui.widget.TextStyle
+import kotlinx.coroutines.launch
 
 class DatabasePlugin(context: Context) : Plugin {
 
@@ -28,8 +34,11 @@ class DatabasePlugin(context: Context) : Plugin {
 
   @Composable
   override fun Content() {
+    val scope = rememberCoroutineScope()
     val availableDatabases = remember { mutableStateListOf<DatabaseInfo>() }
-    LaunchedEffect(Unit) {
+
+    suspend fun refreshDatabases() {
+      Log.d("DatabasePlugin", "Refreshing Databases")
       inspector.discoverDatabases()
         .onSuccess { databases ->
           availableDatabases.clear()
@@ -40,7 +49,34 @@ class DatabasePlugin(context: Context) : Plugin {
         }
     }
 
+    LaunchedEffect(Unit) {
+      refreshDatabases()
+    }
+
     Column {
+      Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = LivewireModifier.height(48.dp)
+      ) {
+        Text(
+          text = "Available Databases",
+          style = TextStyle.TitleMedium,
+          modifier = LivewireModifier
+            .padding(horizontal = 16.dp)
+        )
+
+        Button(
+          text = "Refresh",
+          action = clickAction {
+            scope.launch {
+              refreshDatabases()
+            }
+          },
+          modifier = LivewireModifier
+            .padding(horizontal = 16.dp),
+        )
+      }
+
       availableDatabases.forEach { db ->
         Text(
           text = db.name,

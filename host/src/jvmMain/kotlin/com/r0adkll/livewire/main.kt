@@ -31,6 +31,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -60,6 +61,7 @@ import com.r0adkll.livewire.runtime.HostConnectionState.FORWARDING
 import com.r0adkll.livewire.runtime.LivewireHost
 import com.r0adkll.livewire.ui.PluginDrawerItem
 import com.r0adkll.livewire.ui.PluginInfo
+import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.data.ClientManifest
 import com.r0adkll.livewire.ui.data.PluginSelected
 import com.r0adkll.livewire.ui.data.UiProtocol
@@ -189,12 +191,16 @@ fun main() = application {
           }
         }
       ) {
-
         val layoutNode by host.connection.incomingLayoutNodes.collectAsState()
-        LayoutNodeContent(
-          node = layoutNode,
-          modifier = Modifier.fillMaxSize(),
-        )
+
+        CompositionLocalProvider(
+          LocalLivewireActionDispatcher provides host,
+        ) {
+          LayoutNodeContent(
+            node = layoutNode,
+            modifier = Modifier.fillMaxSize(),
+          )
+        }
       }
     }
   }

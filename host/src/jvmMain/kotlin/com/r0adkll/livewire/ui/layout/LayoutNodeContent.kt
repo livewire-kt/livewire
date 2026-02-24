@@ -11,14 +11,17 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.modifier.LivewireModifier.Companion.toComposeUi
 import com.r0adkll.livewire.ui.widget.ButtonNode
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.TextNode
 import com.r0adkll.livewire.ui.widget.TextStyle
+import kotlinx.coroutines.launch
 import com.r0adkll.livewire.ui.layout.Alignment as LivewireAlignment
 
 @Composable
@@ -134,6 +137,9 @@ private fun ButtonNodeContent(
   node: ButtonNode,
   modifier: Modifier = Modifier,
 ) {
+  val scope = rememberCoroutineScope()
+  val eventDispatcher = LocalLivewireActionDispatcher.current
+
   val buttonSize = when (node.size) {
     ButtonSize.ExtraSmall -> ButtonDefaults.ExtraSmallContainerHeight
     ButtonSize.Small -> ButtonDefaults.MinHeight
@@ -142,7 +148,11 @@ private fun ButtonNodeContent(
   }
 
   Button(
-    onClick = {},
+    onClick = {
+      scope.launch {
+        eventDispatcher.dispatch(node.action)
+      }
+    },
     shapes = ButtonDefaults.shapes(),
     modifier = modifier
       .heightIn(buttonSize),

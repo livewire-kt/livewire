@@ -2,6 +2,7 @@ package com.r0adkll.livewire.ui.data
 
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.PluginInfo
+import com.r0adkll.livewire.ui.actions.LivewireAction
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -41,4 +42,5 @@ data object ClearPlugin : UiProtocol
 
 val UiDecoders get() = listOf(
   UiProtocol,
+  LivewireAction,
 )

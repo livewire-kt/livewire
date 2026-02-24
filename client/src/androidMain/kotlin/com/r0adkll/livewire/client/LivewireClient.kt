@@ -1,6 +1,7 @@
 package com.r0adkll.livewire.client
 
 import android.util.Log
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -8,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withCompositionLocal
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.launchMolecule
 import app.cash.molecule.moleculeFlow
@@ -15,6 +17,9 @@ import com.r0adkll.livewire.transport.DefaultDecoders
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
+import com.r0adkll.livewire.ui.actions.LivewireAction
+import com.r0adkll.livewire.ui.actions.LocalLivewireActionObserver
+import com.r0adkll.livewire.ui.actions.rememberLivewireActionController
 import com.r0adkll.livewire.ui.composition.livewireFlow
 import com.r0adkll.livewire.ui.data.ClearPlugin
 import com.r0adkll.livewire.ui.data.ClientManifest
@@ -80,6 +85,8 @@ class LivewireClient private constructor(
       val connectionState by server.connectionState.collectAsState()
       var activePluginInfo by remember { mutableStateOf<PluginInfo?>(null) }
 
+      val actionController = rememberLivewireActionController()
+
       LaunchedEffect(Unit) {
         server.incomingMessages.collect { message ->
           when (message) {
@@ -89,6 +96,10 @@ class LivewireClient private constructor(
 
             is ClearPlugin -> {
               activePluginInfo = null
+            }
+
+            is LivewireAction -> {
+              actionController.dispatch(message)
             }
           }
         }
@@ -108,7 +119,12 @@ class LivewireClient private constructor(
                   Log.d("LivewireCompose", "Plugin Exited Composition: ${plugin.info.pluginId}")
                 }
               }
-              plugin.Content()
+
+              CompositionLocalProvider(
+                LocalLivewireActionObserver provides actionController,
+              ) {
+                plugin.Content()
+              }
             }.collect { layoutNode ->
               server.sendLayoutNode(layoutNode)
             }
