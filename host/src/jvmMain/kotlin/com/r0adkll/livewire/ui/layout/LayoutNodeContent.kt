@@ -1,5 +1,6 @@
 package com.r0adkll.livewire.ui.layout
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,9 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
-import com.r0adkll.livewire.ui.modifier.LivewireModifier.Companion.toComposeUi
 import com.r0adkll.livewire.ui.widget.ButtonNode
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.TextNode
@@ -27,19 +30,19 @@ import com.r0adkll.livewire.ui.layout.Alignment as LivewireAlignment
 @Composable
 internal fun LayoutNodeContent(
   node: LayoutNode,
-  modifier: Modifier = Modifier,
+  modifier: Modifier,
 ) {
-  val appliedModifier = with (node.modifier) { modifier.toComposeUi() }
   when (node) {
-    is BoxNode -> BoxNodeContent(node, appliedModifier)
-    is ColumnNode -> ColumnNodeContent(node, appliedModifier)
-    is RowNode -> RowNodeContent(node, appliedModifier)
-    is TextNode -> TextNodeContent(node, appliedModifier)
-    is ButtonNode -> ButtonNodeContent(node, appliedModifier)
+    is BoxNode -> BoxNodeContent(node, modifier)
+    is ColumnNode -> ColumnNodeContent(node, modifier)
+    is RowNode -> RowNodeContent(node, modifier)
+    is TextNode -> TextNodeContent(node, modifier)
+    is ButtonNode -> ButtonNodeContent(node, modifier)
+
     else -> {
-      Box(appliedModifier) {
+      Box(modifier.debugFrame()) {
         node.children.forEach { child ->
-          LayoutNodeContent(child)
+          LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
         }
       }
     }
@@ -52,7 +55,7 @@ private fun BoxNodeContent(
   modifier: Modifier = Modifier,
 ) {
   Box(
-    modifier = modifier,
+    modifier = modifier.debugFrame(),
     contentAlignment = when (node.contentAlignment) {
       LivewireAlignment.BottomCenter -> Alignment.BottomCenter
       LivewireAlignment.BottomEnd -> Alignment.BottomEnd
@@ -63,7 +66,10 @@ private fun BoxNodeContent(
       else -> Alignment.TopStart
     }
   ) {
-    node.children.forEach { child -> LayoutNodeContent(child) }
+    node.children.forEach { child ->
+      val modifier = with (child.modifier) { this@Box.toComposeUi(Modifier) }
+      LayoutNodeContent(child, modifier)
+    }
   }
 }
 
@@ -73,14 +79,17 @@ private fun ColumnNodeContent(
   modifier: Modifier = Modifier,
 ) {
   Column(
-    modifier = modifier,
+    modifier = modifier.debugFrame(),
     horizontalAlignment = when (node.horizontalAlignment) {
       LivewireAlignment.CenterHorizontally -> Alignment.CenterHorizontally
       LivewireAlignment.End -> Alignment.End
       LivewireAlignment.Start -> Alignment.Start
     }
   ) {
-    node.children.forEach { child -> LayoutNodeContent(child) }
+    node.children.forEach { child ->
+      val modifier = with (child.modifier) { this@Column.toComposeUi(Modifier) }
+      LayoutNodeContent(child, modifier)
+    }
   }
 }
 
@@ -90,14 +99,17 @@ private fun RowNodeContent(
   modifier: Modifier = Modifier,
 ) {
   Row(
-    modifier = modifier,
+    modifier = modifier.debugFrame(),
     verticalAlignment = when (node.verticalAlignment) {
       LivewireAlignment.Bottom -> Alignment.Bottom
       LivewireAlignment.CenterVertically -> Alignment.CenterVertically
       LivewireAlignment.Top -> Alignment.Top
     }
   ) {
-    node.children.forEach { child -> LayoutNodeContent(child) }
+    node.children.forEach { child ->
+      val modifier = with (child.modifier) { this@Row.toComposeUi(Modifier) }
+      LayoutNodeContent(child, modifier)
+    }
   }
 }
 
@@ -127,7 +139,7 @@ private fun TextNodeContent(
       null -> LocalTextStyle.current
     },
     fontWeight = node.fontWeight?.let { FontWeight(it) },
-    modifier = modifier,
+    modifier = modifier.debugFrame(),
   )
 }
 
@@ -155,7 +167,8 @@ private fun ButtonNodeContent(
     },
     shapes = ButtonDefaults.shapes(),
     modifier = modifier
-      .heightIn(buttonSize),
+      .heightIn(buttonSize)
+      .debugFrame(),
     contentPadding = ButtonDefaults.contentPaddingFor(buttonSize),
   ) {
     Text(
@@ -164,3 +177,15 @@ private fun ButtonNodeContent(
     )
   }
 }
+
+/**
+ * Set this to true to draw debugging information on the screen
+ */
+const val DebugNodes = false
+
+fun Modifier.debugFrame(): Modifier = if (DebugNodes) {
+  border(
+    width = 1.dp,
+    color = Color.Red
+  )
+} else this

@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.modifier
 
 import androidx.annotation.RestrictTo
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentWidth
@@ -10,14 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import com.r0adkll.livewire.ui.modifier.DimensionModifier.Type
-import com.r0adkll.livewire.ui.modifier.LivewireModifier.Element.Companion.BOUNDARY
-import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.descriptors.SerialDescriptor
-import kotlinx.serialization.encoding.Decoder
-import kotlinx.serialization.encoding.Encoder
-import okio.BufferedSink
 
+@Suppress("ModifierFactoryExtensionFunction")
 @Serializable
 internal class WidthModifier(
   val type: Type,
@@ -25,14 +21,21 @@ internal class WidthModifier(
 ) : LivewireModifier.Element {
 
   @Composable
-  override fun Modifier.toComposeUi(): Modifier {
+  override fun toComposeUi(then: Modifier): Modifier {
     return when (type) {
-      Type.FILL -> this.fillMaxWidth(value)
-      Type.WRAP -> this.wrapContentWidth()
-      Type.INTRINSIC_MIN -> this.width(IntrinsicSize.Min)
-      Type.INTRINSIC_MAX -> this.width(IntrinsicSize.Max)
-      Type.EXACT_DP -> this.width(Dp(value))
-      else -> this
+      Type.FILL -> then.fillMaxWidth(value)
+      Type.WRAP -> then.wrapContentWidth()
+      Type.INTRINSIC_MIN -> then.width(IntrinsicSize.Min)
+      Type.INTRINSIC_MAX -> then.width(IntrinsicSize.Max)
+      Type.EXACT_DP -> then.width(Dp(value))
+      else -> then
+    }
+  }
+  @Composable
+  override fun RowScope.toComposeUi(then: Modifier): Modifier {
+    return when (type) {
+      Type.WEIGHT -> then.weight(value)
+      else -> this@WidthModifier.toComposeUi(then)
     }
   }
 }

@@ -1,5 +1,6 @@
 package com.r0adkll.livewire.ui.modifier
 
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
@@ -11,6 +12,7 @@ import androidx.compose.ui.unit.Dp
 import com.r0adkll.livewire.ui.modifier.DimensionModifier.Type
 import kotlinx.serialization.Serializable
 
+@Suppress("ModifierFactoryExtensionFunction")
 @Serializable
 internal class HeightModifier(
   val type: Type,
@@ -18,17 +20,24 @@ internal class HeightModifier(
 ) : LivewireModifier.Element {
 
   @Composable
-  override fun Modifier.toComposeUi(): Modifier {
+  override fun toComposeUi(then: Modifier): Modifier {
     return when (type) {
-      Type.FILL -> this.fillMaxHeight(value)
-      Type.WRAP -> this.wrapContentHeight()
-      Type.INTRINSIC_MIN -> this.height(IntrinsicSize.Min)
-      Type.INTRINSIC_MAX -> this.height(IntrinsicSize.Max)
-      Type.EXACT_DP -> this.height(Dp(value))
-      else -> this
+      Type.FILL -> then.fillMaxHeight(value)
+      Type.WRAP -> then.wrapContentHeight()
+      Type.INTRINSIC_MIN -> then.height(IntrinsicSize.Min)
+      Type.INTRINSIC_MAX -> then.height(IntrinsicSize.Max)
+      Type.EXACT_DP -> then.height(Dp(value))
+      else -> then
     }
   }
 
+  @Composable
+  override fun ColumnScope.toComposeUi(then: Modifier): Modifier {
+    return when (type) {
+      Type.WEIGHT -> then.weight(value)
+      else -> this@HeightModifier.toComposeUi(then)
+    }
+  }
 }
 
 fun LivewireModifier.height(height: Dp): LivewireModifier =

@@ -1,15 +1,16 @@
 package com.r0adkll.livewire.ui.modifier
 
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
+import com.r0adkll.livewire.ui.modifier.mapping.ComposeUiMapper
 import kotlinx.serialization.Serializable
 
 @Stable
-sealed interface LivewireModifier {
-
-  @Composable
-  fun Modifier.toComposeUi(): Modifier = this
+sealed interface LivewireModifier : ComposeUiMapper {
 
   fun <R> foldIn(initial: R, operation: (R, Element) -> R): R
   fun <R> foldOut(initial: R, operation: (Element, R) -> R): R
@@ -26,10 +27,6 @@ sealed interface LivewireModifier {
     override fun <R> foldOut(initial: R, operation: (Element, R) -> R): R = operation(this, initial)
     override fun any(predicate: (Element) -> Boolean): Boolean = predicate(this)
     override fun all(predicate: (Element) -> Boolean): Boolean = predicate(this)
-
-    companion object {
-      internal const val BOUNDARY = "<<element>>"
-    }
   }
 
   companion object : LivewireModifier {
@@ -39,28 +36,14 @@ sealed interface LivewireModifier {
     override fun all(predicate: (Element) -> Boolean): Boolean = true
     override infix fun then(other: LivewireModifier): LivewireModifier = other
     override fun toString(): String = "Modifier"
-
-    @Composable
-    override fun Modifier.toComposeUi(): Modifier = this
   }
-}
-
-@Composable
-@Suppress("ModifierFactoryExtensionFunction")
-fun LivewireModifier.toComposeUi(): Modifier {
-  return Modifier.toComposeUi()
-}
-
-@Composable
-@Suppress("ModifierFactoryExtensionFunction")
-fun LivewireModifier.toComposeUiLayout(): Modifier {
-  return this.foldIn<LivewireModifier>(LivewireModifier) { r, n -> r.then(n) }.toComposeUi()
 }
 
 /**
  * A node in a [LivewireModifier] chain. A CombinedModifier always contains at least two elements; a
  * Modifier [outer] that wraps around the Modifier [inner].
  */
+@Suppress("ModifierFactoryExtensionFunction")
 @Serializable
 internal class CombinedLivewireModifier(
   private val outer: LivewireModifier,
@@ -68,12 +51,34 @@ internal class CombinedLivewireModifier(
 ) : LivewireModifier {
 
   @Composable
-  override fun Modifier.toComposeUi(): Modifier {
-    var result = this
+  override fun toComposeUi(then: Modifier): Modifier {
+    var result = then
+    result = outer.toComposeUi(result)
+    result = inner.toComposeUi(result)
+    return result
+  }
 
-    result = with(outer) { result.toComposeUi() }
-    result = with(inner) { result.toComposeUi() }
+  @Composable
+  override fun ColumnScope.toComposeUi(then: Modifier): Modifier {
+    var result = then
+    result = with (outer) { this@toComposeUi.toComposeUi(result) }
+    result = with (inner) { this@toComposeUi.toComposeUi(result) }
+    return result
+  }
 
+  @Composable
+  override fun RowScope.toComposeUi(then: Modifier): Modifier {
+    var result = then
+    result = with (outer) { this@toComposeUi.toComposeUi(result) }
+    result = with (inner) { this@toComposeUi.toComposeUi(result) }
+    return result
+  }
+
+  @Composable
+  override fun BoxScope.toComposeUi(then: Modifier): Modifier {
+    var result = then
+    result = with (outer) { this@toComposeUi.toComposeUi(result) }
+    result = with (inner) { this@toComposeUi.toComposeUi(result) }
     return result
   }
 

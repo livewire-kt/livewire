@@ -25,7 +25,8 @@ fun HostScaffold(
 ) {
   Column(modifier = modifier.fillMaxSize()) {
     Box(
-      modifier = Modifier.fillMaxWidth()
+      modifier = Modifier
+        .fillMaxWidth()
         .zIndex(1f),
     ) {
       topBar()

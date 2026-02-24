@@ -12,9 +12,11 @@ import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.layout.Alignment
+import com.r0adkll.livewire.ui.layout.Box
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import com.r0adkll.livewire.ui.modifier.fillMaxHeight
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.widget.Button
@@ -53,39 +55,52 @@ class DatabasePlugin(context: Context) : Plugin {
       refreshDatabases()
     }
 
-    Column {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = LivewireModifier.height(48.dp)
-      ) {
-        Text(
-          text = "Available Databases",
-          style = TextStyle.TitleMedium,
-          modifier = LivewireModifier
-            .padding(horizontal = 16.dp)
-        )
+    Row {
 
-        Button(
-          text = "Refresh",
-          action = clickAction {
-            scope.launch {
-              refreshDatabases()
-            }
-          },
-          modifier = LivewireModifier
-            .padding(horizontal = 16.dp),
-        )
+      Column(
+        modifier = LivewireModifier.weight(2f)
+      ) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = LivewireModifier.height(48.dp)
+        ) {
+          Text(
+            text = "Available Databases",
+            style = TextStyle.TitleMedium,
+            modifier = LivewireModifier
+              .padding(horizontal = 16.dp)
+          )
+
+          Button(
+            text = "Refresh",
+            action = clickAction {
+              scope.launch {
+                refreshDatabases()
+              }
+            },
+            modifier = LivewireModifier
+              .padding(horizontal = 16.dp),
+          )
+        }
+
+        availableDatabases.forEach { db ->
+          Text(
+            text = db.name,
+            modifier = LivewireModifier
+              .padding(
+                horizontal = 16.dp,
+                vertical = 8.dp,
+              ),
+          )
+        }
       }
 
-      availableDatabases.forEach { db ->
-        Text(
-          text = db.name,
-          modifier = LivewireModifier
-            .padding(
-              horizontal = 16.dp,
-              vertical = 8.dp,
-            ),
-        )
+      Box(
+        modifier = LivewireModifier
+          .weight(3f)
+          .fillMaxHeight()
+      ) {
+        Text("CONTENT", LivewireModifier.padding(16.dp))
       }
     }
   }

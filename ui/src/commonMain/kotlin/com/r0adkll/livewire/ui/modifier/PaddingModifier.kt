@@ -28,9 +28,10 @@ internal class PaddingModifier(
     }
   }
 
+  @Suppress("ModifierFactoryExtensionFunction")
   @Composable
-  override fun Modifier.toComposeUi(): Modifier {
-    return this.padding(
+  override fun toComposeUi(then: Modifier): Modifier {
+    return then.padding(
       start = start.dp,
       end = end.dp,
       top = top.dp,
