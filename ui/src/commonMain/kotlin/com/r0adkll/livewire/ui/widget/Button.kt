@@ -6,6 +6,7 @@ import androidx.compose.runtime.ReusableComposeNode
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.applier
+import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
 @LivewireComposable
@@ -13,12 +14,14 @@ import kotlinx.serialization.Serializable
 fun Button(
   text: String,
   action: String,
+  modifier: LivewireModifier = LivewireModifier,
   icon: String? = null,
   size: ButtonSize = ButtonSize.Small,
 ) {
   ReusableComposeNode<ButtonNode, Applier<LayoutNode>>(
     factory = { ButtonNode(text, action) },
     update = {
+      set(modifier, LayoutNode.SetModifier)
       set(text, ButtonNode.SetText)
       set(action, ButtonNode.SetActionIntent)
       set(icon, ButtonNode.SetIcon)

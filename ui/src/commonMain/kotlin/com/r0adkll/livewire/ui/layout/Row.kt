@@ -5,11 +5,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReusableComposeNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
 @LivewireComposable
 @Composable
 inline fun Row(
+  modifier: LivewireModifier = LivewireModifier,
   verticalAlignment: Alignment.Vertical = Alignment.Top,
   content: @Composable @LivewireComposable RowScope.() -> Unit,
 ) {
@@ -17,6 +19,7 @@ inline fun Row(
     factory = { RowNode() },
     update = {
       set(verticalAlignment, RowNode.SetVerticalAlignment)
+      set(modifier, LayoutNode.SetModifier)
     },
     content = { RowScopeInstance.content() },
   )

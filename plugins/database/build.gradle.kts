@@ -20,6 +20,7 @@ kotlin {
   sourceSets {
     androidMain.dependencies {
       api(libs.kotlinx.coroutines.android)
+      implementation(libs.androidx.sqlite.framework)
     }
     commonMain.dependencies {
       api(projects.ui)

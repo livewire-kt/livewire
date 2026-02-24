@@ -1,5 +1,7 @@
 package com.r0adkll.livewire.ui.layout
 
+import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import com.r0adkll.livewire.ui.modifier.serialization.LivewireModifierSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -11,6 +13,14 @@ private const val DebugChanges = false
 abstract class LayoutNode(
   val children: MutableList<LayoutNode> = mutableListOf(),
 ) {
+
+  companion object {
+    val SetModifier: LayoutNode.(LivewireModifier) -> Unit = { modifier = it }
+
+  }
+
+  @Serializable(with = LivewireModifierSerializer::class)
+  var modifier: LivewireModifier = LivewireModifier
 
   /**
    * Callback invoked whenever the node in the vector tree is modified in a way that would change

@@ -6,18 +6,21 @@ import androidx.compose.runtime.ReusableComposeNode
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.applier
+import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
 @LivewireComposable
 @Composable
 fun Text(
   text: String,
+  modifier: LivewireModifier = LivewireModifier,
   style: TextStyle? = null,
   fontWeight: Int? = null,
 ) {
   ReusableComposeNode<TextNode, Applier<LayoutNode>>(
     factory = { TextNode(text) },
     update = {
+      set(modifier, LayoutNode.SetModifier)
       set(text, TextNode.SetText)
       set(style, TextNode.SetStyle)
       set(fontWeight, TextNode.SetFontWeight)

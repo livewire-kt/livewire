@@ -5,11 +5,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReusableComposeNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
 @LivewireComposable
 @Composable
 inline fun Box(
+  modifier: LivewireModifier = LivewireModifier,
   contentAlignment: Alignment = Alignment.TopStart,
   content: @Composable @LivewireComposable BoxScope.() -> Unit,
 ) {
@@ -17,6 +19,7 @@ inline fun Box(
     factory = { BoxNode() },
     update = {
       set(contentAlignment, BoxNode.SetContentAlignment)
+      set(modifier, LayoutNode.SetModifier)
     },
     content = { BoxScopeInstance.content() },
   )

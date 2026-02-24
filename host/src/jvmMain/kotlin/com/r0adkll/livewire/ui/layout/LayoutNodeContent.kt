@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import com.r0adkll.livewire.ui.modifier.LivewireModifier.Companion.toComposeUi
 import com.r0adkll.livewire.ui.widget.ButtonNode
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.TextNode
@@ -25,14 +26,15 @@ internal fun LayoutNodeContent(
   node: LayoutNode,
   modifier: Modifier = Modifier,
 ) {
+  val appliedModifier = with (node.modifier) { modifier.toComposeUi() }
   when (node) {
-    is BoxNode -> BoxNodeContent(node, modifier)
-    is ColumnNode -> ColumnNodeContent(node, modifier)
-    is RowNode -> RowNodeContent(node, modifier)
-    is TextNode -> TextNodeContent(node, modifier)
-    is ButtonNode -> ButtonNodeContent(node, modifier)
+    is BoxNode -> BoxNodeContent(node, appliedModifier)
+    is ColumnNode -> ColumnNodeContent(node, appliedModifier)
+    is RowNode -> RowNodeContent(node, appliedModifier)
+    is TextNode -> TextNodeContent(node, appliedModifier)
+    is ButtonNode -> ButtonNodeContent(node, appliedModifier)
     else -> {
-      Box(modifier) {
+      Box(appliedModifier) {
         node.children.forEach { child ->
           LayoutNodeContent(child)
         }

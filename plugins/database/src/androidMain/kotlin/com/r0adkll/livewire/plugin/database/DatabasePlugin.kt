@@ -1,18 +1,24 @@
 package com.r0adkll.livewire.plugin.database
 
+import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.layout.Column
+import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.widget.Text
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlin.time.Duration.Companion.seconds
 
-class DatabasePlugin : Plugin {
+class DatabasePlugin(context: Context) : Plugin {
+
+  val inspector = DatabaseInspector(context)
 
   override val info: PluginInfo = PluginInfo(
     pluginId = "database",
@@ -22,19 +28,28 @@ class DatabasePlugin : Plugin {
 
   @Composable
   override fun Content() {
-    Column {
-      val messages = remember { mutableStateListOf<String>() }
-      messages.forEach { message ->
-        Text(message)
-      }
-
-      LaunchedEffect(Unit) {
-        var count = 0
-        while (isActive) {
-          delay(5.seconds)
-          count++
-          messages += "Messages: $count"
+    val availableDatabases = remember { mutableStateListOf<DatabaseInfo>() }
+    LaunchedEffect(Unit) {
+      inspector.discoverDatabases()
+        .onSuccess { databases ->
+          availableDatabases.clear()
+          availableDatabases.addAll(databases)
         }
+        .onFailure { e ->
+          e.printStackTrace()
+        }
+    }
+
+    Column {
+      availableDatabases.forEach { db ->
+        Text(
+          text = db.name,
+          modifier = LivewireModifier
+            .padding(
+              horizontal = 16.dp,
+              vertical = 8.dp,
+            ),
+        )
       }
     }
   }
