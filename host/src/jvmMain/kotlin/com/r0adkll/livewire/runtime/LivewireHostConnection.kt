@@ -139,10 +139,6 @@ class LivewireHostConnection(
     session?.send(Frame.Text(json.encodeToString(payload)))
   }
 
-  suspend fun sendRaw(payload: String) {
-    session?.send(Frame.Text(payload))
-  }
-
   fun disconnect() {
     scope.launch {
       session?.close(CloseReason(CloseReason.Codes.NORMAL, "User disconnected"))

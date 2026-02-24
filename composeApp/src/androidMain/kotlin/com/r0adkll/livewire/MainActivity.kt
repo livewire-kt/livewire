@@ -29,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.lifecycleScope
 import com.r0adkll.livewire.client.LivewireClient
 import com.r0adkll.livewire.ui.icons.ChatBubbleFilled
 import com.r0adkll.livewire.ui.icons.ChatBubbleOutline

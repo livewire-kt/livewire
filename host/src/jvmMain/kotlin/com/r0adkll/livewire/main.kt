@@ -1,8 +1,6 @@
 package com.r0adkll.livewire
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,13 +10,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -29,13 +25,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -49,15 +43,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.r0adkll.livewire.com.r0adkll.livewire.theme.LivewireTheme
-import com.r0adkll.livewire.protocol.SimpleMessage
 import com.r0adkll.livewire.runtime.AdbDevice
 import com.r0adkll.livewire.runtime.AdbDeviceManager
 import com.r0adkll.livewire.runtime.HostConnectionState
 import com.r0adkll.livewire.runtime.HostConnectionState.CONNECTED
-import com.r0adkll.livewire.runtime.HostConnectionState.CONNECTING
-import com.r0adkll.livewire.runtime.HostConnectionState.DISCONNECTED
-import com.r0adkll.livewire.runtime.HostConnectionState.ERROR
-import com.r0adkll.livewire.runtime.HostConnectionState.FORWARDING
 import com.r0adkll.livewire.runtime.LivewireHost
 import com.r0adkll.livewire.ui.PluginDrawerItem
 import com.r0adkll.livewire.ui.PluginInfo
@@ -70,8 +59,6 @@ import com.r0adkll.livewire.ui.icons.Disconnected
 import com.r0adkll.livewire.ui.layout.HostScaffold
 import com.r0adkll.livewire.ui.layout.LayoutNodeContent
 import kotlinx.coroutines.flow.filterIsInstance
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)

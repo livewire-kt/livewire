@@ -4,11 +4,10 @@ import android.util.Log
 import com.r0adkll.livewire.LIVEWIRE_PORT
 import com.r0adkll.livewire.LIVEWIRE_WS_PATH
 import com.r0adkll.livewire.protocol.EnvelopeJson
-import com.r0adkll.livewire.protocol.SimpleMessage
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
-import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.data.LivewireUiJson
+import com.r0adkll.livewire.ui.layout.LayoutNode
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
@@ -75,11 +74,8 @@ class LivewireServer(
                 if (payload != null) {
                   _incomingMessages.tryEmit(payload)
                 } else {
-                  _incomingMessages.tryEmit(SimpleMessage(text))
+                  println("Unknown message: $text")
                 }
-
-                // Echo back for initial testing
-                send(Frame.Text(EnvelopeJson.encodeToString(SimpleMessage("pong!"))))
               }
             }
           } catch (e: Exception) {
@@ -100,10 +96,6 @@ class LivewireServer(
     val envelopeJson = EnvelopeJson.encodeToString(envelope)
     Log.d("Livewire", "Sending $envelopeJson")
     activeSession?.send(Frame.Text(envelopeJson))
-  }
-
-  suspend fun sendRaw(envelope: String) {
-    activeSession?.send(Frame.Text(envelope))
   }
 
   suspend fun sendLayoutNode(node: LayoutNode) {
