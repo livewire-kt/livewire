@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.Stable
+import com.r0adkll.livewire.annotations.LivewireLayoutNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.modifier.DimensionModifier
 import com.r0adkll.livewire.ui.modifier.HeightModifier
@@ -53,6 +54,7 @@ internal object ColumnScopeInstance : ColumnScope {
   }
 }
 
+@LivewireLayoutNode
 @Serializable
 class ColumnNode(
   var horizontalAlignment: Alignment.Horizontal = Alignment.Start,

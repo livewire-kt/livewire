@@ -6,9 +6,14 @@ plugins {
   alias(libs.plugins.kotlinSerialization)
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
+  alias(libs.plugins.ksp)
 }
 
 kotlin {
+  compilerOptions {
+    freeCompilerArgs.add("-Xexpect-actual-classes")
+  }
+
   androidTarget {
     compilerOptions {
       jvmTarget.set(JvmTarget.JVM_11)
@@ -45,6 +50,10 @@ kotlin {
   }
 }
 
+dependencies {
+  add("kspJvm", projects.compiler)
+  add("kspAndroid", projects.compiler)
+}
 
 android {
   namespace = "com.r0adkll.livewire.ui"

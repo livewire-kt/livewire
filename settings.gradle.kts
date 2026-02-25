@@ -38,7 +38,9 @@ include(":host")
 include(":runtime")
 include(":client")
 include(":ui")
+include("compiler")
 
 include(
   ":plugins:database",
 )
+

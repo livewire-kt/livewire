@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.r0adkll.livewire.annotations.LivewireLayoutNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
@@ -28,6 +29,7 @@ fun Icon(
   )
 }
 
+@LivewireLayoutNode
 @Serializable
 class IconNode(
   var svgData: String,
