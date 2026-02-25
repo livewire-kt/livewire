@@ -1,0 +1,214 @@
+# Generate a Livewire Widget
+
+Generate a new Livewire composable widget for building remote UIs. The user will describe the Material3 composable they want to wrap (e.g. "Slider", "Switch", "TextField"). Use this description along with the argument: $ARGUMENTS
+
+## What to generate
+
+You must create/modify exactly these files:
+
+### 1. Widget definition: `ui/src/commonMain/kotlin/com/r0adkll/livewire/ui/widget/<Name>.kt`
+
+This file contains both the client-side `@Composable` function and the serializable node class.
+
+**Composable function pattern:**
+- Annotated with `@LivewireComposable` and `@Composable`
+- Uses `ReusableComposeNode<{Name}Node, Applier<LayoutNode>>` to create node instances
+- Always accepts `modifier: LivewireModifier = LivewireModifier` parameter
+- `factory` block creates the initial node
+- `update` block sets all properties using companion setter references
+- Always set modifier: `set(modifier, LayoutNode.SetModifier)`
+- If the widget has children, pass a `content` lambda and wrap it in a scope (e.g. `RowScopeInstance.content()`)
+
+**Node class pattern:**
+- Annotated with `@LivewireLayoutNode` and `@Serializable`
+- Extends `LayoutNode()`
+- All mutable properties are `var`
+- Companion object contains setter lambdas using the `applier { }` helper: `val SetFoo: {Name}Node.(Type) -> Unit = applier { foo = it }`
+- All properties must be serializable. For non-serializable types (like Color), convert to a serializable form (e.g. Int ARGB)
+
+**Enums for style variants:**
+- Define enums in the same file for categorical properties (e.g. style, size)
+- Mark them `@Serializable`
+
+**Actions for events:**
+- If the widget needs to communicate events back to the client (e.g. onClick, onValueChange), check if an existing action type in `ui/src/commonMain/kotlin/com/r0adkll/livewire/ui/actions/` fits
+- If no existing action fits, create a new `@Serializable` action class implementing `LivewireAction` in that directory, along with a `@Composable` factory function that wires up the observer pattern (see `ClickAction.kt` and `CheckedChangeAction.kt` for the pattern)
+- New actions must also be registered as a subclass in the `LivewireAction` sealed interface's serialization
+
+Here is an example of Text.kt for reference:
+```kotlin
+package com.r0adkll.livewire.ui.widget
+
+import androidx.compose.runtime.Applier
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReusableComposeNode
+import com.r0adkll.livewire.annotations.LivewireLayoutNode
+import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.layout.applier
+import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import kotlinx.serialization.Serializable
+
+@LivewireComposable
+@Composable
+fun Text(
+  text: String,
+  modifier: LivewireModifier = LivewireModifier,
+  style: TextStyle? = null,
+  fontWeight: Int? = null,
+) {
+  ReusableComposeNode<TextNode, Applier<LayoutNode>>(
+    factory = { TextNode(text) },
+    update = {
+      set(modifier, LayoutNode.SetModifier)
+      set(text, TextNode.SetText)
+      set(style, TextNode.SetStyle)
+      set(fontWeight, TextNode.SetFontWeight)
+    },
+  )
+}
+
+@LivewireLayoutNode
+@Serializable
+class TextNode(
+  var text: String,
+  var style: TextStyle? = null,
+  var fontWeight: Int? = null,
+) : LayoutNode() {
+
+  companion object {
+    val SetText: TextNode.(String) -> Unit = applier { text = it }
+    val SetStyle: TextNode.(TextStyle?) -> Unit = applier { style = it }
+    val SetFontWeight: TextNode.(Int?) -> Unit = applier { fontWeight = it }
+  }
+}
+
+enum class TextStyle {
+  DisplayLarge,
+  DisplayMedium,
+  // ...
+}
+```
+
+Here is an example of Checkbox.kt for a widget with actions:
+```kotlin
+package com.r0adkll.livewire.ui.widget
+
+import androidx.compose.runtime.Applier
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReusableComposeNode
+import com.r0adkll.livewire.annotations.LivewireLayoutNode
+import com.r0adkll.livewire.ui.actions.CheckedChangeAction
+import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
+import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import kotlinx.serialization.Serializable
+
+@LivewireComposable
+@Composable
+fun Checkbox(
+  checked: Boolean,
+  onCheckedChange: CheckedChangeAction,
+  modifier: LivewireModifier = LivewireModifier,
+  enabled: Boolean = true,
+) {
+  ReusableComposeNode<CheckboxNode, Applier<LayoutNode>>(
+    factory = { CheckboxNode(checked, onCheckedChange, enabled) },
+    update = {
+      set(modifier, LayoutNode.SetModifier)
+      set(checked, CheckboxNode.SetChecked)
+      set(onCheckedChange, CheckboxNode.SetCheckedChange)
+      set(enabled, CheckboxNode.SetEnabled)
+    }
+  )
+}
+
+@LivewireLayoutNode
+@Serializable
+class CheckboxNode(
+  var checked: Boolean,
+  var onCheckedChange: CheckedChangeAction,
+  var enabled: Boolean,
+) : LayoutNode() {
+
+  companion object {
+    val SetChecked: CheckboxNode.(Boolean) -> Unit = applier { checked = it }
+    val SetCheckedChange: CheckboxNode.(CheckedChangeAction) -> Unit = applier { onCheckedChange = it }
+    val SetEnabled: CheckboxNode.(Boolean) -> Unit = applier { enabled = it }
+  }
+}
+```
+
+### 2. Host renderer: `ui/src/commonMain/kotlin/com/r0adkll/livewire/ui/host/nodes/<Name>NodeContent.kt`
+
+This renders the actual Material3 composable on the host/desktop side from the node data.
+
+**Pattern:**
+- `@Composable internal fun {Name}NodeContent(node: {Name}Node, modifier: Modifier = Modifier)`
+- Always apply `modifier.debugFrame()` to the root composable
+- For interactive widgets with actions, get the dispatcher: `val eventDispatcher = LocalLivewireActionDispatcher.current` and `val scope = rememberCoroutineScope()`, then dispatch in callbacks: `scope.launch { eventDispatcher.dispatch(node.action) }`
+- For container widgets with children, render them: `node.children.forEach { child -> LayoutNodeContent(child, child.modifier.toComposeUi(Modifier)) }`
+- Map Livewire enum values to corresponding Material3 APIs
+
+Here is an example of CheckboxNodeContent.kt:
+```kotlin
+package com.r0adkll.livewire.ui.host.nodes
+
+import androidx.compose.material3.Checkbox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
+import com.r0adkll.livewire.ui.host.debugFrame
+import com.r0adkll.livewire.ui.widget.CheckboxNode
+import kotlinx.coroutines.launch
+
+@Composable
+internal fun CheckboxNodeContent(
+  node: CheckboxNode,
+  modifier: Modifier = Modifier,
+) {
+  val scope = rememberCoroutineScope()
+  val eventDispatcher = LocalLivewireActionDispatcher.current
+
+  Checkbox(
+    checked = node.checked,
+    onCheckedChange = {
+      scope.launch {
+        eventDispatcher.dispatch(node.onCheckedChange.copy(checked = it))
+      }
+    },
+    modifier = modifier.debugFrame(),
+    enabled = node.enabled,
+  )
+}
+```
+
+### 3. Update the router: `ui/src/commonMain/kotlin/com/r0adkll/livewire/ui/host/LayoutNodeContent.kt`
+
+Add a new `is {Name}Node -> {Name}NodeContent(node, modifier)` branch to the `when` expression in `LayoutNodeContent()`. Add the necessary imports for the new node type and content function.
+
+### 4. (If needed) New action type: `ui/src/commonMain/kotlin/com/r0adkll/livewire/ui/actions/<ActionName>.kt`
+
+Only create if no existing action type fits. Follow the pattern from `ClickAction.kt` / `CheckedChangeAction.kt`:
+- `@Immutable @Serializable data class` implementing `LivewireAction`
+- Has an `identifier: String` property for routing
+- Companion `@Composable` factory function that creates the action with a composition key, sets up `LaunchedEffect` to observe incoming events, and returns the action instance
+
+When creating a new action, you must also add it as a subclass in `LivewireAction`'s serialization. Check `LivewireAction.kt` to see how the sealed interface is set up.
+
+## Important conventions
+
+- Package: `com.r0adkll.livewire.ui.widget` for widget files
+- Package: `com.r0adkll.livewire.ui.host.nodes` for host renderers
+- Package: `com.r0adkll.livewire.ui.actions` for action types
+- Naming: `{Name}Node` for node class, `{Name}NodeContent` for host renderer
+- The `@LivewireLayoutNode` annotation auto-registers the node with the KSP-generated polymorphic serializer — no manual registration needed
+- All node properties that will be transmitted must be serializable
+- Use existing action types when possible (`ClickAction` for simple clicks, `CheckedChangeAction` for boolean toggles)
+
+## After generating
+
+1. Verify the code compiles: `./gradlew :ui:assemble`
+2. Summarize what was created and what Material3 composable it wraps
