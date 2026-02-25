@@ -26,11 +26,15 @@ kotlin {
       api(libs.compose.runtime)
       api(libs.compose.foundation)
       api(libs.compose.ui)
+      api(libs.compose.material3)
       api(libs.kotlinx.serialization.json)
       api(libs.kotlinx.serialization.cbor)
       api(libs.kotlinx.coroutines.core)
       api(libs.molecule.runtime)
       api(libs.okio)
+      api(libs.coil.compose)
+      api(libs.coil.network.ktor3)
+      api(libs.coil.svg)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)

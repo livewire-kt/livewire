@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import com.r0adkll.livewire.ui.actions.ClickAction
+import com.r0adkll.livewire.ui.actions.LivewireAction
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.ColumnScope
@@ -15,50 +16,42 @@ import kotlinx.serialization.Serializable
 
 @LivewireComposable
 @Composable
-fun Button(
+fun IconButton(
   action: ClickAction,
   modifier: LivewireModifier = LivewireModifier,
   size: ButtonSize = ButtonSize.Small,
-  style: ButtonStyle = ButtonStyle.Filled,
-  content: @Composable @LivewireComposable RowScope.() -> Unit,
+  style: IconButtonStyle = IconButtonStyle.Default,
+  content: @Composable @LivewireComposable () -> Unit,
 ) {
-  ReusableComposeNode<ButtonNode, Applier<LayoutNode>>(
-    factory = { ButtonNode(action) },
+  ReusableComposeNode<IconButtonNode, Applier<LayoutNode>>(
+    factory = { IconButtonNode(action) },
     update = {
       set(modifier, LayoutNode.SetModifier)
-      set(action, ButtonNode.SetAction)
-      set(size, ButtonNode.SetSize)
-      set(style, ButtonNode.SetStyle)
+      set(action, IconButtonNode.SetAction)
+      set(size, IconButtonNode.SetSize)
+      set(style, IconButtonNode.SetStyle)
     },
-    content = { RowScopeInstance.content() },
+    content = { content() },
   )
 }
 
 @Serializable
-class ButtonNode(
+class IconButtonNode(
   var action: ClickAction,
   var size: ButtonSize = ButtonSize.Small,
-  var style: ButtonStyle = ButtonStyle.Filled,
+  var style: IconButtonStyle = IconButtonStyle.Default,
 ) : LayoutNode() {
 
   companion object {
-    val SetAction: ButtonNode.(ClickAction) -> Unit = applier { action = it }
-    val SetSize: ButtonNode.(ButtonSize) -> Unit = applier { size = it }
-    val SetStyle: ButtonNode.(ButtonStyle) -> Unit = applier { style = it }
+    val SetAction: IconButtonNode.(ClickAction) -> Unit = applier { action = it }
+    val SetSize: IconButtonNode.(ButtonSize) -> Unit = applier { size = it }
+    val SetStyle: IconButtonNode.(IconButtonStyle) -> Unit = applier { style = it }
   }
 }
 
-enum class ButtonSize {
-  ExtraSmall,
-  Small,
-  Medium,
-  Large,
-}
-
-enum class ButtonStyle {
+enum class IconButtonStyle {
+  Default,
   Filled,
   Tonal,
   Outlined,
-  Elevated,
-  Text,
 }

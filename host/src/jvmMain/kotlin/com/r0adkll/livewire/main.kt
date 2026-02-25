@@ -54,10 +54,10 @@ import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.data.ClientManifest
 import com.r0adkll.livewire.ui.data.PluginSelected
 import com.r0adkll.livewire.ui.data.UiProtocol
+import com.r0adkll.livewire.ui.host.LayoutNodeContent
 import com.r0adkll.livewire.ui.icons.Connected
 import com.r0adkll.livewire.ui.icons.Disconnected
 import com.r0adkll.livewire.ui.layout.HostScaffold
-import com.r0adkll.livewire.ui.layout.LayoutNodeContent
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 

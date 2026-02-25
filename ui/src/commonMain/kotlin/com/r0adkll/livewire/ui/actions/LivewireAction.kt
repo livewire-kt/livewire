@@ -23,19 +23,25 @@ sealed interface LivewireAction {
   }
 }
 
-val LocalLivewireActionObserver = staticCompositionLocalOf<LivewireActionObserver> {
-  error("LivewireActionObserver not initialized")
-}
-
 interface LivewireActionObserver {
   val events: Flow<LivewireAction>
 }
 
-interface LivewireActionController : LivewireActionObserver {
+val LocalLivewireActionObserver = staticCompositionLocalOf<LivewireActionObserver> {
+  error("LivewireActionObserver not initialized")
+}
+
+interface LivewireActionDispatcher {
   suspend fun dispatch(action: LivewireAction)
 }
 
-private class LivewireActionControllerImpl : LivewireActionController {
+val LocalLivewireActionDispatcher = staticCompositionLocalOf<LivewireActionDispatcher> {
+  error("LivewireActionDispatcher not initialized")
+}
+
+class LivewireActionController
+internal constructor(): LivewireActionDispatcher, LivewireActionObserver {
+
   private val _events = MutableSharedFlow<LivewireAction>(
     replay = 0,
     extraBufferCapacity = 20,
@@ -48,8 +54,8 @@ private class LivewireActionControllerImpl : LivewireActionController {
 }
 
 @Composable
-fun rememberLivewireActionController() : LivewireActionController{
+fun rememberLivewireActionController() : LivewireActionController {
   return remember {
-    LivewireActionControllerImpl()
+    LivewireActionController()
   }
 }
