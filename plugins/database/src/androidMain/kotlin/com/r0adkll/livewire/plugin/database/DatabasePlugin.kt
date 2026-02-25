@@ -1,5 +1,6 @@
 package com.r0adkll.livewire.plugin.database
 
+import android.R.attr.checked
 import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.IconButtonStyle
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextStyle
+import com.r0adkll.livewire.ui.widget.ToggleButton
 import kotlinx.coroutines.launch
 
 class DatabasePlugin(context: Context) : Plugin {
@@ -101,6 +103,16 @@ class DatabasePlugin(context: Context) : Plugin {
               .padding(horizontal = 16.dp),
             enabled = true,
           )
+        }
+
+        var toggleButtonChecked by remember { mutableStateOf(false) }
+        ToggleButton(
+          checked = toggleButtonChecked,
+          onCheckedChange = checkedChangeAction {
+            toggleButtonChecked = it
+          }
+        ) {
+          Text(if (toggleButtonChecked) "On" else "Off")
         }
 
         availableDatabases.forEach { db ->
