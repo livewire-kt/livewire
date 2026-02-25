@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
@@ -15,13 +16,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.widget.ButtonNode
 import com.r0adkll.livewire.ui.widget.ButtonSize
+import com.r0adkll.livewire.ui.widget.CheckboxNode
 import com.r0adkll.livewire.ui.widget.TextNode
 import com.r0adkll.livewire.ui.widget.TextStyle
 import kotlinx.coroutines.launch
@@ -38,6 +39,7 @@ internal fun LayoutNodeContent(
     is RowNode -> RowNodeContent(node, modifier)
     is TextNode -> TextNodeContent(node, modifier)
     is ButtonNode -> ButtonNodeContent(node, modifier)
+    is CheckboxNode -> CheckboxNodeContent(node, modifier)
 
     else -> {
       Box(modifier.debugFrame()) {
@@ -67,7 +69,7 @@ private fun BoxNodeContent(
     }
   ) {
     node.children.forEach { child ->
-      val modifier = with (child.modifier) { this@Box.toComposeUi(Modifier) }
+      val modifier = with(child.modifier) { this@Box.toComposeUi(Modifier) }
       LayoutNodeContent(child, modifier)
     }
   }
@@ -87,7 +89,7 @@ private fun ColumnNodeContent(
     }
   ) {
     node.children.forEach { child ->
-      val modifier = with (child.modifier) { this@Column.toComposeUi(Modifier) }
+      val modifier = with(child.modifier) { this@Column.toComposeUi(Modifier) }
       LayoutNodeContent(child, modifier)
     }
   }
@@ -107,7 +109,7 @@ private fun RowNodeContent(
     }
   ) {
     node.children.forEach { child ->
-      val modifier = with (child.modifier) { this@Row.toComposeUi(Modifier) }
+      val modifier = with(child.modifier) { this@Row.toComposeUi(Modifier) }
       LayoutNodeContent(child, modifier)
     }
   }
@@ -176,6 +178,27 @@ private fun ButtonNodeContent(
       style = ButtonDefaults.textStyleFor(buttonSize),
     )
   }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun CheckboxNodeContent(
+  node: CheckboxNode,
+  modifier: Modifier = Modifier,
+) {
+  val scope = rememberCoroutineScope()
+  val eventDispatcher = LocalLivewireActionDispatcher.current
+
+  Checkbox(
+    checked = node.checked,
+    onCheckedChange = {
+      scope.launch {
+        eventDispatcher.dispatch(node.onCheckedChange.copy(checked = it))
+      }
+    },
+    modifier = modifier.debugFrame(),
+    enabled = node.enabled,
+  )
 }
 
 /**

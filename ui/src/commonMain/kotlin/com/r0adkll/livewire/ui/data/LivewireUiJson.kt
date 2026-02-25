@@ -6,6 +6,7 @@ import com.r0adkll.livewire.ui.layout.BoxNode
 import com.r0adkll.livewire.ui.layout.ColumnNode
 import com.r0adkll.livewire.ui.layout.RowNode
 import com.r0adkll.livewire.ui.widget.ButtonNode
+import com.r0adkll.livewire.ui.widget.CheckboxNode
 import com.r0adkll.livewire.ui.widget.TextNode
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
@@ -21,6 +22,7 @@ val LivewireUiJson = Json {
       subclass(RowNode::class, RowNode.serializer())
       subclass(TextNode::class, TextNode.serializer())
       subclass(ButtonNode::class, ButtonNode.serializer())
+      subclass(CheckboxNode::class, CheckboxNode.serializer())
     }
   }
 }
