@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.host.nodes.BoxNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ButtonNodeContent
+import com.r0adkll.livewire.ui.host.nodes.CheckboxNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ColumnNodeContent
 import com.r0adkll.livewire.ui.host.nodes.IconButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.RowNodeContent
@@ -20,6 +21,7 @@ import com.r0adkll.livewire.ui.layout.ColumnNode
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RowNode
 import com.r0adkll.livewire.ui.widget.ButtonNode
+import com.r0adkll.livewire.ui.widget.CheckboxNode
 import com.r0adkll.livewire.ui.widget.IconButtonNode
 import com.r0adkll.livewire.ui.widget.TextNode
 
@@ -35,6 +37,7 @@ fun LayoutNodeContent(
     is TextNode -> TextNodeContent(node, modifier)
     is ButtonNode -> ButtonNodeContent(node, modifier)
     is IconButtonNode -> IconButtonNodeContent(node, modifier)
+    is CheckboxNode -> CheckboxNodeContent(node, modifier)
 
     else -> {
       Box(modifier.debugFrame()) {
