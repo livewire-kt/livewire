@@ -4,12 +4,16 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
+import com.r0adkll.livewire.ui.actions.checkedChangeAction
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.layout.Alignment
 import com.r0adkll.livewire.ui.layout.Box
@@ -20,6 +24,7 @@ import com.r0adkll.livewire.ui.modifier.fillMaxHeight
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.widget.Button
+import com.r0adkll.livewire.ui.widget.Checkbox
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextStyle
 import kotlinx.coroutines.launch
@@ -80,6 +85,17 @@ class DatabasePlugin(context: Context) : Plugin {
             },
             modifier = LivewireModifier
               .padding(horizontal = 16.dp),
+          )
+
+          var checked by remember { mutableStateOf(false) }
+          Checkbox(
+            checked = checked,
+            onCheckedChange = checkedChangeAction {
+              checked = it
+            },
+            modifier = LivewireModifier
+              .padding(horizontal = 16.dp),
+            enabled = true,
           )
         }
 
