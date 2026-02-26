@@ -208,7 +208,57 @@ When creating a new action, you must also add it as a subclass in `LivewireActio
 - All node properties that will be transmitted must be serializable
 - Use existing action types when possible (`ClickAction` for simple clicks, `CheckedChangeAction` for boolean toggles)
 
+### 5. Add demo to PlaygroundPlugin: `plugins/playground/src/androidMain/kotlin/com/r0adkll/livewire/plugin/playground/PlaygroundPlugin.kt`
+
+Add a new `Row` section inside the `Column` in `Content()` that demos the new widget with its key variants/states. Follow these conventions:
+
+- Wrap demo widgets in a `Row(LivewireModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically)` block
+- Show multiple variants to demonstrate the widget's configuration options (e.g. different styles, sizes, states)
+- For widgets with actions, wire up the action factory functions (`clickAction {}`, `checkedChangeAction {}`, `valueChangeAction {}`, etc.)
+- For stateful widgets, use `var state by remember { mutableStateOf(...) }` to make the demo interactive
+- Use `Icons.Sync` as placeholder icon SVG data where icons are needed
+- Add `modifier = LivewireModifier.padding(horizontal = 16.dp)` for spacing when appropriate
+- Add any new imports needed for the widget and its enum types
+
+Here is the current PlaygroundPlugin for reference on the existing demo structure:
+```kotlin
+class PlaygroundPlugin : Plugin {
+  override val info: PluginInfo = PluginInfo(
+    pluginId = "playground",
+    iconData = Icons.Playground,
+    title = "Playground",
+  )
+
+  @Composable
+  override fun Content() {
+    Column(LivewireModifier.fillMaxSize()) {
+      // Each widget type gets its own Row section demonstrating variants
+      Row(LivewireModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Button style variants: Filled, Tonal, Outlined, Elevated, Text
+        // IconButton style variants: Default, Filled, Tonal, Outlined
+        // ToggleButton with state
+      }
+      Row(LivewireModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Button size variants: Large, Medium, Small, ExtraSmall
+      }
+      Row(LivewireModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Checkbox and RadioButton with shared state
+      }
+      Row(LivewireModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // ProgressIndicator variants: Linear/Circular, determinate/indeterminate
+      }
+      Row(LivewireModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // TextField variants: Filled and Outlined
+      }
+      Row(LivewireModifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // FloatingActionButton variants: Small, Default, Large, Extended
+      }
+    }
+  }
+}
+```
+
 ## After generating
 
-1. Verify the code compiles: `./gradlew :ui:assemble`
+1. Verify the code compiles: `./gradlew :ui:assemble :plugins:playground:assemble`
 2. Summarize what was created and what Material3 composable it wraps
