@@ -3,7 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
-import com.r0adkll.livewire.annotations.LivewireLayoutNode
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.FloatValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
@@ -36,7 +36,7 @@ fun Slider(
   )
 }
 
-@LivewireLayoutNode
+@LivewireSerializer
 @Serializable
 class SliderNode(
   var value: Float,

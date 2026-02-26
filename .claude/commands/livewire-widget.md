@@ -20,7 +20,7 @@ This file contains both the client-side `@Composable` function and the serializa
 - If the widget has children, pass a `content` lambda and wrap it in a scope (e.g. `RowScopeInstance.content()`)
 
 **Node class pattern:**
-- Annotated with `@LivewireLayoutNode` and `@Serializable`
+- Annotated with `@LivewireSerializer` (from `com.r0adkll.livewire.annotations.LivewireSerializer`) and `@Serializable` — the `@LivewireSerializer` annotation auto-registers the node with the KSP-generated polymorphic serializer, no manual registration needed
 - Extends `LayoutNode()`
 - All mutable properties are `var`
 - Companion object contains setter lambdas using the `applier { }` helper: `val SetFoo: {Name}Node.(Type) -> Unit = applier { foo = it }`
@@ -42,7 +42,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
-import com.r0adkll.livewire.annotations.LivewireLayoutNode
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.applier
@@ -68,7 +68,7 @@ fun Text(
   )
 }
 
-@LivewireLayoutNode
+@LivewireSerializer
 @Serializable
 class TextNode(
   var text: String,
@@ -97,7 +97,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
-import com.r0adkll.livewire.annotations.LivewireLayoutNode
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.CheckedChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
@@ -124,7 +124,7 @@ fun Checkbox(
   )
 }
 
-@LivewireLayoutNode
+@LivewireSerializer
 @Serializable
 class CheckboxNode(
   var checked: Boolean,
@@ -204,7 +204,7 @@ When creating a new action, you must also add it as a subclass in `LivewireActio
 - Package: `com.r0adkll.livewire.ui.host.nodes` for host renderers
 - Package: `com.r0adkll.livewire.ui.actions` for action types
 - Naming: `{Name}Node` for node class, `{Name}NodeContent` for host renderer
-- The `@LivewireLayoutNode` annotation auto-registers the node with the KSP-generated polymorphic serializer — no manual registration needed
+- The `@LivewireSerializer` annotation auto-registers the node with the KSP-generated polymorphic serializer — no manual registration needed
 - All node properties that will be transmitted must be serializable
 - Use existing action types when possible (`ClickAction` for simple clicks, `CheckedChangeAction` for boolean toggles)
 

@@ -1,6 +1,7 @@
 package com.r0adkll.livewire.compiler
 
 import com.fueledbycaffeine.autoservice.AutoService
+import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.KSPLogger
@@ -10,8 +11,8 @@ import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.r0adkll.livewire.annotations.LivewireLayoutNode
 import com.r0adkll.livewire.annotations.LivewireLayoutSerializer
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -34,6 +35,8 @@ class LayoutNodeSymbolProcessor internal constructor(
     }
   }
 
+  private val LayoutNodeClassName = ClassName("com.r0adkll.livewire.ui.layout", "LayoutNode")
+
   private val codeGenerator: CodeGenerator get() = environment.codeGenerator
   private val logger: KSPLogger get() = environment.logger
   private var generated = false
@@ -51,9 +54,15 @@ class LayoutNodeSymbolProcessor internal constructor(
     if (serializerInterfaces.isEmpty()) return emptyList()
 
     val layoutNodes = resolver
-      .getSymbolsWithAnnotation(LivewireLayoutNode::class.qualifiedName!!)
+      .getSymbolsWithAnnotation(LivewireSerializer::class.qualifiedName!!)
       .filterIsInstance<KSClassDeclaration>()
+      .filter { decl ->
+        decl.getAllSuperTypes()
+          .any { it.toClassName() == LayoutNodeClassName }
+      }
       .toList()
+
+    logger.warn("Found ${layoutNodes.size} layout nodes")
 
     // Defer if no layout nodes found yet (they may come in a later round)
     if (layoutNodes.isEmpty()) {
@@ -77,20 +86,12 @@ class LayoutNodeSymbolProcessor internal constructor(
 
     val serializersModuleType = ClassName("kotlinx.serialization.modules", "SerializersModule")
 
-    // Find the base LayoutNode class from the first node's supertype
-    val layoutNodeClass = layoutNodes.firstOrNull()?.let { node ->
-      node.superTypes.firstOrNull()?.resolve()?.declaration as? KSClassDeclaration
-    }?.toClassName() ?: run {
-      logger.error("No LayoutNode supertype found on annotated classes")
-      return
-    }
-
     val polymorphicMember = MemberName("kotlinx.serialization.modules", "polymorphic")
     val subclassMember = MemberName("kotlinx.serialization.modules", "subclass")
     val serializersModuleMember = MemberName("kotlinx.serialization.modules", "SerializersModule")
 
     val subclassBlock = CodeBlock.builder()
-    subclassBlock.beginControlFlow("%M(%T::class)", polymorphicMember, layoutNodeClass)
+    subclassBlock.beginControlFlow("%M(%T::class)", polymorphicMember, LayoutNodeClassName)
     for (node in layoutNodes) {
       val nodeClass = node.toClassName()
       subclassBlock.addStatement("%M(%T::class, %T.serializer())", subclassMember, nodeClass, nodeClass)

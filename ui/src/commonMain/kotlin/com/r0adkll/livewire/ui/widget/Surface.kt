@@ -4,7 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.ui.graphics.Color
-import com.r0adkll.livewire.annotations.LivewireLayoutNode
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ClickAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.graphics.ColorSerializer
@@ -42,7 +42,7 @@ fun Surface(
   )
 }
 
-@LivewireLayoutNode
+@LivewireSerializer
 @Serializable
 class SurfaceNode(
   var shape: Shape = RectangleShape,

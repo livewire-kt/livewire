@@ -1,6 +1,6 @@
 package com.r0adkll.livewire.ui.layout
 
-import com.r0adkll.livewire.annotations.LivewireLayoutNode
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.modifier.serialization.LivewireModifierSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -86,6 +86,6 @@ fun <T : LayoutNode, C> applier(block: T.(C) -> Unit): T.(C) -> Unit {
   }
 }
 
-@LivewireLayoutNode
+@LivewireSerializer
 @Serializable
 class RootNode : LayoutNode()
