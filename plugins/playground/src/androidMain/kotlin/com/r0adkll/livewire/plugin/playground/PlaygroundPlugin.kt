@@ -41,6 +41,7 @@ import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextField
 import com.r0adkll.livewire.ui.widget.TextFieldStyle
+import com.r0adkll.livewire.ui.widget.Switch
 import com.r0adkll.livewire.ui.widget.ToggleButton
 
 class PlaygroundPlugin : Plugin {
@@ -246,6 +247,20 @@ class PlaygroundPlugin : Plugin {
           onClick = clickAction {
             checked = !checked
           }
+        )
+
+        var switchChecked by remember { mutableStateOf(true) }
+        Switch(
+          checked = switchChecked,
+          onCheckedChange = checkedChangeAction {
+            switchChecked = it
+          },
+        )
+
+        Switch(
+          checked = false,
+          onCheckedChange = checkedChangeAction { },
+          enabled = false,
         )
       }
 
