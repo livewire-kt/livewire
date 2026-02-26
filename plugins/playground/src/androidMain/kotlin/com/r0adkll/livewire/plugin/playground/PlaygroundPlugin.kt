@@ -32,6 +32,7 @@ import com.r0adkll.livewire.ui.widget.DropdownMenu
 import com.r0adkll.livewire.ui.widget.DropdownMenuItem
 import com.r0adkll.livewire.ui.widget.FabSize
 import com.r0adkll.livewire.ui.widget.FloatingActionButton
+import com.r0adkll.livewire.ui.widget.FloatingToolbar
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.IconButtonStyle
@@ -417,6 +418,43 @@ class PlaygroundPlugin : Plugin {
           onClick = clickAction { },
         ) {
           Text("Click")
+        }
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+
+        FloatingToolbar(
+          expanded = true,
+          modifier = LivewireModifier.padding(horizontal = 16.dp),
+        ) {
+          IconButton(
+            action = clickAction { },
+          ) { Icon(Icons.Sync) }
+          IconButton(
+            action = clickAction { },
+          ) { Icon(Icons.Sync) }
+          IconButton(
+            action = clickAction { },
+          ) { Icon(Icons.Sync) }
+        }
+
+        FloatingToolbar(
+          expanded = false,
+          modifier = LivewireModifier.padding(horizontal = 16.dp),
+        ) {
+          IconButton(
+            action = clickAction { },
+          ) { Icon(Icons.Sync) }
+          IconButton(
+            action = clickAction { },
+          ) { Icon(Icons.Sync) }
+          IconButton(
+            action = clickAction { },
+          ) { Icon(Icons.Sync) }
         }
       }
 

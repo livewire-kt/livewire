@@ -15,6 +15,7 @@ import com.r0adkll.livewire.ui.host.nodes.CheckboxNodeContent
 import com.r0adkll.livewire.ui.host.nodes.DropdownMenuNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ColumnNodeContent
 import com.r0adkll.livewire.ui.host.nodes.FloatingActionButtonNodeContent
+import com.r0adkll.livewire.ui.host.nodes.FloatingToolbarNodeContent
 import com.r0adkll.livewire.ui.host.nodes.IconButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.RowNodeContent
 import com.r0adkll.livewire.ui.host.nodes.SurfaceNodeContent
@@ -33,6 +34,7 @@ import com.r0adkll.livewire.ui.widget.ButtonNode
 import com.r0adkll.livewire.ui.widget.CheckboxNode
 import com.r0adkll.livewire.ui.widget.DropdownMenuNode
 import com.r0adkll.livewire.ui.widget.FloatingActionButtonNode
+import com.r0adkll.livewire.ui.widget.FloatingToolbarNode
 import com.r0adkll.livewire.ui.widget.IconButtonNode
 import com.r0adkll.livewire.ui.widget.TextNode
 import com.r0adkll.livewire.ui.widget.ProgressIndicatorNode
@@ -58,6 +60,7 @@ fun LayoutNodeContent(
     is CheckboxNode -> CheckboxNodeContent(node, modifier)
     is DropdownMenuNode -> DropdownMenuNodeContent(node, modifier)
     is FloatingActionButtonNode -> FloatingActionButtonNodeContent(node, modifier)
+    is FloatingToolbarNode -> FloatingToolbarNodeContent(node, modifier)
     is ProgressIndicatorNode -> ProgressIndicatorNodeContent(node, modifier)
     is RadioButtonNode -> RadioButtonNodeContent(node, modifier)
     is SliderNode -> SliderNodeContent(node, modifier)

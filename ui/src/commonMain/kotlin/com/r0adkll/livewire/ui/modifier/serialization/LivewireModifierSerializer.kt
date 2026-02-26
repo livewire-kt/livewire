@@ -1,5 +1,6 @@
 package com.r0adkll.livewire.ui.modifier.serialization
 
+import com.r0adkll.livewire.ui.modifier.BackgroundModifier
 import com.r0adkll.livewire.ui.modifier.CombinedLivewireModifier
 import com.r0adkll.livewire.ui.modifier.HeightModifier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
@@ -40,6 +41,7 @@ private val LivewireModifierCbor = Cbor {
       subclass(WidthModifier::class, WidthModifier.serializer())
       subclass(HeightModifier::class, HeightModifier.serializer())
       subclass(PaddingModifier::class, PaddingModifier.serializer())
+      subclass(BackgroundModifier::class, BackgroundModifier.serializer())
       subclass(CombinedLivewireModifier::class, CombinedLivewireModifier.serializer())
     }
   }
