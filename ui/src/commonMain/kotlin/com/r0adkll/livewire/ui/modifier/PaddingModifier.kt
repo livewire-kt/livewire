@@ -8,8 +8,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import kotlinx.serialization.Serializable
 
+@LivewireSerializer
 @Serializable
 internal class PaddingModifier(
   val start: Float,

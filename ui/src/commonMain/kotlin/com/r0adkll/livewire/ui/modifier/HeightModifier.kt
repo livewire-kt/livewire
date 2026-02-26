@@ -9,10 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.modifier.DimensionModifier.Type
 import kotlinx.serialization.Serializable
 
 @Suppress("ModifierFactoryExtensionFunction")
+@LivewireSerializer
 @Serializable
 internal class HeightModifier(
   val type: Type,

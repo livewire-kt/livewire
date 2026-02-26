@@ -1,6 +1,7 @@
 package com.r0adkll.livewire.compiler
 
 import com.fueledbycaffeine.autoservice.AutoService
+import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
 import com.google.devtools.ksp.processing.KSPLogger
@@ -10,8 +11,8 @@ import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.r0adkll.livewire.annotations.LivewireLayoutNode
-import com.r0adkll.livewire.annotations.LivewireLayoutSerializer
+import com.r0adkll.livewire.annotations.LivewireModifierSerializer
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -20,19 +21,22 @@ import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 
-class LayoutNodeSymbolProcessor internal constructor(
+class ModifierSymbolProcessor(
   private val environment: SymbolProcessorEnvironment,
 ) : SymbolProcessor {
 
   @AutoService
   class Provider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-      return LayoutNodeSymbolProcessor(environment)
+      return ModifierSymbolProcessor(environment)
     }
   }
+
+  private val LivewireModifierClassName = ClassName("com.r0adkll.livewire.ui.modifier", "LivewireModifier")
 
   private val codeGenerator: CodeGenerator get() = environment.codeGenerator
   private val logger: KSPLogger get() = environment.logger
@@ -44,24 +48,30 @@ class LayoutNodeSymbolProcessor internal constructor(
     // Scan all source files to find annotated declarations since KSP metadata
     // compilation may not fully resolve annotation types from KMP dependencies
     val serializerInterfaces = resolver
-      .getSymbolsWithAnnotation(LivewireLayoutSerializer::class.qualifiedName!!)
+      .getSymbolsWithAnnotation(LivewireModifierSerializer::class.qualifiedName!!)
       .filterIsInstance<KSClassDeclaration>()
       .toList()
 
     if (serializerInterfaces.isEmpty()) return emptyList()
 
-    val layoutNodes = resolver
-      .getSymbolsWithAnnotation(LivewireLayoutNode::class.qualifiedName!!)
+    val modifierNodes = resolver
+      .getSymbolsWithAnnotation(LivewireSerializer::class.qualifiedName!!)
       .filterIsInstance<KSClassDeclaration>()
+      .filter { decl ->
+        decl.getAllSuperTypes()
+          .any { it.toClassName() == LivewireModifierClassName }
+      }
       .toList()
 
+    logger.warn("Found ${modifierNodes.size} modifier nodes")
+
     // Defer if no layout nodes found yet (they may come in a later round)
-    if (layoutNodes.isEmpty()) {
+    if (modifierNodes.isEmpty()) {
       return serializerInterfaces
     }
 
     for (serializerInterface in serializerInterfaces) {
-      generateImpl(serializerInterface, layoutNodes)
+      generateImpl(serializerInterface, modifierNodes)
     }
 
     generated = true
@@ -77,20 +87,12 @@ class LayoutNodeSymbolProcessor internal constructor(
 
     val serializersModuleType = ClassName("kotlinx.serialization.modules", "SerializersModule")
 
-    // Find the base LayoutNode class from the first node's supertype
-    val layoutNodeClass = layoutNodes.firstOrNull()?.let { node ->
-      node.superTypes.firstOrNull()?.resolve()?.declaration as? KSClassDeclaration
-    }?.toClassName() ?: run {
-      logger.error("No LayoutNode supertype found on annotated classes")
-      return
-    }
-
     val polymorphicMember = MemberName("kotlinx.serialization.modules", "polymorphic")
     val subclassMember = MemberName("kotlinx.serialization.modules", "subclass")
     val serializersModuleMember = MemberName("kotlinx.serialization.modules", "SerializersModule")
 
     val subclassBlock = CodeBlock.builder()
-    subclassBlock.beginControlFlow("%M(%T::class)", polymorphicMember, layoutNodeClass)
+    subclassBlock.beginControlFlow("%M(%T::class)", polymorphicMember, LivewireModifierClassName)
     for (node in layoutNodes) {
       val nodeClass = node.toClassName()
       subclassBlock.addStatement("%M(%T::class, %T.serializer())", subclassMember, nodeClass, nodeClass)
@@ -109,7 +111,7 @@ class LayoutNodeSymbolProcessor internal constructor(
       .build()
 
     val layoutSerializerAnnotation = AnnotationSpec.builder(
-      ClassName("com.r0adkll.livewire.annotations", "LivewireLayoutSerializer")
+      LivewireModifierSerializer::class.asClassName()
     ).build()
 
     val actualClass = TypeSpec.classBuilder(className)

@@ -1,11 +1,7 @@
 package com.r0adkll.livewire.ui.modifier.serialization
 
-import com.r0adkll.livewire.ui.modifier.BackgroundModifier
-import com.r0adkll.livewire.ui.modifier.CombinedLivewireModifier
-import com.r0adkll.livewire.ui.modifier.HeightModifier
+import com.r0adkll.livewire.annotations.LivewireModifierSerializer
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
-import com.r0adkll.livewire.ui.modifier.PaddingModifier
-import com.r0adkll.livewire.ui.modifier.WidthModifier
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.cbor.Cbor
@@ -17,7 +13,6 @@ import kotlinx.serialization.encodeToHexString
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.modules.SerializersModule
-import kotlinx.serialization.modules.polymorphic
 
 @OptIn(ExperimentalSerializationApi::class)
 object LivewireModifierSerializer : KSerializer<LivewireModifier> {
@@ -36,13 +31,10 @@ object LivewireModifierSerializer : KSerializer<LivewireModifier> {
 
 @OptIn(ExperimentalSerializationApi::class)
 private val LivewireModifierCbor = Cbor {
-  serializersModule = SerializersModule {
-    polymorphic(LivewireModifier::class) {
-      subclass(WidthModifier::class, WidthModifier.serializer())
-      subclass(HeightModifier::class, HeightModifier.serializer())
-      subclass(PaddingModifier::class, PaddingModifier.serializer())
-      subclass(BackgroundModifier::class, BackgroundModifier.serializer())
-      subclass(CombinedLivewireModifier::class, CombinedLivewireModifier.serializer())
-    }
-  }
+  serializersModule = LivewireModifierSerializers().serializersModule
+}
+
+@LivewireModifierSerializer
+expect class LivewireModifierSerializers() {
+  val serializersModule: SerializersModule
 }

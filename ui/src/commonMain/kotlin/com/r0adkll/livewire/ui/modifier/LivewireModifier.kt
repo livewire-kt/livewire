@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
+import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.modifier.mapping.ComposeUiMapper
 import kotlinx.serialization.Serializable
 
@@ -44,6 +45,7 @@ sealed interface LivewireModifier : ComposeUiMapper {
  * Modifier [outer] that wraps around the Modifier [inner].
  */
 @Suppress("ModifierFactoryExtensionFunction")
+@LivewireSerializer
 @Serializable
 internal class CombinedLivewireModifier(
   private val outer: LivewireModifier,

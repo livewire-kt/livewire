@@ -66,3 +66,4 @@ livewire/
 - Android app package: `com.r0adkll.livewire.livewire`
 - KMP modules use `androidMain` / `jvmMain` / `commonMain` source set layout
 - JVM-only modules (`:host-runtime`) use standard `src/main/kotlin` layout
+- After generating files, run `git add .`
