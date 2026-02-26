@@ -5,10 +5,11 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import com.r0adkll.livewire.annotations.LivewireLayoutNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.graphics.ColorSerializer
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -34,18 +35,11 @@ fun Icon(
 class IconNode(
   var svgData: String,
 ) : LayoutNode() {
-  var tint: Int = -1
-
-  val tintAsComposeColor: Color
-    @Composable get() = tint
-      .takeIf { it != -1 }
-      ?.let { Color(it) }
-      ?: LocalContentColor.current
+  @Serializable(with = ColorSerializer::class)
+  var tint: Color = Color.Unspecified
 
   companion object {
     val SetSvgData: IconNode.(String) -> Unit = { svgData = it }
-    val SetTint: IconNode.(Color) -> Unit = {
-      tint = if (it == Color.Unspecified) -1 else it.toArgb()
-    }
+    val SetTint: IconNode.(Color) -> Unit = applier { tint = it }
   }
 }

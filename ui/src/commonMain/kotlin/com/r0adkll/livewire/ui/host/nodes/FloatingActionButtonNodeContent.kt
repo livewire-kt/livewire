@@ -49,7 +49,7 @@ internal fun FloatingActionButtonNodeContent(
           RemoteIcon(
             svgData = iconNode.svgData,
             contentDescription = null,
-            tint = iconNode.tintAsComposeColor,
+            tint = iconNode.tint,
             modifier = Modifier.size(24.dp),
           )
         }
@@ -65,7 +65,7 @@ internal fun FloatingActionButtonNodeContent(
             RemoteIcon(
               svgData = child.svgData,
               contentDescription = null,
-              tint = child.tintAsComposeColor,
+              tint = child.tint,
               modifier = Modifier.size(24.dp),
             )
           }

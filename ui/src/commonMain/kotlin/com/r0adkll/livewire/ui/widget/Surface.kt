@@ -3,9 +3,11 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.ui.graphics.Color
 import com.r0adkll.livewire.annotations.LivewireLayoutNode
 import com.r0adkll.livewire.ui.actions.ClickAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.graphics.ColorSerializer
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.graphics.RectangleShape
 import com.r0adkll.livewire.ui.graphics.Shape
@@ -18,7 +20,8 @@ import kotlinx.serialization.Serializable
 fun Surface(
   modifier: LivewireModifier = LivewireModifier,
   shape: Shape = RectangleShape,
-  color: Int? = null,
+  color: @Serializable(with = ColorSerializer::class) Color? = null,
+  contentColor: @Serializable(with = ColorSerializer::class) Color? = null,
   tonalElevation: Float = 0f,
   shadowElevation: Float = 0f,
   onClick: ClickAction? = null,
@@ -30,6 +33,7 @@ fun Surface(
       set(modifier, LayoutNode.SetModifier)
       set(shape, SurfaceNode.SetShape)
       set(color, SurfaceNode.SetColor)
+      set(contentColor, SurfaceNode.SetContentColor)
       set(tonalElevation, SurfaceNode.SetTonalElevation)
       set(shadowElevation, SurfaceNode.SetShadowElevation)
       set(onClick, SurfaceNode.SetOnClick)
@@ -42,7 +46,8 @@ fun Surface(
 @Serializable
 class SurfaceNode(
   var shape: Shape = RectangleShape,
-  var color: Int? = null,
+  @Serializable(with = ColorSerializer::class) var color: Color? = null,
+  @Serializable(with = ColorSerializer::class) var contentColor: Color? = null,
   var tonalElevation: Float = 0f,
   var shadowElevation: Float = 0f,
   var onClick: ClickAction? = null,
@@ -50,7 +55,8 @@ class SurfaceNode(
 
   companion object {
     val SetShape: SurfaceNode.(Shape) -> Unit = applier { shape = it }
-    val SetColor: SurfaceNode.(Int?) -> Unit = applier { color = it }
+    val SetColor: SurfaceNode.(Color?) -> Unit = applier { color = it }
+    val SetContentColor: SurfaceNode.(Color?) -> Unit = applier { contentColor = it }
     val SetTonalElevation: SurfaceNode.(Float) -> Unit = applier { tonalElevation = it }
     val SetShadowElevation: SurfaceNode.(Float) -> Unit = applier { shadowElevation = it }
     val SetOnClick: SurfaceNode.(ClickAction?) -> Unit = applier { onClick = it }
