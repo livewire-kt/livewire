@@ -10,7 +10,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import coil3.svg.SvgDecoder
-import java.nio.ByteBuffer
+import io.ktor.utils.io.core.toByteArray
 
 @Composable
 fun RemoteIcon(
@@ -22,7 +22,7 @@ fun RemoteIcon(
   val context = LocalPlatformContext.current
   val imageRequest = remember(svgData) {
     ImageRequest.Builder(context)
-      .data(ByteBuffer.wrap(svgData.toByteArray()))
+      .data(svgData.toByteArray())
       .decoderFactory(SvgDecoder.Factory())
       .build()
   }

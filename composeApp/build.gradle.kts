@@ -27,6 +27,15 @@ kotlin {
   }
 
   jvm()
+  iosArm64()
+  iosSimulatorArm64()
+
+  targets.withType<org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget>().configureEach {
+    binaries.framework {
+      baseName = "ComposeApp"
+      export(projects.runtime)
+    }
+  }
 
   sourceSets {
     androidMain.dependencies {
@@ -35,11 +44,14 @@ kotlin {
 
       implementation(projects.client)
       implementation(projects.plugins.database)
-      implementation(projects.plugins.playground)
 
       implementation(libs.sqldelight.android.driver)
     }
     commonMain.dependencies {
+      implementation(projects.client)
+      implementation(projects.plugins.playground)
+      api(projects.runtime)
+
       implementation(libs.compose.runtime)
       implementation(libs.compose.foundation)
       implementation(libs.compose.material3)
@@ -52,6 +64,10 @@ kotlin {
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
+    }
+    iosMain.dependencies {
+      implementation(libs.compose.ui)
+      implementation(projects.plugins.database)
     }
   }
 }

@@ -5,9 +5,7 @@ import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.actions.LivewireAction
 import com.r0adkll.livewire.ui.actions.LivewireActionDispatcher
 import com.r0adkll.livewire.ui.data.UiDecoders
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlin.coroutines.CoroutineContext
 
 class LivewireHost private constructor(
@@ -18,8 +16,6 @@ class LivewireHost private constructor(
   constructor(configure: LivewireHostBuilder.() -> Unit = {}) : this(
     LivewireHostBuilder().apply(configure).build()
   )
-
-  private val scope = CoroutineScope(context + SupervisorJob())
 
   val connection = LivewireHostConnection(
     decoders = configuration.decoders + DefaultDecoders + UiDecoders,

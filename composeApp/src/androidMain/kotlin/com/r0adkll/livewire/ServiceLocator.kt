@@ -11,7 +11,6 @@ import com.r0adkll.livewire.client.LivewireClient
 import com.r0adkll.livewire.plugin.database.DatabasePlugin
 import com.r0adkll.livewire.plugin.playground.PlaygroundPlugin
 import com.r0adkll.livewire.ui.theme.CustomLivewireTheme
-import com.r0adkll.livewire.ui.theme.LivewireTheme
 
 @SuppressLint("StaticFieldLeak")
 object ServiceLocator {

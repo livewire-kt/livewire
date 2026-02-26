@@ -42,11 +42,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import com.r0adkll.livewire.runtime.AdbDevice
-import com.r0adkll.livewire.runtime.AdbDeviceManager
 import com.r0adkll.livewire.runtime.HostConnectionState
 import com.r0adkll.livewire.runtime.HostConnectionState.CONNECTED
 import com.r0adkll.livewire.runtime.LivewireHost
+import com.r0adkll.livewire.runtime.devicemanager.CompositeDeviceManager
+import com.r0adkll.livewire.runtime.devicemanager.HostDevice
 import com.r0adkll.livewire.theme.LivewireThemeContent
 import com.r0adkll.livewire.ui.PluginDrawerItem
 import com.r0adkll.livewire.ui.PluginInfo
@@ -61,39 +61,42 @@ import com.r0adkll.livewire.ui.layout.HostScaffold
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 fun main() = application {
   val host = remember { LivewireHost() }
+  LaunchedEffect(Unit) {
+    Runtime.getRuntime().addShutdownHook(Thread {
+      runBlocking {
+        host.connection.close()
+      }
+
+      CompositeDeviceManager.shutdown()
+    })
+  }
 
   val scope = rememberCoroutineScope()
   val state by host.connection.connectionState.collectAsState()
 
-  var devices by remember { mutableStateOf<List<AdbDevice>>(emptyList()) }
-  var selectedDevice by remember { mutableStateOf<AdbDevice?>(null) }
+  var devices by remember { mutableStateOf<List<HostDevice>>(emptyList()) }
+  var selectedDevice by remember { mutableStateOf<HostDevice?>(null) }
 
-  fun refreshDevices() {
-    scope.launch {
-      val result = AdbDeviceManager.listDevices()
-      devices = result.getOrDefault(emptyList())
-      // Auto-select first device if current selection is no longer available
-      if (selectedDevice == null || selectedDevice !in devices) {
-        selectedDevice = devices.firstOrNull()
+  LaunchedEffect(Unit) {
+    CompositeDeviceManager.deviceList().collect { deviceList ->
+      devices = deviceList
+
+      if (selectedDevice == null || deviceList.none { selectedDevice?.id == it.id }) {
+        selectedDevice = deviceList.firstOrNull()
+        // TODO: close connections with disconnected devices
       }
     }
   }
 
-  // Scan devices on launch
-  LaunchedEffect(Unit) {
-    refreshDevices()
-  }
-
-  // Collect the current manifest
   var clientManifest by remember { mutableStateOf<ClientManifest?>(null) }
   var selectedPlugin by remember { mutableStateOf<PluginInfo?>(null) }
 
-  // Always collect the client manifest regardless of connection state
-  LaunchedEffect(Unit) {
+  LaunchedEffect(host.connection) {
     host.connection.incomingMessages
       .filterIsInstance<ClientManifest>()
       .collect {
@@ -101,7 +104,6 @@ fun main() = application {
       }
   }
 
-  // Clear the plugin if we ever become disconnected from the server
   LaunchedEffect(state) {
     if (state != CONNECTED) {
       selectedPlugin = null
@@ -110,16 +112,12 @@ fun main() = application {
   }
 
   Window(
-    onCloseRequest = {
-      host.connection.close()
-      exitApplication()
-    },
+    onCloseRequest = { exitApplication() },
     title = "Livewire Host",
     state = rememberWindowState(
       size = DpSize(1200.dp, 800.dp),
     )
   ) {
-
     LivewireThemeContent(
       theme = clientManifest?.theme ?: LivewireTheme(),
       host = host
@@ -131,11 +129,12 @@ fun main() = application {
             devices = devices,
             selectedDevice = selectedDevice,
             onDeviceClick = { selectedDevice = it },
-            onRefreshClick = { refreshDevices() },
-            onConnectClick = {
-              host.connection.connect(it)
+            onConnectClick = { device ->
+              scope.launch { host.connection.connect(device) }
             },
-            onDisconnectClick = { host.connection.disconnect() },
+            onDisconnectClick = {
+              scope.launch { host.connection.disconnect() }
+            },
           )
         },
         drawer = {
@@ -178,8 +177,6 @@ fun main() = application {
                   )
                 }
               }
-
-
             }
           }
         }
@@ -202,11 +199,10 @@ fun main() = application {
 @Composable
 private fun DeviceTopBar(
   hostConnectionState: HostConnectionState,
-  devices: List<AdbDevice>,
-  selectedDevice: AdbDevice?,
-  onDeviceClick: (AdbDevice) -> Unit,
-  onRefreshClick: () -> Unit,
-  onConnectClick: (AdbDevice) -> Unit,
+  devices: List<HostDevice>,
+  selectedDevice: HostDevice?,
+  onDeviceClick: (HostDevice) -> Unit,
+  onConnectClick: (HostDevice) -> Unit,
   onDisconnectClick: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -227,12 +223,9 @@ private fun DeviceTopBar(
         val tint by animateColorAsState(
           if (hostConnectionState == CONNECTED) Color(0xff118F00) else MaterialTheme.colorScheme.error
         )
+
         Icon(
-          if (hostConnectionState == CONNECTED) {
-            Connected
-          } else {
-            Disconnected
-          },
+          imageVector = if (hostConnectionState == CONNECTED) Connected else Disconnected,
           contentDescription = null,
           tint = tint,
         )
@@ -240,9 +233,7 @@ private fun DeviceTopBar(
 
       Box {
         OutlinedButton(onClick = { dropdownExpanded = true }) {
-          Text(
-            selectedDevice?.displayName ?: "No devices",
-          )
+          Text(selectedDevice?.displayName ?: "No devices")
         }
         DropdownMenu(
           expanded = dropdownExpanded,
@@ -262,12 +253,6 @@ private fun DeviceTopBar(
 
       Spacer(Modifier.width(8.dp))
 
-      Button(onClick = onRefreshClick) {
-        Text("Refresh")
-      }
-
-      Spacer(Modifier.width(8.dp))
-
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
           onClick = {
@@ -282,7 +267,7 @@ private fun DeviceTopBar(
         }
         Button(
           onClick = onDisconnectClick,
-          enabled = hostConnectionState == HostConnectionState.CONNECTED,
+          enabled = hostConnectionState == CONNECTED,
         ) {
           Text("Disconnect")
         }

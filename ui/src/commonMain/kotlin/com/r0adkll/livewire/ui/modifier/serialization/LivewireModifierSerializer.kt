@@ -12,6 +12,7 @@ import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encodeToHexString
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.PolymorphicSerializer
 import kotlinx.serialization.modules.SerializersModule
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -19,13 +20,19 @@ object LivewireModifierSerializer : KSerializer<LivewireModifier> {
   override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("com.r0adkll.livewire.ui.LivewireModifier", PrimitiveKind.STRING)
 
   override fun serialize(encoder: Encoder, value: LivewireModifier) {
-    val byteString = LivewireModifierCbor.encodeToHexString(value)
+    val byteString = LivewireModifierCbor.encodeToHexString(
+      PolymorphicSerializer(LivewireModifier::class),
+      value
+    )
     encoder.encodeString(byteString)
   }
 
   override fun deserialize(decoder: Decoder): LivewireModifier {
     val byteString = decoder.decodeString()
-    return LivewireModifierCbor.decodeFromHexString(byteString)
+    return LivewireModifierCbor.decodeFromHexString(
+      PolymorphicSerializer(LivewireModifier::class),
+      byteString
+    )
   }
 }
 

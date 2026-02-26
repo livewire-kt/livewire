@@ -53,8 +53,7 @@ data class PluginSelected(
 data object ClearPlugin : UiProtocol
 
 
-
-val UiDecoders get() = listOf(
+val UiDecoders: List<PayloadDecoder<*>> get() = listOf(
   UiProtocol,
   LivewireAction,
 )
