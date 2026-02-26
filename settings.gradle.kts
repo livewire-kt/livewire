@@ -42,5 +42,6 @@ include("compiler")
 
 include(
   ":plugins:database",
+  ":plugins:playground",
 )
 

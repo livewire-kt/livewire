@@ -7,6 +7,7 @@ import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.r0adkll.livewire.app.LivewireDatabase
 import com.r0adkll.livewire.client.LivewireClient
 import com.r0adkll.livewire.plugin.database.DatabasePlugin
+import com.r0adkll.livewire.plugin.playground.PlaygroundPlugin
 
 @SuppressLint("StaticFieldLeak")
 object ServiceLocator {
@@ -15,6 +16,7 @@ object ServiceLocator {
   val livewireClient by lazy {
     LivewireClient {
       install(DatabasePlugin(context))
+      install(PlaygroundPlugin())
     }
   }
 

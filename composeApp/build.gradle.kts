@@ -35,6 +35,7 @@ kotlin {
 
       implementation(projects.client)
       implementation(projects.plugins.database)
+      implementation(projects.plugins.playground)
 
       implementation(libs.sqldelight.android.driver)
     }

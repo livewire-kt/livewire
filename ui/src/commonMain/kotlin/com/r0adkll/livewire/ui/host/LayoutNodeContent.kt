@@ -16,6 +16,9 @@ import com.r0adkll.livewire.ui.host.nodes.ColumnNodeContent
 import com.r0adkll.livewire.ui.host.nodes.IconButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.RowNodeContent
 import com.r0adkll.livewire.ui.host.nodes.TextNodeContent
+import com.r0adkll.livewire.ui.host.nodes.ProgressIndicatorNodeContent
+import com.r0adkll.livewire.ui.host.nodes.RadioButtonNodeContent
+import com.r0adkll.livewire.ui.host.nodes.TextFieldNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ToggleButtonNodeContent
 import com.r0adkll.livewire.ui.layout.BoxNode
 import com.r0adkll.livewire.ui.layout.ColumnNode
@@ -25,6 +28,9 @@ import com.r0adkll.livewire.ui.widget.ButtonNode
 import com.r0adkll.livewire.ui.widget.CheckboxNode
 import com.r0adkll.livewire.ui.widget.IconButtonNode
 import com.r0adkll.livewire.ui.widget.TextNode
+import com.r0adkll.livewire.ui.widget.ProgressIndicatorNode
+import com.r0adkll.livewire.ui.widget.RadioButtonNode
+import com.r0adkll.livewire.ui.widget.TextFieldNode
 import com.r0adkll.livewire.ui.widget.ToggleButtonNode
 
 @Composable
@@ -40,6 +46,9 @@ fun LayoutNodeContent(
     is ButtonNode -> ButtonNodeContent(node, modifier)
     is IconButtonNode -> IconButtonNodeContent(node, modifier)
     is CheckboxNode -> CheckboxNodeContent(node, modifier)
+    is ProgressIndicatorNode -> ProgressIndicatorNodeContent(node, modifier)
+    is RadioButtonNode -> RadioButtonNodeContent(node, modifier)
+    is TextFieldNode -> TextFieldNodeContent(node, modifier)
     is ToggleButtonNode -> ToggleButtonNodeContent(node, modifier)
 
     else -> {
