@@ -22,6 +22,7 @@ import com.r0adkll.livewire.ui.host.nodes.SwitchNodeContent
 import com.r0adkll.livewire.ui.host.nodes.TextNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ProgressIndicatorNodeContent
 import com.r0adkll.livewire.ui.host.nodes.RadioButtonNodeContent
+import com.r0adkll.livewire.ui.host.nodes.SliderNodeContent
 import com.r0adkll.livewire.ui.host.nodes.TextFieldNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ToggleButtonNodeContent
 import com.r0adkll.livewire.ui.layout.BoxNode
@@ -36,6 +37,7 @@ import com.r0adkll.livewire.ui.widget.IconButtonNode
 import com.r0adkll.livewire.ui.widget.TextNode
 import com.r0adkll.livewire.ui.widget.ProgressIndicatorNode
 import com.r0adkll.livewire.ui.widget.RadioButtonNode
+import com.r0adkll.livewire.ui.widget.SliderNode
 import com.r0adkll.livewire.ui.widget.SurfaceNode
 import com.r0adkll.livewire.ui.widget.SwitchNode
 import com.r0adkll.livewire.ui.widget.TextFieldNode
@@ -58,6 +60,7 @@ fun LayoutNodeContent(
     is FloatingActionButtonNode -> FloatingActionButtonNodeContent(node, modifier)
     is ProgressIndicatorNode -> ProgressIndicatorNodeContent(node, modifier)
     is RadioButtonNode -> RadioButtonNodeContent(node, modifier)
+    is SliderNode -> SliderNodeContent(node, modifier)
     is SurfaceNode -> SurfaceNodeContent(node, modifier)
     is SwitchNode -> SwitchNodeContent(node, modifier)
     is TextFieldNode -> TextFieldNodeContent(node, modifier)

@@ -10,6 +10,7 @@ import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.checkedChangeAction
 import com.r0adkll.livewire.ui.actions.clickAction
+import com.r0adkll.livewire.ui.actions.floatValueChangeAction
 import com.r0adkll.livewire.ui.actions.valueChangeAction
 import com.r0adkll.livewire.ui.graphics.CircleShape
 import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
@@ -37,6 +38,7 @@ import com.r0adkll.livewire.ui.widget.IconButtonStyle
 import com.r0adkll.livewire.ui.widget.ProgressIndicator
 import com.r0adkll.livewire.ui.widget.ProgressIndicatorStyle
 import com.r0adkll.livewire.ui.widget.RadioButton
+import com.r0adkll.livewire.ui.widget.Slider
 import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextField
@@ -321,6 +323,45 @@ class PlaygroundPlugin : Plugin {
             .padding(16.dp)
         )
 
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+
+        var sliderValue by remember { mutableStateOf(0.5f) }
+        Slider(
+          value = sliderValue,
+          onValueChange = floatValueChangeAction {
+            sliderValue = it
+          },
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(horizontal = 16.dp),
+        )
+
+        var steppedValue by remember { mutableStateOf(0f) }
+        Slider(
+          value = steppedValue,
+          onValueChange = floatValueChangeAction {
+            steppedValue = it
+          },
+          steps = 4,
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(horizontal = 16.dp),
+        )
+
+        Slider(
+          value = 0.3f,
+          onValueChange = floatValueChangeAction { },
+          enabled = false,
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(horizontal = 16.dp),
+        )
       }
 
       Row(
