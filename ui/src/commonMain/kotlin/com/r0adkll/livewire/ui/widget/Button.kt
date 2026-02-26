@@ -27,7 +27,7 @@ fun Button(
     factory = { ButtonNode(action) },
     update = {
       set(modifier, LayoutNode.SetModifier)
-      set(action, ButtonNode.SetAction)
+      update(action, ButtonNode.SetAction)
       set(size, ButtonNode.SetSize)
       set(style, ButtonNode.SetStyle)
     },

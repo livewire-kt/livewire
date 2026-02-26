@@ -4,11 +4,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.LargeFloatingActionButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.host.RemoteIcon
@@ -49,7 +51,7 @@ internal fun FloatingActionButtonNodeContent(
           RemoteIcon(
             svgData = iconNode.svgData,
             contentDescription = null,
-            tint = iconNode.tint,
+            tint = iconNode.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
             modifier = Modifier.size(24.dp),
           )
         }
@@ -65,7 +67,7 @@ internal fun FloatingActionButtonNodeContent(
             RemoteIcon(
               svgData = child.svgData,
               contentDescription = null,
-              tint = child.tint,
+              tint = child.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
               modifier = Modifier.size(24.dp),
             )
           }

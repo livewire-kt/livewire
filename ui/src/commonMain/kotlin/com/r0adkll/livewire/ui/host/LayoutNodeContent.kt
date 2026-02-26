@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.host.nodes.BoxNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.CheckboxNodeContent
+import com.r0adkll.livewire.ui.host.nodes.DropdownMenuNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ColumnNodeContent
 import com.r0adkll.livewire.ui.host.nodes.FloatingActionButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.IconButtonNodeContent
@@ -28,6 +29,7 @@ import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RowNode
 import com.r0adkll.livewire.ui.widget.ButtonNode
 import com.r0adkll.livewire.ui.widget.CheckboxNode
+import com.r0adkll.livewire.ui.widget.DropdownMenuNode
 import com.r0adkll.livewire.ui.widget.FloatingActionButtonNode
 import com.r0adkll.livewire.ui.widget.IconButtonNode
 import com.r0adkll.livewire.ui.widget.TextNode
@@ -50,6 +52,7 @@ fun LayoutNodeContent(
     is ButtonNode -> ButtonNodeContent(node, modifier)
     is IconButtonNode -> IconButtonNodeContent(node, modifier)
     is CheckboxNode -> CheckboxNodeContent(node, modifier)
+    is DropdownMenuNode -> DropdownMenuNodeContent(node, modifier)
     is FloatingActionButtonNode -> FloatingActionButtonNodeContent(node, modifier)
     is ProgressIndicatorNode -> ProgressIndicatorNodeContent(node, modifier)
     is RadioButtonNode -> RadioButtonNodeContent(node, modifier)

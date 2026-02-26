@@ -22,10 +22,13 @@ import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.size
 import com.r0adkll.livewire.ui.modifier.width
+import com.r0adkll.livewire.ui.layout.Box
 import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.ButtonStyle
 import com.r0adkll.livewire.ui.widget.Checkbox
+import com.r0adkll.livewire.ui.widget.DropdownMenu
+import com.r0adkll.livewire.ui.widget.DropdownMenuItem
 import com.r0adkll.livewire.ui.widget.FabSize
 import com.r0adkll.livewire.ui.widget.FloatingActionButton
 import com.r0adkll.livewire.ui.widget.Icon
@@ -358,6 +361,46 @@ class PlaygroundPlugin : Plugin {
           onClick = clickAction { },
         ) {
           Text("Click")
+        }
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        var menuExpanded by remember { mutableStateOf(false) }
+
+        Box {
+          Button(
+            action = clickAction {
+              menuExpanded = true
+            },
+          ) {
+            Text("Show Menu")
+          }
+
+          DropdownMenu(
+            expanded = menuExpanded,
+            onDismissRequest = clickAction {
+              menuExpanded = false
+            },
+          ) {
+            DropdownMenuItem(
+              text = "Option 1",
+              onClick = clickAction { menuExpanded = false },
+              leadingIconData = Icons.Sync,
+            )
+            DropdownMenuItem(
+              text = "Option 2",
+              onClick = clickAction { menuExpanded = false },
+            )
+            DropdownMenuItem(
+              text = "Disabled",
+              onClick = clickAction { },
+              enabled = false,
+            )
+          }
         }
       }
 

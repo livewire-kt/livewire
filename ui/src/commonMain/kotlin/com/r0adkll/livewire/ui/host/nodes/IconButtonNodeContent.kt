@@ -9,10 +9,12 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.IconButtonShapes
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.host.RemoteIcon
 import com.r0adkll.livewire.ui.host.debugFrame
@@ -57,7 +59,7 @@ internal fun IconButtonNodeContent(
     RemoteIcon(
       svgData = child.svgData,
       contentDescription = null,
-      tint = child.tint,
+      tint = child.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
       modifier = Modifier.size(ButtonDefaults.iconSizeFor(buttonSize))
     )
   }

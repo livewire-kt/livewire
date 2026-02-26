@@ -13,7 +13,7 @@ import kotlinx.serialization.Serializable
 
 @Immutable
 @Serializable
-class ClickAction(
+data class ClickAction(
   val identifier: String,
 ) : LivewireAction {
 }
