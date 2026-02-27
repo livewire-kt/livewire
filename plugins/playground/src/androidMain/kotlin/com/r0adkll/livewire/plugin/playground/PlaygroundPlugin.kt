@@ -24,6 +24,8 @@ import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.size
 import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.layout.Box
+import com.r0adkll.livewire.ui.modifier.height
+import com.r0adkll.livewire.ui.modifier.verticalScroll
 import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.ButtonStyle
@@ -495,6 +497,17 @@ class PlaygroundPlugin : Plugin {
               enabled = false,
             )
           }
+        }
+      }
+
+      Column(
+        modifier = LivewireModifier
+          .height(200.dp)
+          .verticalScroll()
+          .padding(horizontal = 16.dp),
+      ) {
+        repeat(20) {
+          Text("Item $it")
         }
       }
 
