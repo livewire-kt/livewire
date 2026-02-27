@@ -11,6 +11,7 @@ import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.checkedChangeAction
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.actions.floatValueChangeAction
+import com.r0adkll.livewire.ui.actions.intValueChangeAction
 import com.r0adkll.livewire.ui.actions.valueChangeAction
 import com.r0adkll.livewire.ui.graphics.CircleShape
 import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
@@ -48,6 +49,8 @@ import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextField
 import com.r0adkll.livewire.ui.widget.TextFieldStyle
 import com.r0adkll.livewire.ui.widget.Switch
+import com.r0adkll.livewire.ui.widget.Tab
+import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Table
 import com.r0adkll.livewire.ui.widget.ToggleButton
 
@@ -524,6 +527,20 @@ class PlaygroundPlugin : Plugin {
         repeat(20) {
           Text("Item $it")
         }
+      }
+
+      // TabRow
+      var selectedTab by remember { mutableStateOf(0) }
+      TabRow(
+        selectedTabIndex = selectedTab,
+        onTabSelected = intValueChangeAction {
+          selectedTab = it
+        },
+        modifier = LivewireModifier.fillMaxWidth(),
+      ) {
+        Tab(text = "Overview")
+        Tab(text = "Details")
+        Tab(text = "Settings")
       }
 
       // Table

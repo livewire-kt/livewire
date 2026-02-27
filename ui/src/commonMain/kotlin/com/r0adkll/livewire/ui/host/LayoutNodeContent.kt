@@ -22,6 +22,7 @@ import com.r0adkll.livewire.ui.host.nodes.SwitchNodeContent
 import com.r0adkll.livewire.ui.host.nodes.TextFieldNodeContent
 import com.r0adkll.livewire.ui.host.nodes.TextNodeContent
 import com.r0adkll.livewire.ui.host.nodes.TableNodeContent
+import com.r0adkll.livewire.ui.host.nodes.TabRowNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ToggleButtonNodeContent
 import com.r0adkll.livewire.ui.layout.BoxNode
 import com.r0adkll.livewire.ui.layout.ColumnNode
@@ -43,6 +44,7 @@ import com.r0adkll.livewire.ui.widget.SwitchNode
 import com.r0adkll.livewire.ui.widget.TextFieldNode
 import com.r0adkll.livewire.ui.widget.TextNode
 import com.r0adkll.livewire.ui.widget.TableNode
+import com.r0adkll.livewire.ui.widget.TabRowNode
 import com.r0adkll.livewire.ui.widget.ToggleButtonNode
 
 @Composable
@@ -70,6 +72,7 @@ fun LayoutNodeContent(
     is SwitchNode -> SwitchNodeContent(node, modifier)
     is TextFieldNode -> TextFieldNodeContent(node, modifier)
     is TableNode -> TableNodeContent(node, modifier)
+    is TabRowNode -> TabRowNodeContent(node, modifier)
     is ToggleButtonNode -> ToggleButtonNodeContent(node, modifier)
 
     else -> {

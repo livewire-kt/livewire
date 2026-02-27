@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -15,14 +16,22 @@ import com.r0adkll.livewire.plugin.database.composables.TableList
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.clickAction
+import com.r0adkll.livewire.ui.actions.intValueChangeAction
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.modifier.fillMaxHeight
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
+import com.r0adkll.livewire.ui.modifier.fillMaxWidth
+import com.r0adkll.livewire.ui.widget.Button
+import com.r0adkll.livewire.ui.widget.ButtonSize
+import com.r0adkll.livewire.ui.widget.ButtonStyle
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
+import com.r0adkll.livewire.ui.widget.Tab
+import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Table
+import com.r0adkll.livewire.ui.widget.Text
 import kotlinx.coroutines.launch
 
 class DatabasePlugin(context: Context) : Plugin {
@@ -43,7 +52,6 @@ class DatabasePlugin(context: Context) : Plugin {
     var selectedTable by remember { mutableStateOf<TableInfo?>(null) }
 
     val selectedTables = remember { mutableStateListOf<TableInfo>() }
-
     var currentQueryResult by remember { mutableStateOf<QueryResult?>(null) }
 
     suspend fun refreshDatabases() {
@@ -99,12 +107,45 @@ class DatabasePlugin(context: Context) : Plugin {
       queryTable()
     }
 
-    Column(LivewireModifier.fillMaxSize()) {
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
 
+    var extraQueryTabs by remember { mutableIntStateOf(0) }
+
+    Column(LivewireModifier.fillMaxSize()) {
       DatabaseToolBar(
         selectedDatabase = selectedDatabase,
         availableDatabases = availableDatabases,
         onDatabaseSelected = { selectedDatabase = it },
+        tabs = {
+          TabRow(
+            selectedTabIndex = selectedTabIndex,
+            onTabSelected = intValueChangeAction {
+              selectedTabIndex = it
+            },
+            modifier = LivewireModifier.fillMaxWidth(),
+          ) {
+            Tab(
+              text = "Contents"
+            )
+
+            repeat(extraQueryTabs) { index ->
+              Tab(
+                text = "Query #$index",
+              )
+            }
+
+            Button(
+              action = clickAction {
+                extraQueryTabs++
+              },
+              size = ButtonSize.ExtraSmall,
+              style = ButtonStyle.Tonal,
+            ) {
+              Icon(Icons.DatabaseSearch)
+              Text("New Query")
+            }
+          }
+        },
         actions = {
           IconButton(
             action = clickAction {

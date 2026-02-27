@@ -11,6 +11,8 @@ import com.r0adkll.livewire.plugin.database.Icons
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
 import com.r0adkll.livewire.ui.layout.Alignment
+import com.r0adkll.livewire.ui.layout.Box
+import com.r0adkll.livewire.ui.layout.BoxScope
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.layout.RowScope
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
@@ -34,6 +36,7 @@ fun DatabaseToolBar(
   availableDatabases: List<DatabaseInfo>,
   onDatabaseSelected: (DatabaseInfo) -> Unit,
   actions: @Composable RowScope.() -> Unit = {},
+  tabs: @Composable BoxScope.() -> Unit = {},
   modifier: LivewireModifier = LivewireModifier,
 ) {
   Surface(
@@ -94,7 +97,15 @@ fun DatabaseToolBar(
         }
       }
 
-      Spacer(LivewireModifier.weight(1f))
+      Spacer(LivewireModifier.width(16.dp))
+
+      Box(
+        modifier = LivewireModifier.weight(1f)
+      ) {
+        tabs()
+      }
+
+      Spacer(LivewireModifier.width(16.dp))
 
       actions()
     }
