@@ -48,6 +48,7 @@ import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextField
 import com.r0adkll.livewire.ui.widget.TextFieldStyle
 import com.r0adkll.livewire.ui.widget.Switch
+import com.r0adkll.livewire.ui.widget.Table
 import com.r0adkll.livewire.ui.widget.ToggleButton
 
 class PlaygroundPlugin : Plugin {
@@ -524,6 +525,33 @@ class PlaygroundPlugin : Plugin {
           Text("Item $it")
         }
       }
+
+      // Table
+      Table(
+        columns = listOf("Name", "Role", "Status"),
+        rows = listOf(
+          listOf("Alice", "Engineer", "Active"),
+          listOf("Bob", "Designer", "Active"),
+          listOf("Charlie", "PM", "Away"),
+          listOf("Diana", "Engineer", "Active"),
+          listOf("Eve", "QA", "Offline"),
+          listOf("Frank", "DevOps", "Active"),
+          listOf("Grace", "Designer", "Away"),
+          listOf("Hank", "Engineer", "Active"),
+          listOf("Iris", "PM", "Active"),
+          listOf("Jack", "QA", "Offline"),
+          listOf("Karen", "Engineer", "Away"),
+          listOf("Leo", "Designer", "Active"),
+          listOf("Mona", "DevOps", "Active"),
+          listOf("Nate", "Engineer", "Offline"),
+          listOf("Olivia", "PM", "Active"),
+        ),
+        pageSize = 5,
+        modifier = LivewireModifier
+          .fillMaxWidth()
+          .height(300.dp)
+          .padding(16.dp),
+      )
 
     }
   }

@@ -6,3 +6,6 @@ CREATE TABLE Users (
 insert:
 INSERT OR IGNORE INTO Users
 VALUES ?;
+
+count:
+SELECT count(*) FROM Users;
