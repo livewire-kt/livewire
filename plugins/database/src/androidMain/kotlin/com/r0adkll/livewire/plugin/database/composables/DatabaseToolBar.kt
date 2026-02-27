@@ -7,7 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.plugin.database.DatabaseInfo
-import com.r0adkll.livewire.plugin.database.Icons
+import com.r0adkll.livewire.plugin.database.ui.Icons
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
 import com.r0adkll.livewire.ui.layout.Alignment

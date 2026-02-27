@@ -11,32 +11,44 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.plugin.database.composables.DatabaseToolBar
 import com.r0adkll.livewire.plugin.database.composables.TableList
+import com.r0adkll.livewire.plugin.database.ui.Icons
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.actions.intValueChangeAction
+import com.r0adkll.livewire.ui.actions.valueChangeAction
+import com.r0adkll.livewire.ui.layout.Alignment
+import com.r0adkll.livewire.ui.layout.Box
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.modifier.fillMaxHeight
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
+import com.r0adkll.livewire.ui.modifier.height
+import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.ButtonStyle
+import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
+import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Table
 import com.r0adkll.livewire.ui.widget.Text
+import com.r0adkll.livewire.ui.widget.TextField
 import kotlinx.coroutines.launch
 
 class DatabasePlugin(context: Context) : Plugin {
 
-  val inspector = DatabaseInspector(context)
+  private val inspector = DatabaseInspector(context)
+  private val presenter = DatabasePresenter(inspector)
 
   override val info: PluginInfo = PluginInfo(
     pluginId = "database",
@@ -47,75 +59,18 @@ class DatabasePlugin(context: Context) : Plugin {
   @Composable
   override fun Content() {
     val scope = rememberCoroutineScope()
-    val availableDatabases = remember { mutableStateListOf<DatabaseInfo>() }
-    var selectedDatabase by remember { mutableStateOf<DatabaseInfo?>(null) }
-    var selectedTable by remember { mutableStateOf<TableInfo?>(null) }
-
-    val selectedTables = remember { mutableStateListOf<TableInfo>() }
-    var currentQueryResult by remember { mutableStateOf<QueryResult?>(null) }
-
-    suspend fun refreshDatabases() {
-      Log.d("DatabasePlugin", "Refreshing Databases")
-      inspector.discoverDatabases()
-        .onSuccess { databases ->
-          availableDatabases.clear()
-          availableDatabases.addAll(databases)
-
-          if (selectedDatabase == null) {
-            selectedDatabase = databases.firstOrNull()
-          }
-        }
-        .onFailure { e ->
-          e.printStackTrace()
-        }
-    }
-
-    suspend fun refreshTables() {
-      if (selectedDatabase != null) {
-        inspector.getTables(selectedDatabase!!.path)
-          .onSuccess { tables ->
-            selectedTables.clear()
-            selectedTables.addAll(tables)
-          }
-          .onFailure { e ->
-            e.printStackTrace()
-          }
-      }
-    }
-
-    suspend fun queryTable() {
-      if (selectedDatabase != null && selectedTable != null) {
-        inspector.getTableContents(selectedDatabase!!.path, selectedTable!!.name)
-          .onSuccess { result ->
-            currentQueryResult = result
-          }
-          .onFailure { e ->
-            e.printStackTrace()
-          }
-      }
-    }
-
-    LaunchedEffect(Unit) {
-      refreshDatabases()
-    }
-
-    LaunchedEffect(selectedDatabase) {
-      refreshTables()
-    }
-
-    LaunchedEffect(selectedTable) {
-      queryTable()
-    }
+    val state = presenter.present()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-
     var extraQueryTabs by remember { mutableIntStateOf(0) }
 
     Column(LivewireModifier.fillMaxSize()) {
       DatabaseToolBar(
-        selectedDatabase = selectedDatabase,
-        availableDatabases = availableDatabases,
-        onDatabaseSelected = { selectedDatabase = it },
+        selectedDatabase = state.selectedDatabase,
+        availableDatabases = state.availableDatabases,
+        onDatabaseSelected = {
+          state.eventSink(DatabaseUiEvent.SelectDatabase(it))
+        },
         tabs = {
           TabRow(
             selectedTabIndex = selectedTabIndex,
@@ -124,35 +79,30 @@ class DatabasePlugin(context: Context) : Plugin {
             },
             modifier = LivewireModifier.fillMaxWidth(),
           ) {
-            Tab(
-              text = "Contents"
-            )
-
-            repeat(extraQueryTabs) { index ->
+            state.pages.forEachIndexed { index, page ->
               Tab(
-                text = "Query #$index",
+                text = page.name,
               )
-            }
-
-            Button(
-              action = clickAction {
-                extraQueryTabs++
-              },
-              size = ButtonSize.ExtraSmall,
-              style = ButtonStyle.Tonal,
-            ) {
-              Icon(Icons.DatabaseSearch)
-              Text("New Query")
             }
           }
         },
         actions = {
+
+          Button(
+            action = clickAction {
+              state.eventSink(DatabaseUiEvent.AddQueryTab)
+            },
+            size = ButtonSize.ExtraSmall,
+            style = ButtonStyle.Tonal,
+          ) {
+            Icon(Icons.DatabaseSearch)
+            Text("New Query")
+          }
+
           IconButton(
             action = clickAction {
               scope.launch {
-                refreshDatabases()
-                refreshTables()
-                queryTable()
+                state.eventSink(DatabaseUiEvent.Refresh)
               }
             }
           ) {
@@ -163,9 +113,11 @@ class DatabasePlugin(context: Context) : Plugin {
 
       Row {
         TableList(
-          selected = selectedTable,
-          tables = selectedTables,
-          onTableClick = { selectedTable = it },
+          selected = state.selectedTable,
+          tables = state.selectedDatabaseTables,
+          onTableClick = {
+            state.eventSink(DatabaseUiEvent.SelectTable(it))
+          },
           modifier = LivewireModifier
             .weight(2f)
             .fillMaxHeight()
@@ -176,13 +128,23 @@ class DatabasePlugin(context: Context) : Plugin {
             .weight(8f)
             .fillMaxHeight()
         ) {
-          if (currentQueryResult != null) {
-            Table(
-              columns = currentQueryResult!!.columns,
-              rows = currentQueryResult!!.rows.map { it.filterNotNull() },
-              pageSize = 25,
-              modifier = LivewireModifier.fillMaxSize(),
-            )
+          state.pages.getOrNull(selectedTabIndex)?.let { page ->
+            when (page) {
+              is QueryPage -> QueryContentPage(
+                page = page,
+                onQueryChange = { query ->
+                  state.eventSink(DatabaseUiEvent.UpdateQueryForTab(selectedTabIndex, query))
+                },
+                onExecute = {
+                  state.eventSink(DatabaseUiEvent.ExecuteQueryForTab(selectedTabIndex))
+                },
+                modifier = LivewireModifier.fillMaxSize(),
+              )
+              is TableContentPage -> TableContentPage(
+                page = page,
+                modifier = LivewireModifier.fillMaxSize(),
+              )
+            }
           }
         }
       }
@@ -190,4 +152,75 @@ class DatabasePlugin(context: Context) : Plugin {
   }
 }
 
+@Composable
+private fun TableContentPage(
+  page: TableContentPage,
+  modifier: LivewireModifier = LivewireModifier,
+) {
+  page.content?.let { content ->
+    Table(
+      columns = content.columns,
+      rows = content.rows.map { it.filterNotNull() },
+      pageSize = 25, // ? Configure this ?
+      modifier = modifier,
+    )
+  }
+}
+
+@Composable
+private fun QueryContentPage(
+  page: QueryPage,
+  onQueryChange: (String) -> Unit,
+  onExecute: () -> Unit,
+  modifier: LivewireModifier = LivewireModifier,
+) {
+  Column(
+    modifier = modifier,
+  ) {
+    TextField(
+      initialValue = page.query,
+      onValueChange = valueChangeAction {
+        onQueryChange(it)
+      },
+      label = "Query",
+      placeholder = "Enter your SQL query here…",
+      modifier = LivewireModifier
+        .fillMaxWidth()
+        .height(128.dp),
+    )
+    Row(
+      modifier = LivewireModifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 4.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Spacer(LivewireModifier.weight(1f))
+
+      Button(
+        action = clickAction {
+          onExecute()
+        },
+        size = ButtonSize.ExtraSmall,
+      ) {
+        Icon(Icons.Run)
+        Text("Execute")
+      }
+    }
+
+    HorizontalDivider(
+      modifier = LivewireModifier.fillMaxWidth()
+    )
+
+    Box(LivewireModifier.weight(1f)) {
+      page.result?.let { result ->
+        Table(
+          columns = result.columns,
+          rows = result.rows.map { it.filterNotNull() },
+          pageSize = 25,
+          modifier = LivewireModifier.fillMaxSize()
+        )
+      }
+    }
+  }
+}
 

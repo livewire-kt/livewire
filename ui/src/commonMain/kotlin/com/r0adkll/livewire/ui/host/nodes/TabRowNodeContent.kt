@@ -1,15 +1,23 @@
 package com.r0adkll.livewire.ui.host.nodes
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PrimaryScrollableTabRow
-import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.SecondaryScrollableTabRow
-import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRowDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.host.LayoutNodeContent
@@ -30,15 +38,29 @@ internal fun TabRowNodeContent(
 
   val content: @Composable () -> Unit = {
     node.children.forEachIndexed { index, child ->
+      val isSelected = index == node.selectedTabIndex
+
+      val tabCornerRadius by animateDpAsState(
+        if (isSelected) 16.dp else 8.dp
+      )
+
+      val tabContainerColor by animateColorAsState(
+        if (isSelected) MaterialTheme.colorScheme.surfaceContainerHighest
+        else MaterialTheme.colorScheme.surfaceContainer
+      )
+
       if (child is TabNode) {
         Tab(
-          selected = index == node.selectedTabIndex,
+          selected = isSelected,
           onClick = {
             scope.launch {
               eventDispatcher.dispatch(node.onTabSelected.copy(value = index))
             }
           },
-          modifier = child.modifier.toComposeUi(Modifier),
+          modifier = child.modifier.toComposeUi(Modifier)
+            .padding(horizontal = 2.dp)
+            .clip(RoundedCornerShape(topStart = tabCornerRadius, topEnd = tabCornerRadius))
+            .background(tabContainerColor),
           enabled = child.enabled,
           text = child.text?.let { { Text(it) } },
           icon = child.iconData?.let { iconData ->
@@ -61,13 +83,27 @@ internal fun TabRowNodeContent(
     TabStyle.Primary -> PrimaryScrollableTabRow(
       selectedTabIndex = node.selectedTabIndex,
       modifier = modifier.debugFrame(),
+      edgePadding = 8.dp,
       tabs = content,
+      indicator = {
+        TabRowDefaults.PrimaryIndicator(
+          Modifier.tabIndicatorOffset(node.selectedTabIndex, matchContentSize = false),
+          width = Dp.Unspecified,
+        )
+      }
     )
 
     TabStyle.Secondary -> SecondaryScrollableTabRow(
       selectedTabIndex = node.selectedTabIndex,
       modifier = modifier.debugFrame(),
+      edgePadding = 8.dp,
       tabs = content,
+      indicator = {
+        TabRowDefaults.PrimaryIndicator(
+          Modifier.tabIndicatorOffset(node.selectedTabIndex, matchContentSize = false),
+          width = Dp.Unspecified,
+        )
+      }
     )
   }
 }

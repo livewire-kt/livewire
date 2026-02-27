@@ -31,6 +31,8 @@ import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.ButtonStyle
 import com.r0adkll.livewire.ui.widget.Checkbox
+import com.r0adkll.livewire.ui.widget.HorizontalDivider
+import com.r0adkll.livewire.ui.widget.VerticalDivider
 import com.r0adkll.livewire.ui.widget.DropdownMenu
 import com.r0adkll.livewire.ui.widget.DropdownMenuItem
 import com.r0adkll.livewire.ui.widget.FabSize
@@ -517,6 +519,34 @@ class PlaygroundPlugin : Plugin {
         Spacer(modifier = LivewireModifier.width(48.dp))
         Text("Right")
       }
+
+      // Dividers
+      HorizontalDivider(
+        modifier = LivewireModifier
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+      )
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth()
+          .height(48.dp)
+          .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Text("Left")
+        VerticalDivider(modifier = LivewireModifier.padding(horizontal = 16.dp))
+        Text("Center")
+        VerticalDivider(modifier = LivewireModifier.padding(horizontal = 16.dp))
+        Text("Right")
+      }
+
+      HorizontalDivider(
+        modifier = LivewireModifier
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+        thickness = 3f,
+      )
 
       Column(
         modifier = LivewireModifier

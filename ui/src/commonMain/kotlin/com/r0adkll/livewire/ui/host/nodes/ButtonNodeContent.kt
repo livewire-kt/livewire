@@ -12,12 +12,14 @@ import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.host.RemoteIcon
 import com.r0adkll.livewire.ui.host.debugFrame
@@ -71,7 +73,7 @@ internal fun ButtonNodeContent(
           RemoteIcon(
             svgData = child.svgData,
             contentDescription = null,
-            tint = child.tint,
+            tint = child.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
             modifier = Modifier.size(ButtonDefaults.iconSizeFor(buttonSize))
           )
         }

@@ -3,7 +3,7 @@ package com.r0adkll.livewire.plugin.database.composables
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.r0adkll.livewire.plugin.database.Icons
+import com.r0adkll.livewire.plugin.database.ui.Icons
 import com.r0adkll.livewire.plugin.database.TableInfo
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.graphics.CircleShape
