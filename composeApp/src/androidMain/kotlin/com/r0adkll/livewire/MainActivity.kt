@@ -34,6 +34,7 @@ import com.r0adkll.livewire.ui.icons.ChatBubbleFilled
 import com.r0adkll.livewire.ui.icons.ChatBubbleOutline
 import com.r0adkll.livewire.ui.icons.HomeFilled
 import com.r0adkll.livewire.ui.icons.HomeOutlined
+import com.r0adkll.livewire.ui.theme.CustomLivewireTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
     livewireClient.start()
 
     setContent {
-      MaterialTheme {
+      CustomLivewireTheme {
         val scope = rememberCoroutineScope()
 
         val connectionState by livewireClient.server.connectionState.collectAsState()

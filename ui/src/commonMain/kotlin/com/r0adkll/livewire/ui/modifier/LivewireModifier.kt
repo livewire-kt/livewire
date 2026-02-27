@@ -40,6 +40,14 @@ sealed interface LivewireModifier : ComposeUiMapper {
   }
 }
 
+inline fun LivewireModifier.thenIf(
+  predicate: Boolean,
+  then: LivewireModifier.() -> LivewireModifier,
+): LivewireModifier {
+  return if (predicate) this.then()
+  else this
+}
+
 /**
  * A node in a [LivewireModifier] chain. A CombinedModifier always contains at least two elements; a
  * Modifier [outer] that wraps around the Modifier [inner].

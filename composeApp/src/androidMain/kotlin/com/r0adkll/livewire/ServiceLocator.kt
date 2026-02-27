@@ -2,12 +2,16 @@ package com.r0adkll.livewire
 
 import android.annotation.SuppressLint
 import android.content.Context
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.Color
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.r0adkll.livewire.app.LivewireDatabase
 import com.r0adkll.livewire.client.LivewireClient
 import com.r0adkll.livewire.plugin.database.DatabasePlugin
 import com.r0adkll.livewire.plugin.playground.PlaygroundPlugin
+import com.r0adkll.livewire.ui.theme.CustomLivewireTheme
+import com.r0adkll.livewire.ui.theme.LivewireTheme
 
 @SuppressLint("StaticFieldLeak")
 object ServiceLocator {
@@ -15,6 +19,7 @@ object ServiceLocator {
 
   val livewireClient by lazy {
     LivewireClient {
+      theme(CustomLivewireTheme)
       install(DatabasePlugin(context))
       install(PlaygroundPlugin())
     }

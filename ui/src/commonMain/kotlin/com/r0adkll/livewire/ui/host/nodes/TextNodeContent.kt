@@ -18,6 +18,7 @@ internal fun TextNodeContent(
 ) {
   Text(
     text = node.text,
+    color = node.color,
     style = node.style.asComposeTextStyle,
     fontWeight = node.fontWeight?.let { FontWeight(it) },
     modifier = modifier.debugFrame(),

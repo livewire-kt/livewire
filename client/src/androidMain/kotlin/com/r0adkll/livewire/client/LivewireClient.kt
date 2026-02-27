@@ -1,6 +1,7 @@
 package com.r0adkll.livewire.client
 
 import android.util.Log
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -21,9 +22,11 @@ import com.r0adkll.livewire.ui.actions.rememberLivewireActionController
 import com.r0adkll.livewire.ui.composition.livewireFlow
 import com.r0adkll.livewire.ui.data.ClearPlugin
 import com.r0adkll.livewire.ui.data.ClientManifest
+import com.r0adkll.livewire.ui.data.DarkModeChange
 import com.r0adkll.livewire.ui.data.PluginSelected
 import com.r0adkll.livewire.ui.data.UiDecoders
 import com.r0adkll.livewire.ui.data.UiProtocol
+import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -61,7 +64,8 @@ class LivewireClient private constructor(
           ConnectionState.CONNECTED -> {
             // Send ClientManifest to the new host connection
             val manifest: UiProtocol = ClientManifest(
-              configuration.plugins
+              theme = configuration.theme,
+              availablePlugins = configuration.plugins
                 .map { it.info }
                 .toSet()
             )
@@ -78,9 +82,15 @@ class LivewireClient private constructor(
 
       val actionController = rememberLivewireActionController()
 
+      var isDarkMode by remember { mutableStateOf(false) }
+
       LaunchedEffect(Unit) {
         server.incomingMessages.collect { message ->
           when (message) {
+            is DarkModeChange -> {
+              isDarkMode = message.darkMode
+            }
+
             is PluginSelected -> {
               activePluginInfo = message.info
             }
@@ -114,7 +124,12 @@ class LivewireClient private constructor(
               CompositionLocalProvider(
                 LocalLivewireActionObserver provides actionController,
               ) {
-                plugin.Content()
+                LivewireTheme(
+                  theme = configuration.theme,
+                  darkMode = isDarkMode,
+                ) {
+                  plugin.Content()
+                }
               }
             }.collect { layoutNode ->
               server.sendLayoutNode(layoutNode)
@@ -136,6 +151,7 @@ class LivewireClient private constructor(
 
 @LivewireClientDsl
 class LivewireClientBuilder {
+  var theme: LivewireTheme? = null
   val plugins = mutableSetOf<Plugin>()
   val decoders = mutableSetOf<PayloadDecoder<*>>()
 
@@ -143,8 +159,13 @@ class LivewireClientBuilder {
     plugins.add(plugin)
   }
 
+  fun theme(theme: LivewireTheme) {
+    this.theme = theme
+  }
+
   fun build(): LivewireClientConfiguration {
     return LivewireClientConfiguration(
+      theme = theme ?: LivewireTheme(),
       plugins = plugins,
       decoders = decoders,
     )
@@ -152,6 +173,7 @@ class LivewireClientBuilder {
 }
 
 class LivewireClientConfiguration(
+  val theme: LivewireTheme,
   val plugins: Set<Plugin>,
   val decoders: Set<PayloadDecoder<*>>,
 )

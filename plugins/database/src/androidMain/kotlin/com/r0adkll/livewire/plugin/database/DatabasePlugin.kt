@@ -14,6 +14,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.r0adkll.livewire.plugin.database.composables.DatabaseToolBar
+import com.r0adkll.livewire.plugin.database.composables.TableList
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.checkedChangeAction
@@ -36,8 +38,10 @@ import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.size
+import com.r0adkll.livewire.ui.modifier.thenIf
 import com.r0adkll.livewire.ui.modifier.verticalScroll
 import com.r0adkll.livewire.ui.modifier.width
+import com.r0adkll.livewire.ui.theme.LivewireTheme
 import com.r0adkll.livewire.ui.widget.Checkbox
 import com.r0adkll.livewire.ui.widget.DropdownMenu
 import com.r0adkll.livewire.ui.widget.DropdownMenuItem
@@ -89,11 +93,7 @@ class DatabasePlugin(context: Context) : Plugin {
         }
     }
 
-    LaunchedEffect(Unit) {
-      refreshDatabases()
-    }
-
-    LaunchedEffect(selectedDatabase) {
+    suspend fun refreshTables() {
       if (selectedDatabase != null) {
         inspector.getTables(selectedDatabase!!.path)
           .onSuccess { tables ->
@@ -103,8 +103,15 @@ class DatabasePlugin(context: Context) : Plugin {
           .onFailure { e ->
             e.printStackTrace()
           }
-
       }
+    }
+
+    LaunchedEffect(Unit) {
+      refreshDatabases()
+    }
+
+    LaunchedEffect(selectedDatabase) {
+      refreshTables()
     }
 
     LaunchedEffect(selectedTable) {
@@ -121,128 +128,38 @@ class DatabasePlugin(context: Context) : Plugin {
 
     Column(LivewireModifier.fillMaxSize()) {
 
-      Surface(
-        modifier = LivewireModifier
-          .fillMaxWidth()
-          .height(56.dp),
-      ) {
-
-        Row(
-          modifier = LivewireModifier
-            .fillMaxSize()
-            .padding(horizontal = 16.dp),
-          verticalAlignment = Alignment.CenterVertically,
-        ) {
-          var menuExpanded by remember { mutableStateOf(false) }
-          Surface(
-            shape = RoundedCornerShape(8.dp),
-            tonalElevation = 2f,
-            onClick = clickAction {
-              menuExpanded = true
-            },
-          ) {
-            Text(
-              text = selectedDatabase?.name ?: "<no database>",
-              style = TextStyle.TitleMedium,
-              modifier = LivewireModifier
-                .padding(
-                  horizontal = 12.dp,
-                  vertical = 6.dp,
-                )
-            )
-
-            DropdownMenu(
-              expanded = menuExpanded,
-              onDismissRequest = clickAction {
-                menuExpanded = false
-              },
-            ) {
-              availableDatabases.forEach { databaseInfo ->
-                DropdownMenuItem(
-                  text = databaseInfo.name,
-                  onClick = clickAction {
-                    selectedDatabase = databaseInfo
-                    menuExpanded = false
-                  },
-                )
+      DatabaseToolBar(
+        selectedDatabase = selectedDatabase,
+        availableDatabases = availableDatabases,
+        onDatabaseSelected = { selectedDatabase = it },
+        actions = {
+          IconButton(
+            action = clickAction {
+              scope.launch {
+                refreshDatabases()
+                refreshTables()
               }
             }
+          ) {
+            Icon(Icons.Sync)
           }
         }
-      }
+      )
 
       Row {
-        Surface(
+        TableList(
+          selected = selectedTable,
+          tables = selectedTables,
+          onTableClick = { selectedTable = it },
           modifier = LivewireModifier
             .weight(2f)
             .fillMaxHeight()
-            .border(2.dp, Color.Red),
-          shadowElevation = 4f,
-        ) {
-          Column(
-            modifier = LivewireModifier.fillMaxHeight()
-          ) {
-            Row(
-              verticalAlignment = Alignment.CenterVertically,
-              modifier = LivewireModifier
-                .height(48.dp)
-                .fillMaxWidth()
-            ) {
-              Text(
-                text = "Tables",
-                style = TextStyle.TitleMedium,
-                modifier = LivewireModifier
-                  .padding(horizontal = 16.dp)
-              )
-            }
-
-            Column(
-              modifier = LivewireModifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(),
-            ) {
-              selectedTables.forEach { table ->
-                val isSelected = selectedTable == table
-
-                Row(
-                  modifier = LivewireModifier
-                    .padding(
-                      horizontal = 8.dp,
-                      vertical = 2.dp,
-                    )
-                    .clip(CircleShape)
-                    .clickable(action = clickAction(table) {
-                      selectedTable = table
-                    })
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                  verticalAlignment = Alignment.CenterVertically,
-                ) {
-                  Icon(
-                    svgData = Icons.Table,
-                    // TODO: Lets figure out theming and color tokens
-                    tint = if (isSelected) Color.Blue else Color.Unspecified,
-                    modifier = LivewireModifier.size(24.dp)
-                  )
-                  Spacer(LivewireModifier.width(16.dp))
-                  Text(
-                    text = table.name,
-                    style = TextStyle.LabelLarge,
-                    fontWeight = if (isSelected) FontWeight.Bold.weight else null,
-                    modifier = LivewireModifier.weight(1f),
-                  )
-                }
-              }
-            }
-          }
-        }
+        )
 
         Column(
           modifier = LivewireModifier
             .weight(8f)
             .fillMaxHeight()
-            .border(2.dp, Color.Red)
         ) {
           if (currentQueryResult != null) {
             Row(

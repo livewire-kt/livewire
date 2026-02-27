@@ -48,7 +48,7 @@ internal fun DropdownMenuNodeContent(
               RemoteIcon(
                 svgData = iconData,
                 contentDescription = null,
-                modifier = Modifier.size(24.dp),
+                modifier = Modifier.size(20.dp),
               )
             }
           },

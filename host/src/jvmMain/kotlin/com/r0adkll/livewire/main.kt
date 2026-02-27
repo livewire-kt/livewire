@@ -42,12 +42,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import com.r0adkll.livewire.com.r0adkll.livewire.theme.LivewireTheme
 import com.r0adkll.livewire.runtime.AdbDevice
 import com.r0adkll.livewire.runtime.AdbDeviceManager
 import com.r0adkll.livewire.runtime.HostConnectionState
 import com.r0adkll.livewire.runtime.HostConnectionState.CONNECTED
 import com.r0adkll.livewire.runtime.LivewireHost
+import com.r0adkll.livewire.theme.LivewireThemeContent
 import com.r0adkll.livewire.ui.PluginDrawerItem
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
@@ -58,6 +58,7 @@ import com.r0adkll.livewire.ui.host.LayoutNodeContent
 import com.r0adkll.livewire.ui.icons.Connected
 import com.r0adkll.livewire.ui.icons.Disconnected
 import com.r0adkll.livewire.ui.layout.HostScaffold
+import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 
@@ -95,7 +96,9 @@ fun main() = application {
   LaunchedEffect(Unit) {
     host.connection.incomingMessages
       .filterIsInstance<ClientManifest>()
-      .collect { clientManifest = it }
+      .collect {
+        clientManifest = it
+      }
   }
 
   // Clear the plugin if we ever become disconnected from the server
@@ -117,7 +120,10 @@ fun main() = application {
     )
   ) {
 
-    LivewireTheme(host) {
+    LivewireThemeContent(
+      theme = clientManifest?.theme ?: LivewireTheme(),
+      host = host
+    ) {
       HostScaffold(
         topBar = {
           DeviceTopBar(

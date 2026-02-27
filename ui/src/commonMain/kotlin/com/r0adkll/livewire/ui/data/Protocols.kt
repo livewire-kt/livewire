@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.data
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.LivewireAction
+import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -22,8 +23,19 @@ sealed interface UiProtocol {
  */
 @Serializable
 data class ClientManifest(
+  val theme: LivewireTheme,
   val availablePlugins: Set<PluginInfo>,
 ) : UiProtocol
+
+/**
+ * Sent by host to set the dark mode on the client side themeing
+ * tokens.
+ */
+@Serializable
+data class DarkModeChange(
+  val darkMode: Boolean,
+) : UiProtocol {
+}
 
 /**
  * Sent by Host to signal client to start producing a [com.r0adkll.livewire.ui.Plugin] content
@@ -39,6 +51,8 @@ data class PluginSelected(
  */
 @Serializable
 data object ClearPlugin : UiProtocol
+
+
 
 val UiDecoders get() = listOf(
   UiProtocol,
