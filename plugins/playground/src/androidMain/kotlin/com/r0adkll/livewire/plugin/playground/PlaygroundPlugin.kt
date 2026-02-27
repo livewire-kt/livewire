@@ -42,6 +42,7 @@ import com.r0adkll.livewire.ui.widget.ProgressIndicator
 import com.r0adkll.livewire.ui.widget.ProgressIndicatorStyle
 import com.r0adkll.livewire.ui.widget.RadioButton
 import com.r0adkll.livewire.ui.widget.Slider
+import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextField
@@ -498,6 +499,19 @@ class PlaygroundPlugin : Plugin {
             )
           }
         }
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Text("Left")
+        Spacer(modifier = LivewireModifier.width(48.dp))
+        Text("Center")
+        Spacer(modifier = LivewireModifier.width(48.dp))
+        Text("Right")
       }
 
       Column(

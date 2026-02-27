@@ -20,9 +20,10 @@ data class ClickAction(
 
 @Composable
 fun clickAction(
+  key: Any? = null,
   onClick: () -> Unit,
 ): ClickAction {
-  val compositionKey = "click_${currentCompositeKeyHashCode}"
+  val compositionKey = "click_${key ?: currentCompositeKeyHashCode}"
   val updatedOnClick by rememberUpdatedState(onClick)
   val actionObserver = LocalLivewireActionObserver.current
 
