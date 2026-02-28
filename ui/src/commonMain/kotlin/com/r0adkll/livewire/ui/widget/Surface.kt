@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import androidx.compose.ui.graphics.Color
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ClickAction
@@ -27,10 +28,12 @@ fun Surface(
   onClick: ClickAction? = null,
   content: @Composable @LivewireComposable () -> Unit,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<SurfaceNode, Applier<LayoutNode>>(
     factory = { SurfaceNode() },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(shape, SurfaceNode.SetShape)
       set(color, SurfaceNode.SetColor)
       set(contentColor, SurfaceNode.SetContentColor)

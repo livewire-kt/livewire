@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.CheckedChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -24,10 +25,12 @@ fun ToggleButton(
   style: ToggleButtonStyle = ToggleButtonStyle.Filled,
   content: @Composable @LivewireComposable RowScope.() -> Unit,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<ToggleButtonNode, Applier<LayoutNode>>(
     factory = { ToggleButtonNode(checked, onCheckedChange) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(checked, ToggleButtonNode.SetChecked)
       set(onCheckedChange, ToggleButtonNode.SetOnCheckedChange)
       set(enabled, ToggleButtonNode.SetEnabled)

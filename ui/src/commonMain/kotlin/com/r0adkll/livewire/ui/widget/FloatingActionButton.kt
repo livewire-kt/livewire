@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ClickAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -23,10 +24,12 @@ fun FloatingActionButton(
   expanded: Boolean = true,
   content: @Composable @LivewireComposable RowScope.() -> Unit,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<FloatingActionButtonNode, Applier<LayoutNode>>(
     factory = { FloatingActionButtonNode(action) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(action, FloatingActionButtonNode.SetAction)
       set(size, FloatingActionButtonNode.SetSize)
       set(style, FloatingActionButtonNode.SetStyle)

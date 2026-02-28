@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -25,12 +26,14 @@ fun TextField(
   maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
   style: TextFieldStyle = TextFieldStyle.Filled,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<TextFieldNode, Applier<LayoutNode>>(
     factory = { TextFieldNode(initialValue, onValueChange) },
     update = {
       set(modifier, LayoutNode.SetModifier)
-      set(initialValue, TextFieldNode.SetInitialValue)
-      set(onValueChange, TextFieldNode.SetOnValueChange)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
+      update(initialValue, TextFieldNode.SetInitialValue)
+      update(onValueChange, TextFieldNode.SetOnValueChange)
       set(enabled, TextFieldNode.SetEnabled)
       set(readOnly, TextFieldNode.SetReadOnly)
       set(label, TextFieldNode.SetLabel)

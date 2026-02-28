@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.IntValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -21,10 +22,12 @@ fun TabRow(
   style: TabStyle = TabStyle.Primary,
   content: @Composable @LivewireComposable () -> Unit,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<TabRowNode, Applier<LayoutNode>>(
     factory = { TabRowNode(selectedTabIndex, onTabSelected) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(style, TabRowNode.SetStyle)
       update(selectedTabIndex, TabRowNode.SetSelectedTabIndex)
       update(onTabSelected, TabRowNode.SetOnTabSelected)
@@ -56,10 +59,12 @@ fun Tab(
   iconData: String? = null,
   enabled: Boolean = true,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<TabNode, Applier<LayoutNode>>(
     factory = { TabNode(text, iconData, enabled) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(text, TabNode.SetText)
       set(iconData, TabNode.SetIconData)
       set(enabled, TabNode.SetEnabled)

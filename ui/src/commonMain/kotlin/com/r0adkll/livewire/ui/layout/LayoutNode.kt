@@ -16,12 +16,15 @@ abstract class LayoutNode(
 ) {
 
   companion object {
-    val SetModifier: LayoutNode.(LivewireModifier) -> Unit = { modifier = it }
+    val SetModifier: LayoutNode.(LivewireModifier) -> Unit = applier { modifier = it }
+    val SetCompositeKeyHash: LayoutNode.(Int) -> Unit = applier { compositeKeyHash = it}
 
   }
 
   @Serializable(with = LivewireModifierSerializer::class)
   var modifier: LivewireModifier = LivewireModifier
+
+  var compositeKeyHash: Int = 0
 
   /**
    * Callback invoked whenever the node in the vector tree is modified in a way that would change

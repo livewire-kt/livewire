@@ -54,7 +54,7 @@ internal fun ButtonNodeContent(
       }
     },
     style = node.style,
-    shapes = ButtonDefaults.shapes(),
+    shapes = node.shapes.toComposeUi(),
     contentPadding = ButtonDefaults.contentPaddingFor(buttonSize),
     modifier = modifier
       .heightIn(buttonSize)

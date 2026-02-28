@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ClickAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -21,10 +22,12 @@ fun DropdownMenu(
   modifier: LivewireModifier = LivewireModifier,
   content: @Composable @LivewireComposable ColumnScope.() -> Unit,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<DropdownMenuNode, Applier<LayoutNode>>(
     factory = { DropdownMenuNode(expanded, onDismissRequest) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       update(expanded, DropdownMenuNode.SetExpanded)
       update(onDismissRequest, DropdownMenuNode.SetOnDismissRequest)
     },
@@ -55,10 +58,12 @@ fun DropdownMenuItem(
   trailingIconData: String? = null,
   enabled: Boolean = true,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<DropdownMenuItemNode, Applier<LayoutNode>>(
     factory = { DropdownMenuItemNode(text, onClick) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       update(text, DropdownMenuItemNode.SetText)
       update(onClick, DropdownMenuItemNode.SetOnClick)
       set(leadingIconData, DropdownMenuItemNode.SetLeadingIconData)

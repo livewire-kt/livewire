@@ -50,7 +50,7 @@ internal fun IconButtonNodeContent(
     style = node.style,
     shapes = IconButtonDefaults.shapes(),
     modifier = modifier
-      .heightIn(buttonSize)
+      .size(buttonSize)
       .debugFrame(),
   ) {
     val child = node.children.firstOrNull() ?: return@IconButtonNodeContent

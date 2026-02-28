@@ -8,6 +8,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldLabelScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.r0adkll.livewire.ui.actions.LivewireAction
@@ -22,10 +23,10 @@ import kotlinx.coroutines.launch
 internal fun TextFieldNodeContent(
   node: TextFieldNode,
   modifier: Modifier = Modifier,
-) {
+) = key(node.compositeKeyHash) {
   val eventDispatcher = LocalLivewireActionDispatcher.current
 
-  val textFieldState = rememberTextFieldState()
+  val textFieldState = rememberTextFieldState(node.initialValue)
   LaunchedEffect(textFieldState.text) {
     eventDispatcher.dispatch(node.onValueChange.copy(
       value = textFieldState.text.toString()

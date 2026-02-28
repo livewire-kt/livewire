@@ -4,6 +4,7 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import androidx.compose.ui.graphics.Color
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -20,10 +21,12 @@ fun Icon(
   modifier: LivewireModifier = LivewireModifier,
   tint: Color = Color.Unspecified,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<IconNode, Applier<LayoutNode>>(
     factory = { IconNode(svgData) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(svgData, IconNode.SetSvgData)
       set(tint, IconNode.SetTint)
     }

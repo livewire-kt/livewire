@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -21,6 +22,8 @@ import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.actions.intValueChangeAction
 import com.r0adkll.livewire.ui.actions.valueChangeAction
+import com.r0adkll.livewire.ui.graphics.CircleShape
+import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
 import com.r0adkll.livewire.ui.layout.Alignment
 import com.r0adkll.livewire.ui.layout.Box
 import com.r0adkll.livewire.ui.layout.Column
@@ -31,12 +34,15 @@ import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
+import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.widget.Button
+import com.r0adkll.livewire.ui.widget.ButtonShapes
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.ButtonStyle
 import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
+import com.r0adkll.livewire.ui.widget.IconButtonStyle
 import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
@@ -87,26 +93,19 @@ class DatabasePlugin(context: Context) : Plugin {
           }
         },
         actions = {
-
           Button(
             action = clickAction {
               state.eventSink(DatabaseUiEvent.AddQueryTab)
             },
             size = ButtonSize.ExtraSmall,
             style = ButtonStyle.Tonal,
+            shapes = ButtonShapes(
+              shape = RoundedCornerShape(8.dp),
+              pressedShape = CircleShape,
+            )
           ) {
             Icon(Icons.DatabaseSearch)
             Text("New Query")
-          }
-
-          IconButton(
-            action = clickAction {
-              scope.launch {
-                state.eventSink(DatabaseUiEvent.Refresh)
-              }
-            }
-          ) {
-            Icon(Icons.Sync)
           }
         }
       )
@@ -131,6 +130,7 @@ class DatabasePlugin(context: Context) : Plugin {
           state.pages.getOrNull(selectedTabIndex)?.let { page ->
             when (page) {
               is QueryPage -> QueryContentPage(
+                index = selectedTabIndex,
                 page = page,
                 onQueryChange = { query ->
                   state.eventSink(DatabaseUiEvent.UpdateQueryForTab(selectedTabIndex, query))
@@ -140,6 +140,7 @@ class DatabasePlugin(context: Context) : Plugin {
                 },
                 modifier = LivewireModifier.fillMaxSize(),
               )
+
               is TableContentPage -> TableContentPage(
                 page = page,
                 modifier = LivewireModifier.fillMaxSize(),
@@ -169,47 +170,45 @@ private fun TableContentPage(
 
 @Composable
 private fun QueryContentPage(
+  index: Int,
   page: QueryPage,
   onQueryChange: (String) -> Unit,
   onExecute: () -> Unit,
   modifier: LivewireModifier = LivewireModifier,
-) {
+) = key(index) {
   Column(
     modifier = modifier,
   ) {
-    TextField(
-      initialValue = page.query,
-      onValueChange = valueChangeAction {
-        onQueryChange(it)
-      },
-      label = "Query",
-      placeholder = "Enter your SQL query here…",
-      modifier = LivewireModifier
-        .fillMaxWidth()
-        .height(128.dp),
-    )
     Row(
       modifier = LivewireModifier
-        .fillMaxWidth()
-        .padding(horizontal = 16.dp, vertical = 4.dp),
+        .fillMaxWidth(),
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      Spacer(LivewireModifier.weight(1f))
-
-      Button(
+      TextField(
+        initialValue = page.query,
+        onValueChange = valueChangeAction {
+          onQueryChange(it)
+        },
+        label = "Query",
+        placeholder = "Enter your SQL query here…",
+        modifier = LivewireModifier
+          .weight(1f)
+          .height(128.dp),
+      )
+      Spacer(LivewireModifier.width(16.dp))
+      IconButton(
         action = clickAction {
           onExecute()
         },
-        size = ButtonSize.ExtraSmall,
+        size = ButtonSize.Medium,
+        style = IconButtonStyle.Filled,
       ) {
         Icon(Icons.Run)
-        Text("Execute")
       }
+      Spacer(LivewireModifier.width(16.dp))
     }
 
-    HorizontalDivider(
-      modifier = LivewireModifier.fillMaxWidth()
-    )
+    HorizontalDivider(LivewireModifier.fillMaxWidth())
 
     Box(LivewireModifier.weight(1f)) {
       page.result?.let { result ->

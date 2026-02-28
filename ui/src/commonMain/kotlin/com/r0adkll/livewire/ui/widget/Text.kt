@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import androidx.compose.ui.graphics.Color
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.layout.LayoutNode
@@ -22,10 +23,12 @@ fun Text(
   style: TextStyle? = null,
   fontWeight: Int? = null,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<TextNode, Applier<LayoutNode>>(
     factory = { TextNode(text) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(color, TextNode.SetColor)
       set(text, TextNode.SetText)
       set(style, TextNode.SetStyle)

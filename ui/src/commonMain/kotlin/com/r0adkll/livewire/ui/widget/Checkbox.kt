@@ -3,6 +3,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.CheckedChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -19,10 +20,12 @@ fun Checkbox(
   modifier: LivewireModifier = LivewireModifier,
   enabled: Boolean = true,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<CheckboxNode, Applier<LayoutNode>>(
     factory = { CheckboxNode(checked, onCheckedChange, enabled) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(checked, CheckboxNode.SetChecked)
       set(onCheckedChange, CheckboxNode.SetCheckedChange)
       set(enabled, CheckboxNode.SetEnabled)

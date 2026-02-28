@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.modifier.DimensionModifier
@@ -20,11 +21,13 @@ inline fun Column(
   horizontalAlignment: Alignment.Horizontal = Alignment.Start,
   content: @Composable @LivewireComposable ColumnScope.() -> Unit,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<ColumnNode, Applier<LayoutNode>>(
     factory = { ColumnNode() },
     update = {
       set(horizontalAlignment, ColumnNode.SetHorizontalAlignment)
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
     },
     content = { ColumnScopeInstance.content() },
   )
