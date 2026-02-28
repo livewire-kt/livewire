@@ -29,12 +29,14 @@ import com.r0adkll.livewire.ui.layout.Box
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import com.r0adkll.livewire.ui.modifier.animateContentSize
 import com.r0adkll.livewire.ui.modifier.fillMaxHeight
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.width
+import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.ButtonShapes
 import com.r0adkll.livewire.ui.widget.ButtonSize
@@ -44,6 +46,7 @@ import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.IconButtonStyle
 import com.r0adkll.livewire.ui.widget.Spacer
+import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Table
@@ -110,21 +113,15 @@ class DatabasePlugin(context: Context) : Plugin {
         }
       )
 
-      Row {
-        TableList(
-          selected = state.selectedTable,
-          tables = state.selectedDatabaseTables,
-          onTableClick = {
-            state.eventSink(DatabaseUiEvent.SelectTable(it))
-          },
-          modifier = LivewireModifier
-            .weight(2f)
-            .fillMaxHeight()
-        )
+      Row(
+        modifier = LivewireModifier
+          .animateContentSize(),
+      ) {
 
+        // Main Content
         Column(
           modifier = LivewireModifier
-            .weight(8f)
+            .weight(1f)
             .fillMaxHeight()
         ) {
           state.pages.getOrNull(selectedTabIndex)?.let { page ->
@@ -146,6 +143,32 @@ class DatabasePlugin(context: Context) : Plugin {
                 modifier = LivewireModifier.fillMaxSize(),
               )
             }
+          }
+        }
+
+        // Side Content
+        AnimatedVisibility(
+          visible = state.selectedDatabase != null,
+          modifier = LivewireModifier.fillMaxHeight(),
+        ) {
+          Surface(
+            shadowElevation = 2f,
+            modifier = LivewireModifier
+              .fillMaxHeight()
+              .width(300.dp)
+          ) {
+
+            TableList(
+              selected = state.selectedTable,
+              tables = state.selectedDatabaseTables,
+              onTableClick = {
+                state.eventSink(DatabaseUiEvent.SelectTable(it))
+              },
+              modifier = LivewireModifier
+                .weight(2f)
+                .fillMaxHeight()
+            )
+
           }
         }
       }

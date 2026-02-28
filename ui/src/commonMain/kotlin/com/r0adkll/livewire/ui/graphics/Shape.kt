@@ -11,30 +11,52 @@ import androidx.compose.ui.graphics.Shape as ComposeShape
 
 @Serializable
 sealed interface Shape {
+  fun toComposeUi(): ComposeShape
+}
 
-  fun toComposeUi(): ComposeShape {
-    return when (this) {
-      CircleShape -> ComposeCircleShape
-      is RectangleShape -> ComposeRectangleShape
-      is RoundedCornerShape -> ComposeRoundedCornerShape(
-        cornerSize.toComposeUi()
-      )
-    }
+@Serializable
+data object RectangleShape : Shape {
+  override fun toComposeUi(): ComposeShape {
+    return ComposeRectangleShape
   }
 }
 
 @Serializable
-data object RectangleShape : Shape
-
-@Serializable
-data object CircleShape : Shape
+data object CircleShape : Shape {
+  override fun toComposeUi(): ComposeShape = ComposeCircleShape
+}
 
 @Serializable
 data class RoundedCornerShape(
-  val cornerSize: CornerSize
-) : Shape
+  val topStart: CornerSize,
+  val topEnd: CornerSize,
+  val bottomStart: CornerSize,
+  val bottomEnd: CornerSize,
+) : Shape {
+  constructor(all: CornerSize) : this(all, all, all, all)
+
+  override fun toComposeUi(): ComposeShape = ComposeRoundedCornerShape(
+    topStart.toComposeUi(),
+    topEnd.toComposeUi(),
+    bottomStart.toComposeUi(),
+    bottomEnd.toComposeUi(),
+  )
+
+}
 
 fun RoundedCornerShape(size: Dp) = RoundedCornerShape(CornerSize(size))
+fun RoundedCornerShape(
+  topStart: Dp,
+  topEnd: Dp,
+  bottomStart: Dp,
+  bottomEnd: Dp,
+) = RoundedCornerShape(
+  topStart = CornerSize(topStart),
+  topEnd = CornerSize(topEnd),
+  bottomStart = CornerSize(bottomStart),
+  bottomEnd = CornerSize(bottomEnd),
+)
+
 fun RoundedCornerShape(pixels: Float) = RoundedCornerShape(CornerSize(pixels))
 fun RoundedCornerShape(percentage: Int) = RoundedCornerShape(CornerSize(percentage))
 

@@ -14,9 +14,11 @@ This file contains both the client-side `@Composable` function and the serializa
 - Annotated with `@LivewireComposable` and `@Composable`
 - Uses `ReusableComposeNode<{Name}Node, Applier<LayoutNode>>` to create node instances
 - Always accepts `modifier: LivewireModifier = LivewireModifier` parameter
+- Before the `ReusableComposeNode` call, capture the composite key hash: `val compositeKeyHash = currentCompositeKeyHashCode.hashCode()` (import `androidx.compose.runtime.currentCompositeKeyHashCode`)
 - `factory` block creates the initial node
 - `update` block sets all properties using companion setter references
 - Always set modifier: `set(modifier, LayoutNode.SetModifier)`
+- Always set compositeKeyHash: `init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)` — this enables the host to track node identity across recompositions
 - If the widget has children, pass a `content` lambda and wrap it in a scope (e.g. `RowScopeInstance.content()`)
 
 **Node class pattern:**
@@ -42,6 +44,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -57,10 +60,12 @@ fun Text(
   style: TextStyle? = null,
   fontWeight: Int? = null,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<TextNode, Applier<LayoutNode>>(
     factory = { TextNode(text) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(text, TextNode.SetText)
       set(style, TextNode.SetStyle)
       set(fontWeight, TextNode.SetFontWeight)
@@ -97,6 +102,7 @@ package com.r0adkll.livewire.ui.widget
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.CheckedChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -113,10 +119,12 @@ fun Checkbox(
   modifier: LivewireModifier = LivewireModifier,
   enabled: Boolean = true,
 ) {
+  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
   ReusableComposeNode<CheckboxNode, Applier<LayoutNode>>(
     factory = { CheckboxNode(checked, onCheckedChange, enabled) },
     update = {
       set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(checked, CheckboxNode.SetChecked)
       set(onCheckedChange, CheckboxNode.SetCheckedChange)
       set(enabled, CheckboxNode.SetEnabled)

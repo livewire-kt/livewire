@@ -27,6 +27,7 @@ import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.layout.Box
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.verticalScroll
+import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.ButtonStyle
@@ -571,6 +572,27 @@ class PlaygroundPlugin : Plugin {
         Tab(text = "Overview")
         Tab(text = "Details")
         Tab(text = "Settings")
+      }
+
+      // AnimatedVisibility
+      Row(
+        LivewireModifier
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        var contentVisible by remember { mutableStateOf(true) }
+        Button(
+          action = clickAction {
+            contentVisible = !contentVisible
+          },
+        ) {
+          Text(if (contentVisible) "Hide" else "Show")
+        }
+
+        AnimatedVisibility(visible = contentVisible) {
+          Text("Hello, AnimatedVisibility!")
+        }
       }
 
       // Table

@@ -85,6 +85,7 @@ internal fun TabRowNodeContent(
       modifier = modifier.debugFrame(),
       edgePadding = 8.dp,
       tabs = content,
+      divider = {},
       indicator = {
         TabRowDefaults.PrimaryIndicator(
           Modifier.tabIndicatorOffset(node.selectedTabIndex, matchContentSize = false),
@@ -98,6 +99,7 @@ internal fun TabRowNodeContent(
       modifier = modifier.debugFrame(),
       edgePadding = 8.dp,
       tabs = content,
+      divider = {},
       indicator = {
         TabRowDefaults.PrimaryIndicator(
           Modifier.tabIndicatorOffset(node.selectedTabIndex, matchContentSize = false),
