@@ -1,21 +1,16 @@
 package com.r0adkll.livewire.plugin.database
 
 import android.content.Context
-import android.util.Log
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.plugin.database.composables.DatabaseToolBar
 import com.r0adkll.livewire.plugin.database.composables.TableList
+import com.r0adkll.livewire.plugin.database.data.DatabaseInspector
 import com.r0adkll.livewire.plugin.database.ui.Icons
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
@@ -34,7 +29,6 @@ import com.r0adkll.livewire.ui.modifier.fillMaxHeight
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
-import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.Button
@@ -52,7 +46,6 @@ import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Table
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextField
-import kotlinx.coroutines.launch
 
 class DatabasePlugin(context: Context) : Plugin {
 
@@ -67,11 +60,9 @@ class DatabasePlugin(context: Context) : Plugin {
 
   @Composable
   override fun Content() {
-    val scope = rememberCoroutineScope()
     val state = presenter.present()
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
-    var extraQueryTabs by remember { mutableIntStateOf(0) }
 
     Column(LivewireModifier.fillMaxSize()) {
       DatabaseToolBar(
@@ -159,7 +150,6 @@ class DatabasePlugin(context: Context) : Plugin {
           ) {
 
             TableList(
-              selected = state.selectedTable,
               tables = state.selectedDatabaseTables,
               onTableClick = {
                 state.eventSink(DatabaseUiEvent.SelectTable(it))

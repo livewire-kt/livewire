@@ -6,16 +6,18 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 
-private val DrawerWidth = 300.dp
+internal val DrawerWidth = 256.dp
 
 @Composable
 fun HostScaffold(
@@ -34,18 +36,24 @@ fun HostScaffold(
     }
     PermanentNavigationDrawer(
       drawerContent = {
-        PermanentDrawerSheet(
-          drawerShape = RoundedCornerShape(
-            bottomEnd = 16.dp,
-          ),
-          modifier = Modifier.width(DrawerWidth),
-          drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ) {
-          drawer()
-        }
+        drawer()
       },
     ) {
       content()
     }
+  }
+}
+
+@Composable
+internal fun HostDrawerSheet(
+  modifier: Modifier = Modifier,
+  content: @Composable () -> Unit,
+) {
+  Surface(
+    modifier = modifier.widthIn(max = DrawerWidth),
+    color = MaterialTheme.colorScheme.surface,
+    shadowElevation = 2.dp
+  ) {
+    content()
   }
 }

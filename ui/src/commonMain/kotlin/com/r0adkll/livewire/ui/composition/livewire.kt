@@ -19,6 +19,8 @@ import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
@@ -54,6 +56,30 @@ fun livewireFlow(
       emit(value)
     }
   }
+}
+
+fun CoroutineScope.launchLivewire(
+  mode: RecompositionMode,
+  context: CoroutineContext = EmptyCoroutineContext,
+  body: @Composable () -> Unit,
+): StateFlow<LayoutNode> {
+  var flow: MutableStateFlow<LayoutNode>? = null
+
+  launchLivewire(
+    context = context,
+    mode = mode,
+    emitter = { value ->
+      val outputFlow = flow
+      if (outputFlow != null) {
+        outputFlow.value = value
+      } else {
+        flow = MutableStateFlow(value)
+      }
+    },
+    body = body,
+  )
+
+  return flow!!
 }
 
 /**

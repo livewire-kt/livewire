@@ -1,4 +1,4 @@
-package com.r0adkll.livewire.plugin.database
+package com.r0adkll.livewire.plugin.database.data
 
 import android.content.Context
 import android.database.Cursor

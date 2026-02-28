@@ -8,6 +8,10 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import com.r0adkll.livewire.plugin.database.data.DatabaseInfo
+import com.r0adkll.livewire.plugin.database.data.DatabaseInspector
+import com.r0adkll.livewire.plugin.database.data.QueryResult
+import com.r0adkll.livewire.plugin.database.data.TableInfo
 import kotlinx.coroutines.launch
 
 class DatabasePresenter(
@@ -48,6 +52,7 @@ class DatabasePresenter(
 
         is DatabaseUiEvent.SelectDatabase -> {
           selectedDatabase = event.database
+          resetPages()
           scope.launch {
             refreshTables()
           }
@@ -85,7 +90,7 @@ class DatabasePresenter(
     }
   }
 
-  suspend fun selectTable(table: TableInfo) {
+  private suspend fun selectTable(table: TableInfo) {
     selectedTable = table
 
     // Query content
@@ -111,7 +116,7 @@ class DatabasePresenter(
     }
   }
 
-  suspend fun refreshDatabases() {
+  private suspend fun refreshDatabases() {
     Log.d("DatabasePlugin", "Refreshing Databases")
     inspector.discoverDatabases()
       .onSuccess { databases ->
@@ -120,6 +125,7 @@ class DatabasePresenter(
 
         if (selectedDatabase == null) {
           selectedDatabase = databases.firstOrNull()
+          resetPages()
           refreshTables()
         }
       }
@@ -128,7 +134,12 @@ class DatabasePresenter(
       }
   }
 
-  suspend fun refreshTables() {
+  private fun resetPages() {
+    pages.clear()
+    pages += QueryPage("New Query")
+  }
+
+  private suspend fun refreshTables() {
     if (selectedDatabase != null) {
       inspector.getTables(selectedDatabase!!.path)
         .onSuccess { tables ->

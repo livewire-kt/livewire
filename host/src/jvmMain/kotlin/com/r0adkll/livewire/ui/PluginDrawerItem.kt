@@ -1,8 +1,15 @@
 package com.r0adkll.livewire.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +36,7 @@ import java.nio.ByteBuffer
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 internal fun PluginDrawerItem(
+  expanded: Boolean,
   selected: Boolean,
   info: PluginInfo,
   onClick: () -> Unit,
@@ -54,12 +62,13 @@ internal fun PluginDrawerItem(
     shape = MaterialTheme.shapes.medium,
     color = containerColor,
     contentColor = contentColor,
-    modifier = modifier
-      .fillMaxWidth(),
+    modifier = modifier,
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
-      modifier = Modifier.padding(8.dp)
+      modifier = Modifier
+        .padding(8.dp)
+        .animateContentSize()
     ) {
       Box(
         modifier = Modifier
@@ -78,12 +87,17 @@ internal fun PluginDrawerItem(
         )
       }
 
-      Spacer(Modifier.width(16.dp))
-
-      Text(
-        text = info.title,
-        style = MaterialTheme.typography.titleMediumEmphasized,
-      )
+      AnimatedVisibility(
+        visible = expanded,
+        modifier = Modifier.fillMaxWidth()
+      ) {
+        Text(
+          text = info.title,
+          style = MaterialTheme.typography.titleMediumEmphasized,
+          modifier = Modifier
+            .padding(horizontal = 16.dp)
+        )
+      }
     }
   }
 }

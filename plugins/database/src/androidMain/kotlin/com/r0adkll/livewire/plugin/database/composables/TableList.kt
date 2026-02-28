@@ -1,10 +1,13 @@
 package com.r0adkll.livewire.plugin.database.composables
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateSetOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.r0adkll.livewire.plugin.database.data.ColumnInfo
 import com.r0adkll.livewire.plugin.database.ui.Icons
-import com.r0adkll.livewire.plugin.database.TableInfo
+import com.r0adkll.livewire.plugin.database.data.TableInfo
 import com.r0adkll.livewire.ui.actions.clickAction
 import com.r0adkll.livewire.ui.graphics.CircleShape
 import com.r0adkll.livewire.ui.layout.Alignment
@@ -19,11 +22,11 @@ import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.size
-import com.r0adkll.livewire.ui.modifier.thenIf
 import com.r0adkll.livewire.ui.modifier.verticalScroll
 import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import com.r0adkll.livewire.ui.widget.Icon
+import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Text
@@ -32,7 +35,6 @@ import com.r0adkll.livewire.ui.widget.TextStyle
 
 @Composable
 internal fun TableList(
-  selected: TableInfo?,
   tables: List<TableInfo>,
   onTableClick: (TableInfo) -> Unit,
   modifier: LivewireModifier = LivewireModifier,
@@ -51,7 +53,7 @@ internal fun TableList(
           .fillMaxWidth()
       ) {
         Text(
-          text = "Tables",
+          text = "Schema",
           style = TextStyle.TitleMedium,
           color = LivewireTheme.colorScheme.onSurface,
           modifier = LivewireModifier
@@ -65,48 +67,138 @@ internal fun TableList(
           .fillMaxWidth()
           .verticalScroll(),
       ) {
+        val collapsedTables = remember { mutableStateSetOf<TableInfo>() }
         tables.forEach { table ->
-          val isSelected = selected == table
-
-          Row(
-            modifier = LivewireModifier
-              .padding(
-                horizontal = 8.dp,
-                vertical = 2.dp,
-              )
-              .clip(CircleShape)
-              .thenIf(isSelected) {
-                background(LivewireTheme.colorScheme.primaryContainer)
+          val isCollapsed = collapsedTables.contains(table)
+          TableRootListItem(
+            name = table.name,
+            onClick = { onTableClick(table) },
+            action = {
+              IconButton(
+                action = clickAction(table.name + "_collapse") {
+                  if (isCollapsed) {
+                    collapsedTables.remove(table)
+                  } else {
+                    collapsedTables.add(table)
+                  }
+                }
+              ) {
+                Icon(
+                  svgData = Icons.DropdownArrow,
+                )
               }
-              .clickable(action = clickAction(table) {
-                 onTableClick(table)
-              })
-              .fillMaxWidth()
-              .padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            val contentColor = if (isSelected) {
-              LivewireTheme.colorScheme.onPrimaryContainer
-            } else {
-              LivewireTheme.colorScheme.onSurface
             }
+          )
 
-            Icon(
-              svgData = Icons.Table,
-              tint = contentColor,
-              modifier = LivewireModifier.size(24.dp)
-            )
-            Spacer(LivewireModifier.width(16.dp))
-            Text(
-              text = table.name,
-              color = contentColor,
-              style = TextStyle.LabelLarge,
-              fontWeight = if (isSelected) FontWeight.Bold.weight else null,
-              modifier = LivewireModifier.weight(1f),
-            )
+          if (!isCollapsed) {
+            table.columns
+              .sortedBy { it.index }
+              .forEach { column ->
+                ColumnListItem(column)
+              }
           }
         }
       }
+    }
+  }
+}
+
+@Composable
+private fun TableRootListItem(
+  name: String,
+  onClick: () -> Unit,
+  action: @Composable () -> Unit,
+  modifier: LivewireModifier = LivewireModifier,
+) {
+  Row(
+    modifier = modifier
+      .padding(
+        horizontal = 6.dp,
+        vertical = 2.dp,
+      )
+  ) {
+    Row(
+      modifier = modifier
+        .clip(CircleShape)
+        .clickable(action = clickAction(name) {
+          onClick()
+        })
+        .weight(1f)
+        .padding(horizontal = 8.dp, vertical = 8.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      val contentColor = LivewireTheme.colorScheme.onSurface
+      Icon(
+        svgData = Icons.Table,
+        tint = contentColor,
+        modifier = LivewireModifier.size(24.dp)
+      )
+      Spacer(LivewireModifier.width(8.dp))
+      Text(
+        text = name,
+        color = contentColor,
+        style = TextStyle.LabelLarge,
+        fontWeight = FontWeight.Bold.weight,
+        modifier = LivewireModifier.weight(1f),
+      )
+    }
+    action()
+  }
+}
+
+@Composable
+private fun ColumnListItem(
+  column: ColumnInfo,
+  modifier: LivewireModifier = LivewireModifier,
+) {
+  Row(
+    modifier = modifier
+      .padding(
+        horizontal = 6.dp,
+        vertical = 2.dp,
+      )
+      .fillMaxWidth()
+      .padding(horizontal = 10.dp),
+  ) {
+//    Spacer(LivewireModifier.width(16.dp))
+
+    Text(
+      text = column.name,
+      style = TextStyle.LabelSmall,
+    )
+    Spacer(LivewireModifier.width(2.dp))
+    Text(
+      text = column.type,
+      style = TextStyle.LabelSmall,
+      fontWeight = FontWeight.SemiBold.weight,
+      color = LivewireTheme.colorScheme.primary,
+    )
+    if (column.notNull) {
+      Spacer(LivewireModifier.width(2.dp))
+      Text(
+        text = "NOT NULL",
+        style = TextStyle.LabelSmall,
+        fontWeight = FontWeight.SemiBold.weight,
+        color = LivewireTheme.colorScheme.primary,
+      )
+    }
+    column.defaultValue?.let { defaultValue ->
+      Spacer(LivewireModifier.width(2.dp))
+      Text(
+        text = "DEFAULT $defaultValue",
+        style = TextStyle.LabelSmall,
+        fontWeight = FontWeight.SemiBold.weight,
+        color = LivewireTheme.colorScheme.primary,
+      )
+    }
+    if (column.primaryKey) {
+      Spacer(LivewireModifier.width(2.dp))
+      Text(
+        text = "PRIMARY KEY",
+        style = TextStyle.LabelSmall,
+        fontWeight = FontWeight.SemiBold.weight,
+        color = LivewireTheme.colorScheme.primary,
+      )
     }
   }
 }

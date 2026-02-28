@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import okio.utf8Size
 import kotlin.coroutines.CoroutineContext
 
 enum class ConnectionState {
@@ -56,6 +57,9 @@ class LivewireServer(
 
   private val _incomingMessages = MutableSharedFlow<Any>(extraBufferCapacity = 64)
   val incomingMessages: SharedFlow<Any> = _incomingMessages.asSharedFlow()
+
+  val outgoingLayoutSize: StateFlow<Long>
+    field = MutableStateFlow(0L)
 
   private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
   var activeSession: WebSocketSession? = null
@@ -109,10 +113,12 @@ class LivewireServer(
   }
 
   suspend fun sendLayoutNode(node: LayoutNode) {
-    val nodeBinary = LivewireUiJson.encodeToString(node)
-    logDebug("Livewire", "Layout: $nodeBinary")
+    val nodeJson = LivewireUiJson.encodeToString(node)
+    val nodeBinary = nodeJson.toByteArray()
+
+    outgoingLayoutSize.value = nodeBinary.size.toLong()
     activeSession?.send(
-      Frame.Binary(true, nodeBinary.toByteArray())
+      Frame.Binary(true, nodeBinary)
     )
   }
 

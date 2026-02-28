@@ -1,6 +1,9 @@
 package com.r0adkll.livewire.plugin.database
 
 import androidx.compose.runtime.Immutable
+import com.r0adkll.livewire.plugin.database.data.DatabaseInfo
+import com.r0adkll.livewire.plugin.database.data.QueryResult
+import com.r0adkll.livewire.plugin.database.data.TableInfo
 
 @Immutable
 data class DatabaseUiState(

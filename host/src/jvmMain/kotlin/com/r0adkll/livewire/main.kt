@@ -7,20 +7,25 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -57,11 +62,14 @@ import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.host.LayoutNodeContent
 import com.r0adkll.livewire.ui.icons.Connected
 import com.r0adkll.livewire.ui.icons.Disconnected
+import com.r0adkll.livewire.ui.icons.MenuOpen
+import com.r0adkll.livewire.ui.layout.HostDrawerSheet
 import com.r0adkll.livewire.ui.layout.HostScaffold
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlin.math.exp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 fun main() = application {
@@ -122,6 +130,7 @@ fun main() = application {
       theme = clientManifest?.theme ?: LivewireTheme(),
       host = host
     ) {
+      var menuExpanded by remember { mutableStateOf(true) }
       HostScaffold(
         topBar = {
           DeviceTopBar(
@@ -135,49 +144,25 @@ fun main() = application {
             onDisconnectClick = {
               scope.launch { host.connection.disconnect() }
             },
+            onNavigationItemClick = {
+              menuExpanded = !menuExpanded
+            }
           )
         },
         drawer = {
-          Column {
-            Row(
-              modifier = Modifier
-                .height(48.dp)
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp),
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Text(
-                text = "Plugins",
-                style = MaterialTheme.typography.titleMediumEmphasized
-              )
-            }
-
-            LazyColumn(
-              modifier = Modifier.weight(1f),
-              contentPadding = PaddingValues(
-                horizontal = 16.dp,
-              ),
-              verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-              clientManifest?.availablePlugins?.let { availablePlugins ->
-                items(
-                  items = availablePlugins.toList(),
-                  key = { it.pluginId },
-                ) { plugin ->
-                  PluginDrawerItem(
-                    selected = plugin == selectedPlugin,
-                    info = plugin,
-                    onClick = {
-                      selectedPlugin = plugin
-                      scope.launch {
-                        val msg: UiProtocol = PluginSelected(plugin)
-                        host.connection.send(msg)
-                      }
-                    },
-                  )
+          HostDrawerSheet {
+            DrawerContent(
+              expanded = menuExpanded,
+              selectedPlugin = selectedPlugin,
+              availablePlugins = clientManifest?.availablePlugins?.toList() ?: emptyList(),
+              onPluginClick = { plugin ->
+                selectedPlugin = plugin
+                scope.launch {
+                  val msg: UiProtocol = PluginSelected(plugin)
+                  host.connection.send(msg)
                 }
               }
-            }
+            )
           }
         }
       ) {
@@ -204,20 +189,37 @@ private fun DeviceTopBar(
   onDeviceClick: (HostDevice) -> Unit,
   onConnectClick: (HostDevice) -> Unit,
   onDisconnectClick: () -> Unit,
+  onNavigationItemClick: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   var dropdownExpanded by remember { mutableStateOf(false) }
   Surface(
-    modifier = modifier.fillMaxWidth(),
+    modifier = modifier
+      .height(56.dp)
+      .fillMaxWidth(),
     shadowElevation = 2.dp,
     tonalElevation = 1.dp,
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
     ) {
+
+      Spacer(Modifier.width(8.dp))
+
+      // Menu button
+      IconButton(
+        onClick = onNavigationItemClick,
+      ) {
+        Icon(
+          MenuOpen,
+          contentDescription = "Menu Open",
+        )
+      }
+
+      // Connection Indicator
       Box(
         modifier = Modifier
-          .size(56.dp),
+          .size(48.dp),
         contentAlignment = Alignment.Center,
       ) {
         val tint by animateColorAsState(
@@ -271,6 +273,44 @@ private fun DeviceTopBar(
         ) {
           Text("Disconnect")
         }
+      }
+    }
+  }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun DrawerContent(
+  expanded: Boolean,
+  selectedPlugin: PluginInfo?,
+  availablePlugins: List<PluginInfo>,
+  onPluginClick: (PluginInfo) -> Unit,
+  modifier: Modifier = Modifier,
+) {
+  Column(
+    modifier = modifier
+      .fillMaxHeight()
+      .padding(vertical = 8.dp),
+  ) {
+    LazyColumn(
+      modifier = Modifier.weight(1f),
+      contentPadding = PaddingValues(
+        horizontal = 8.dp,
+      ),
+      verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+      items(
+        items = availablePlugins,
+        key = { it.pluginId },
+      ) { plugin ->
+        PluginDrawerItem(
+          expanded = expanded,
+          selected = plugin == selectedPlugin,
+          info = plugin,
+          onClick = {
+            onPluginClick(plugin)
+          },
+        )
       }
     }
   }

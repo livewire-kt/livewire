@@ -9,6 +9,7 @@ import com.r0adkll.livewire.transport.PayloadDecoder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
@@ -25,6 +26,10 @@ sealed interface LivewireAction {
 
 interface LivewireActionObserver {
   val events: Flow<LivewireAction>
+
+  companion object NoOp : LivewireActionObserver {
+    override val events: Flow<LivewireAction> = emptyFlow()
+  }
 }
 
 val LocalLivewireActionObserver = staticCompositionLocalOf<LivewireActionObserver> {
