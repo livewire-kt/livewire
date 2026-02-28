@@ -20,27 +20,35 @@ kotlin {
   }
 
   jvm()
+  iosArm64()
+  iosSimulatorArm64()
 
   sourceSets {
-    androidMain.dependencies {
-      api(projects.ui)
-
-      implementation(libs.ktor.serverCio)
-      implementation(libs.ktor.serverWebsockets)
-      implementation(libs.kotlin.reflect)
-
-      implementation(libs.compose.runtime)
-
-      // Still needed??
-      implementation(libs.molecule.runtime)
-    }
     commonMain.dependencies {
       api(projects.runtime)
+      api(projects.ui)
+
+      implementation(libs.compose.runtime)
+      implementation(libs.ktor.serverCore)
+      implementation(libs.ktor.serverCio)
+      implementation(libs.ktor.serverWebsockets)
+      implementation(libs.ktor.clientCore)
+      implementation(libs.ktor.clientWebsockets)
+      implementation(libs.molecule.runtime)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
     }
+    androidMain.dependencies {
+      implementation(libs.kotlin.reflect)
+      implementation(libs.ktor.clientAndroid)
+    }
+    iosMain.dependencies {
+      implementation(libs.ktor.clientDarwin)
+    }
     jvmMain.dependencies {
+      implementation(libs.kotlin.reflect)
+      implementation(libs.ktor.clientCio)
       implementation(libs.kotlinx.coroutinesSwing)
     }
   }

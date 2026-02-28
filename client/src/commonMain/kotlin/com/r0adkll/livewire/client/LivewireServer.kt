@@ -1,21 +1,28 @@
 package com.r0adkll.livewire.client
 
-import android.util.Log
-import com.r0adkll.livewire.LIVEWIRE_PORT
-import com.r0adkll.livewire.LIVEWIRE_WS_PATH
+import com.r0adkll.livewire.LivewireConstants
+import com.r0adkll.livewire.logDebug
+import com.r0adkll.livewire.logError
 import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.data.LivewireUiJson
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import io.ktor.server.application.*
-import io.ktor.server.cio.*
-import io.ktor.server.engine.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.cio.CIOApplicationEngine
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
+import io.ktor.utils.io.core.toByteArray
+import io.ktor.websocket.Frame
+import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.readText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -39,8 +46,8 @@ class LivewireServer(
 ) {
   constructor(
     decoders: Collection<PayloadDecoder<*>>,
-    context: CoroutineContext = Dispatchers.IO
-  ) : this (*decoders.toTypedArray(), context = context)
+    context: CoroutineContext = Dispatchers.IO,
+  ) : this(*decoders.toTypedArray(), context = context)
 
   private val scope = CoroutineScope(context + SupervisorJob())
 
@@ -59,27 +66,30 @@ class LivewireServer(
   )
 
   fun start() {
-    server = embeddedServer(CIO, port = LIVEWIRE_PORT) {
+    if (server != null) {
+      return
+    }
+
+    server = embeddedServer(CIO, port = LivewireConstants.Port) {
       install(WebSockets)
       routing {
-        webSocket(LIVEWIRE_WS_PATH) {
+        webSocket(LivewireConstants.WsPath) {
           activeSession = this
           _connectionState.value = ConnectionState.CONNECTED
           try {
             for (frame in incoming) {
               if (frame is Frame.Text) {
-
                 val text = frame.readText()
                 val payload = envelopeDecoder.decode(text)
                 if (payload != null) {
                   _incomingMessages.tryEmit(payload)
                 } else {
-                  println("Unknown message: $text")
+                  logDebug("Livewire", "Unknown message: $text")
                 }
               }
             }
           } catch (e: Exception) {
-            e.printStackTrace()
+            logError("Livewire", "Server websocket error", e)
           } finally {
             activeSession = null
             _connectionState.value = ConnectionState.STARTED
@@ -94,13 +104,13 @@ class LivewireServer(
 
   suspend inline fun <reified T> send(envelope: T) {
     val envelopeJson = EnvelopeJson.encodeToString(envelope)
-    Log.d("Livewire", "Sending $envelopeJson")
+    logDebug("Livewire", "Sending $envelopeJson")
     activeSession?.send(Frame.Text(envelopeJson))
   }
 
   suspend fun sendLayoutNode(node: LayoutNode) {
     val nodeBinary = LivewireUiJson.encodeToString(node)
-    Log.d("Livewire", "Layout: $nodeBinary")
+    logDebug("Livewire", "Layout: $nodeBinary")
     activeSession?.send(
       Frame.Binary(true, nodeBinary.toByteArray())
     )

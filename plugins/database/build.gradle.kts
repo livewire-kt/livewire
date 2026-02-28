@@ -16,6 +16,8 @@ kotlin {
   }
 
   jvm()
+  iosArm64()
+  iosSimulatorArm64()
 
   sourceSets {
     androidMain.dependencies {
@@ -30,6 +32,9 @@ kotlin {
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
+    }
+    iosMain.dependencies {
+      implementation(libs.compose.runtime)
     }
     jvmMain.dependencies {
       api(libs.kotlinx.coroutinesSwing)

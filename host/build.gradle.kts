@@ -32,6 +32,9 @@ kotlin {
       implementation(libs.kotlin.reflect)
       implementation(libs.kotlinx.coroutinesSwing)
       implementation(libs.kotlinx.serialization.json)
+      implementation(libs.ktor.serverCore)
+      implementation(libs.ktor.serverCio)
+      implementation(libs.ktor.serverWebsockets)
       implementation(libs.ktor.clientCore)
       implementation(libs.ktor.clientCio)
       implementation(libs.ktor.clientWebsockets)
@@ -41,6 +44,20 @@ kotlin {
       implementation(libs.coil.svg)
     }
   }
+}
+
+val buildIosBridge = tasks.register<Exec>("buildIosBridge") {
+  val bridgeDir = rootProject.layout.projectDirectory.dir("tools/ios-device-bridge")
+  workingDir = bridgeDir.asFile
+  commandLine("cargo", "build", "--release")
+
+  inputs.file(bridgeDir.file("Cargo.toml"))
+  inputs.dir(bridgeDir.dir("src"))
+  outputs.file(bridgeDir.file("target/release/livewire-ios-bridge"))
+}
+
+tasks.matching { it.name == "compileKotlinJvm" }.configureEach {
+  dependsOn(buildIosBridge)
 }
 
 compose.desktop {

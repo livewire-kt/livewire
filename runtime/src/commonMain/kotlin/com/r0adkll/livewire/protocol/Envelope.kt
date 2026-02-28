@@ -7,6 +7,7 @@ val DefaultPayloadModule = SerializersModule {
 }
 
 val EnvelopeJson = Json {
+  classDiscriminator = "type"
   ignoreUnknownKeys = true
   serializersModule = DefaultPayloadModule
 }

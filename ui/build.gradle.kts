@@ -21,6 +21,8 @@ kotlin {
   }
 
   jvm()
+  iosArm64()
+  iosSimulatorArm64()
 
   sourceSets {
     androidMain.dependencies {
@@ -53,6 +55,8 @@ kotlin {
 dependencies {
   add("kspJvm", projects.compiler)
   add("kspAndroid", projects.compiler)
+  add("kspIosArm64", projects.compiler)
+  add("kspIosSimulatorArm64", projects.compiler)
 }
 
 android {

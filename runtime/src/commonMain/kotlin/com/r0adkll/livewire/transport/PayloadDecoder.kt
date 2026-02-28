@@ -7,7 +7,6 @@ import kotlinx.serialization.modules.SerializersModule
 interface PayloadDecoder<T : Any> {
   val serializersModule: SerializersModule? get() = null
 
-  @Throws(SerializationException::class)
   suspend fun Json.decodePayload(rawPayload: String): T?
 }
 
