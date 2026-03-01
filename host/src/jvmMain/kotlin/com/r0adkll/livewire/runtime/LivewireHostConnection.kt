@@ -1,25 +1,26 @@
 package com.r0adkll.livewire.runtime
 
 import com.r0adkll.livewire.LivewireConstants
-import com.r0adkll.livewire.logError
-import com.r0adkll.livewire.protocol.EnvelopeJson
+import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.runtime.devicemanager.AdbDevice
 import com.r0adkll.livewire.runtime.devicemanager.HostDevice
 import com.r0adkll.livewire.runtime.devicemanager.IosDeviceInfo
 import com.r0adkll.livewire.runtime.devicemanager.IosDeviceManager
 import com.r0adkll.livewire.runtime.devicemanager.IosDeviceType
-import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
-import com.r0adkll.livewire.ui.actions.LivewireAction
 import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
-import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RootNode
+import com.r0adkll.livewire.ui.transport.LivewireIncoming
+import com.r0adkll.livewire.ui.transport.LivewireWebSocketCodec
 import dadb.Dadb
-import io.ktor.client.*
-import io.ktor.client.engine.cio.*
-import io.ktor.client.plugins.websocket.*
-import io.ktor.websocket.*
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.cio.endpoint
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.close
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -32,7 +33,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.SerializationException
 import kotlin.coroutines.CoroutineContext
 
 enum class HostConnectionState {
@@ -50,10 +50,7 @@ class LivewireHostConnection(
   constructor(
     decoders: Collection<PayloadDecoder<*>>,
     context: CoroutineContext = Dispatchers.IO,
-  ) : this(
-    *decoders.toTypedArray(),
-    context = context,
-  )
+  ) : this(*decoders.toTypedArray(), context = context)
 
   private val scope = CoroutineScope(context + SupervisorJob())
 
@@ -63,8 +60,6 @@ class LivewireHostConnection(
   private val _incomingMessages = MutableSharedFlow<Any>(extraBufferCapacity = 64)
   val incomingMessages: SharedFlow<Any> = _incomingMessages.asSharedFlow()
 
-  var serializationStrategy: LayoutNodeSerializationStrategy =
-    LayoutNodeSerializationStrategy.Default
 
   private val _incomingLayoutNodes = MutableStateFlow<LayoutNode>(RootNode())
   val incomingLayoutNodes: StateFlow<LayoutNode> = _incomingLayoutNodes.asStateFlow()
@@ -74,9 +69,7 @@ class LivewireHostConnection(
   var session: WebSocketSession? = null
     private set
 
-  private val envelopeDecoder = EnvelopeDecoder(
-    payloadDecoders = decoders.toSet()
-  )
+  val codec = LivewireWebSocketCodec(decoders.toSet())
 
   suspend fun connect(device: HostDevice) {
     println("connect to $device")
@@ -143,61 +136,55 @@ class LivewireHostConnection(
     _connectionState.value = HostConnectionState.CONNECTING
 
     val httpClient = HttpClient(CIO) {
+      engine {
+        endpoint {
+          connectAttempts = 1
+          connectTimeout = 3000
+        }
+        requestTimeout = 3000
+      }
       install(WebSockets)
     }
 
     val job = scope.launch {
-      httpClient.webSocket(
-        host = "localhost",
-        port = LivewireConstants.Port,
-        path = LivewireConstants.WsPath,
-      ) {
-        session = this
-        _connectionState.value = HostConnectionState.CONNECTED
-        try {
-          for (frame in incoming) {
-            when (frame) {
-              is Frame.Text -> {
-                val text = frame.readText()
-                val payload = envelopeDecoder.decode(text)
-                if (payload != null) {
-                  _incomingMessages.tryEmit(payload)
+      try {
+        httpClient.webSocket(
+          host = "127.0.0.1",
+          port = LivewireConstants.Port,
+          path = LivewireConstants.WsPath,
+        ) {
+          session = this
+          _connectionState.value = HostConnectionState.CONNECTED
+          try {
+            for (frame in incoming) {
+              try {
+                when (val incomingMessage = codec.decode(frame)) {
+                  is LivewireIncoming.Payload -> _incomingMessages.tryEmit(incomingMessage.payload)
+                  is LivewireIncoming.Layout -> _incomingLayoutNodes.emit(incomingMessage.node)
+                  null -> Unit
                 }
+              } catch (e: Exception) {
+                logDebug("failed to decode frame: ${e.message}")
+                e.printStackTrace()
               }
-
-              is Frame.Binary -> {
-                try {
-                  val bytes = frame.readBytes()
-                  val layoutNode = serializationStrategy.decodeFromByteArray(bytes)
-                  _incomingLayoutNodes.emit(layoutNode)
-                } catch (e: SerializationException) {
-                  logError("LivewireHost", "Error while decoding layout node", e)
-                }
-              }
-
-              else -> Unit
             }
+          } finally {
+            logDebug("websocket closed")
+            disconnect()
           }
-        } finally {
-          disconnect()
         }
+      } catch (e: Exception) {
+        logDebug("failed to connect or communicate: ${e.message}")
+        e.printStackTrace()
+        _connectionState.value = HostConnectionState.ERROR
       }
-    }
-
-    job.invokeOnCompletion {
-      httpClient.close()
     }
 
     return job
   }
 
-  suspend inline fun <reified T> send(payload: T) {
-    val json = when (payload) {
-      is UiProtocol -> EnvelopeJson.encodeToString(UiProtocol.serializer(), payload)
-      is LivewireAction -> EnvelopeJson.encodeToString(LivewireAction.serializer(), payload)
-      else -> EnvelopeJson.encodeToString(payload)
-    }
-    session?.send(Frame.Text(json))
+  suspend inline fun <reified T : Any> send(payload: T) {
+    session?.send(codec.encodePayload(payload))
   }
 
   suspend fun disconnect() {
@@ -218,6 +205,10 @@ class LivewireHostConnection(
   suspend fun close() {
     disconnect()
     scope.cancel()
+  }
+
+  private fun logDebug(message: String) {
+    logDebug("host-connection", message)
   }
 }
 

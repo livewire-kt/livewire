@@ -17,11 +17,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -73,7 +70,6 @@ import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import kotlin.math.exp
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 fun main() = application {
@@ -114,7 +110,7 @@ fun main() = application {
       .collect {
         // TODO: There's gotta be a better way to do this.
         //  Switch out the layoutNode parsing based on what the client is reporting.
-        host.connection.serializationStrategy = it.layoutNodeSerialization.toStrategy()
+        host.connection.codec.serializationStrategy = it.layoutNodeSerialization.toStrategy()
         clientManifest = it
       }
   }

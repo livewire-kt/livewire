@@ -28,6 +28,7 @@ okio = "3.16.4"
 sqldelight = "2.2.1"
 kotlinpoet = "2.1.0"
 ksp = "2.3.5"
+dd-plist = "1.28"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -81,6 +82,7 @@ sqldelight-coroutines-extensions = { module = "app.cash.sqldelight:coroutines-ex
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
 ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
+dd-plist = { module = "com.googlecode.plist:dd-plist", version.ref = "dd-plist" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
