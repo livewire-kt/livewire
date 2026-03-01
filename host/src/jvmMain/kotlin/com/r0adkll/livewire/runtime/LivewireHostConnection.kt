@@ -1,6 +1,7 @@
 package com.r0adkll.livewire.runtime
 
 import com.r0adkll.livewire.LivewireConstants
+import com.r0adkll.livewire.logError
 import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.runtime.devicemanager.AdbDevice
 import com.r0adkll.livewire.runtime.devicemanager.HostDevice
@@ -10,20 +11,15 @@ import com.r0adkll.livewire.runtime.devicemanager.IosDeviceType
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.actions.LivewireAction
-import com.r0adkll.livewire.ui.data.LivewireUiJson
+import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RootNode
 import dadb.Dadb
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.client.plugins.websocket.webSocket
-import io.ktor.websocket.Frame
-import io.ktor.websocket.WebSocketSession
-import io.ktor.websocket.close
-import io.ktor.websocket.readBytes
-import io.ktor.websocket.readText
+import io.ktor.client.*
+import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.websocket.*
+import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -36,6 +32,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.SerializationException
 import kotlin.coroutines.CoroutineContext
 
 enum class HostConnectionState {
@@ -53,7 +50,10 @@ class LivewireHostConnection(
   constructor(
     decoders: Collection<PayloadDecoder<*>>,
     context: CoroutineContext = Dispatchers.IO,
-  ) : this(*decoders.toTypedArray(), context = context)
+  ) : this(
+    *decoders.toTypedArray(),
+    context = context,
+  )
 
   private val scope = CoroutineScope(context + SupervisorJob())
 
@@ -62,6 +62,9 @@ class LivewireHostConnection(
 
   private val _incomingMessages = MutableSharedFlow<Any>(extraBufferCapacity = 64)
   val incomingMessages: SharedFlow<Any> = _incomingMessages.asSharedFlow()
+
+  var serializationStrategy: LayoutNodeSerializationStrategy =
+    LayoutNodeSerializationStrategy.Default
 
   private val _incomingLayoutNodes = MutableStateFlow<LayoutNode>(RootNode())
   val incomingLayoutNodes: StateFlow<LayoutNode> = _incomingLayoutNodes.asStateFlow()
@@ -156,19 +159,20 @@ class LivewireHostConnection(
             when (frame) {
               is Frame.Text -> {
                 val text = frame.readText()
-                println("Frame -- $text")
                 val payload = envelopeDecoder.decode(text)
                 if (payload != null) {
-                  println("Payload -- $payload")
                   _incomingMessages.tryEmit(payload)
                 }
               }
 
               is Frame.Binary -> {
-                val bytes = frame.readBytes()
-                val jsonText = bytes.decodeToString()
-                val layoutNode = LivewireUiJson.decodeFromString<LayoutNode>(jsonText)
-                _incomingLayoutNodes.emit(layoutNode)
+                try {
+                  val bytes = frame.readBytes()
+                  val layoutNode = serializationStrategy.decodeFromByteArray(bytes)
+                  _incomingLayoutNodes.emit(layoutNode)
+                } catch (e: SerializationException) {
+                  logError("LivewireHost", "Error while decoding layout node", e)
+                }
               }
 
               else -> Unit

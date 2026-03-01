@@ -1,15 +1,19 @@
 package com.r0adkll.livewire
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
@@ -24,8 +28,10 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -36,10 +42,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import com.r0adkll.livewire.client.ConnectionState
 import com.r0adkll.livewire.client.LivewireClient
 import com.r0adkll.livewire.ui.icons.ChatBubbleFilled
 import com.r0adkll.livewire.ui.icons.ChatBubbleOutline
+import com.r0adkll.livewire.ui.icons.Connected
+import com.r0adkll.livewire.ui.icons.Disconnected
 import com.r0adkll.livewire.ui.icons.HomeFilled
 import com.r0adkll.livewire.ui.icons.HomeOutlined
 import kotlinx.coroutines.launch
@@ -75,13 +86,29 @@ fun LivewireApp(
       }
     }
 
-    val pagerState = rememberPagerState(0) { 2 }
+    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
       topBar = {
         TopAppBar(
+          scrollBehavior = scrollBehavior,
+          navigationIcon = {
+            Box(
+              modifier = Modifier.padding(8.dp)
+            ) {
+              val tint by animateColorAsState(
+                if (connectionState == ConnectionState.CONNECTED) Color(0xff118F00) else MaterialTheme.colorScheme.error
+              )
+
+              Icon(
+                imageVector = if (connectionState == ConnectionState.CONNECTED) Connected else Disconnected,
+                contentDescription = null,
+                tint = tint,
+              )
+            }
+          },
           title = {
             Text(
-              text = "Status: $connectionState",
+              text = "Livewire",
             )
           }
         )
@@ -89,24 +116,27 @@ fun LivewireApp(
       bottomBar = {
         Surface(
           shadowElevation = 2.dp,
-          modifier = Modifier
-            .navigationBarsPadding()
-            .height(48.dp)
-            .fillMaxWidth()
+          color = MaterialTheme.colorScheme.primaryContainer,
+          modifier = Modifier.fillMaxWidth()
         ) {
-          Row(
-            modifier = Modifier
-              .fillMaxSize()
-              .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            Text(
-              text = "Layout Node Size: ${outgoingNodeSize.asReadableBytes()}"
-            )
+          Column {
+            Row(
+              modifier = Modifier
+                .height(48.dp)
+                .padding(horizontal = 16.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Text(
+                text = "Layout Node Size: ${outgoingNodeSize.asReadableBytes()}",
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+              )
+            }
+
+            Spacer(Modifier.navigationBarsPadding())
           }
         }
       },
-      modifier = modifier,
+      modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
       contentWindowInsets = WindowInsets.systemBars
     ) { padding ->
       MessagePage(

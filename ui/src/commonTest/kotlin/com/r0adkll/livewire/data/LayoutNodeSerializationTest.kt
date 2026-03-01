@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.launchMolecule
 import app.cash.molecule.moleculeFlow
+import com.r0adkll.livewire.annotations.LivewireLayoutSerializer
 import com.r0adkll.livewire.ui.actions.LivewireActionObserver
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionObserver
 import com.r0adkll.livewire.ui.actions.checkedChangeAction
@@ -19,8 +20,9 @@ import com.r0adkll.livewire.ui.actions.intValueChangeAction
 import com.r0adkll.livewire.ui.actions.valueChangeAction
 import com.r0adkll.livewire.ui.composition.launchLivewire
 import com.r0adkll.livewire.ui.composition.livewireFlow
-import com.r0adkll.livewire.ui.data.LivewireUiCbor
+import com.r0adkll.livewire.ui.data.LayoutNodeSerializers
 import com.r0adkll.livewire.ui.data.LivewireUiJson
+import com.r0adkll.livewire.ui.data.LivewireUiProtobuf
 import com.r0adkll.livewire.ui.graphics.CircleShape
 import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
 import com.r0adkll.livewire.ui.layout.Alignment
@@ -65,11 +67,16 @@ import com.r0adkll.livewire.ui.widget.TextField
 import com.r0adkll.livewire.ui.widget.TextFieldStyle
 import com.r0adkll.livewire.ui.widget.ToggleButton
 import com.r0adkll.livewire.ui.widget.VerticalDivider
+import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.cbor.Cbor
 import kotlinx.serialization.encodeToByteArray
+import kotlinx.serialization.protobuf.ProtoBuf
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
@@ -79,8 +86,9 @@ class LayoutNodeSerializationTest {
   @Test
   fun testJsonVsCborLayoutNodeSerialization() = runTest {
     val json = LivewireUiJson
-    val cbor = LivewireUiCbor
+    val protobuf = LivewireUiProtobuf
 
+    // TODO: This is broke AF and doesn't "stop" the coroutine.
     val layoutNode = launchLivewire(
       mode = RecompositionMode.Immediate,
     ) {
@@ -95,13 +103,13 @@ class LayoutNodeSerializationTest {
     println(jsonResultString)
 
     val jsonResult = jsonResultString.encodeToByteArray()
-    val cborResult = cbor.encodeToByteArray(layoutNode)
+    val protobufResult = protobuf.encodeToByteArray(layoutNode)
 
-    println("json size: ${jsonResult.size}")
-    println("cbor size: ${cborResult.size}")
+    println("json size     : ${jsonResult.size}")
+    println("protobuf size : ${protobufResult.size}")
 
     assertTrue {
-      cborResult.size < jsonResult.size
+      protobufResult.size < jsonResult.size
     }
   }
 }

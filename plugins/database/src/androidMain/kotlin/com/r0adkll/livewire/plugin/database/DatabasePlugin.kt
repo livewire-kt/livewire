@@ -174,7 +174,7 @@ private fun TableContentPage(
   page.content?.let { content ->
     Table(
       columns = content.columns,
-      rows = content.rows.map { it.filterNotNull() },
+      rows = content.rows.map { rows -> rows.map { it ?: "null" } },
       pageSize = 25, // ? Configure this ?
       modifier = modifier,
     )
@@ -227,7 +227,7 @@ private fun QueryContentPage(
       page.result?.let { result ->
         Table(
           columns = result.columns,
-          rows = result.rows.map { it.filterNotNull() },
+          rows = result.rows.map { rows -> rows.map { it ?: "null" } },
           pageSize = 25,
           modifier = LivewireModifier.fillMaxSize()
         )

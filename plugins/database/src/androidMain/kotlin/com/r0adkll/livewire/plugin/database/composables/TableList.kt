@@ -31,6 +31,7 @@ import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextStyle
+import kotlin.math.exp
 
 
 @Composable
@@ -67,19 +68,20 @@ internal fun TableList(
           .fillMaxWidth()
           .verticalScroll(),
       ) {
-        val collapsedTables = remember { mutableStateSetOf<TableInfo>() }
+        val expandedTables = remember { mutableStateSetOf<TableInfo>() }
+
         tables.forEach { table ->
-          val isCollapsed = collapsedTables.contains(table)
+          val isExpanded = expandedTables.contains(table)
           TableRootListItem(
             name = table.name,
             onClick = { onTableClick(table) },
             action = {
               IconButton(
                 action = clickAction(table.name + "_collapse") {
-                  if (isCollapsed) {
-                    collapsedTables.remove(table)
+                  if (isExpanded) {
+                    expandedTables.remove(table)
                   } else {
-                    collapsedTables.add(table)
+                    expandedTables.add(table)
                   }
                 }
               ) {
@@ -90,7 +92,7 @@ internal fun TableList(
             }
           )
 
-          if (!isCollapsed) {
+          if (isExpanded) {
             table.columns
               .sortedBy { it.index }
               .forEach { column ->
@@ -160,8 +162,6 @@ private fun ColumnListItem(
       .fillMaxWidth()
       .padding(horizontal = 10.dp),
   ) {
-//    Spacer(LivewireModifier.width(16.dp))
-
     Text(
       text = column.name,
       style = TextStyle.LabelSmall,

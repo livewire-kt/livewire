@@ -108,7 +108,6 @@ internal fun CoroutineScope.launchLivewire(
   var dataInvalidation by mutableStateOf(Unit, neverEqualPolicy())
   val rootNode = RootNode().apply {
     invalidateListener = {
-      println("Livewire Invalidated!")
       dataInvalidation = Unit
     }
   }

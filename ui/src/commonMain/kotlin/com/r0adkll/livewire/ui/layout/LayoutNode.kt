@@ -2,7 +2,6 @@ package com.r0adkll.livewire.ui.layout
 
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
-import com.r0adkll.livewire.ui.modifier.serialization.LivewireModifierSerializer
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -21,7 +20,6 @@ abstract class LayoutNode(
 
   }
 
-  @Serializable(with = LivewireModifierSerializer::class)
   var modifier: LivewireModifier = LivewireModifier
 
   var compositeKeyHash: Int = 0

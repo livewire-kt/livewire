@@ -35,7 +35,7 @@ kotlin {
       api(libs.compose.ui)
       api(libs.compose.material3)
       api(libs.kotlinx.serialization.json)
-      api(libs.kotlinx.serialization.cbor)
+      api(libs.kotlinx.serialization.protobuf)
       api(libs.kotlinx.coroutines.core)
       api(libs.molecule.runtime)
       api(libs.okio)

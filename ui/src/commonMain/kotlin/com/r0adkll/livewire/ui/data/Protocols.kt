@@ -24,6 +24,7 @@ sealed interface UiProtocol {
 @Serializable
 data class ClientManifest(
   val theme: LivewireTheme,
+  val layoutNodeSerialization: LayoutNodeSerialization,
   val availablePlugins: Set<PluginInfo>,
 ) : UiProtocol
 

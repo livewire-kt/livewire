@@ -22,7 +22,12 @@ import com.r0adkll.livewire.ui.composition.livewireFlow
 import com.r0adkll.livewire.ui.data.ClearPlugin
 import com.r0adkll.livewire.ui.data.ClientManifest
 import com.r0adkll.livewire.ui.data.DarkModeChange
+import com.r0adkll.livewire.ui.data.JsonLayoutNodeSerializationStrategy
+import com.r0adkll.livewire.ui.data.LayoutNodeSerialization
+import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Protobuf
+import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Json
 import com.r0adkll.livewire.ui.data.PluginSelected
+import com.r0adkll.livewire.ui.data.ProtobufLayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.data.UiDecoders
 import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.theme.LivewireTheme
@@ -33,8 +38,10 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.coroutines.CoroutineContext
 
+@OptIn(ExperimentalSerializationApi::class)
 class LivewireClient private constructor(
   val configuration: LivewireClientConfiguration,
   context: CoroutineContext = Dispatchers.IO,
@@ -48,6 +55,10 @@ class LivewireClient private constructor(
 
   val server = LivewireServer(
     decoders = configuration.decoders + DefaultDecoders + UiDecoders,
+    serializationStrategy = when (configuration.layoutNodeSerialization) {
+      Json -> JsonLayoutNodeSerializationStrategy()
+      Protobuf -> ProtobufLayoutNodeSerializationStrategy()
+    },
   )
 
   @OptIn(ExperimentalCoroutinesApi::class)
@@ -65,6 +76,7 @@ class LivewireClient private constructor(
             // Send ClientManifest to the new host connection
             val manifest: UiProtocol = ClientManifest(
               theme = configuration.theme,
+              layoutNodeSerialization = configuration.layoutNodeSerialization,
               availablePlugins = configuration.plugins
                 .map { it.info }
                 .toSet()
@@ -151,9 +163,10 @@ class LivewireClient private constructor(
 
 @LivewireClientDsl
 class LivewireClientBuilder {
-  var theme: LivewireTheme? = null
-  val plugins = mutableSetOf<Plugin>()
-  val decoders = mutableSetOf<PayloadDecoder<*>>()
+  private var theme: LivewireTheme? = null
+  private val plugins = mutableSetOf<Plugin>()
+  private val decoders = mutableSetOf<PayloadDecoder<*>>()
+  private var layoutNodeSerialization = Protobuf
 
   fun install(plugin: Plugin) {
     plugins.add(plugin)
@@ -163,11 +176,18 @@ class LivewireClientBuilder {
     this.theme = theme
   }
 
+  fun layoutNodeSerialization(
+    strategy: LayoutNodeSerialization,
+  ) {
+    layoutNodeSerialization = strategy
+  }
+
   fun build(): LivewireClientConfiguration {
     return LivewireClientConfiguration(
       theme = theme ?: LivewireTheme(),
       plugins = plugins,
       decoders = decoders,
+      layoutNodeSerialization = layoutNodeSerialization,
     )
   }
 }
@@ -176,6 +196,7 @@ class LivewireClientConfiguration(
   val theme: LivewireTheme,
   val plugins: Set<Plugin>,
   val decoders: Set<PayloadDecoder<*>>,
+  val layoutNodeSerialization: LayoutNodeSerialization,
 )
 
 @DslMarker

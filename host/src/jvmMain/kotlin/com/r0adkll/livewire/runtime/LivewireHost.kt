@@ -6,8 +6,10 @@ import com.r0adkll.livewire.ui.actions.LivewireAction
 import com.r0adkll.livewire.ui.actions.LivewireActionDispatcher
 import com.r0adkll.livewire.ui.data.UiDecoders
 import kotlinx.coroutines.Dispatchers
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.coroutines.CoroutineContext
 
+@OptIn(ExperimentalSerializationApi::class)
 class LivewireHost private constructor(
   val configuration: LivewireHostConfiguration,
   context: CoroutineContext = Dispatchers.IO,

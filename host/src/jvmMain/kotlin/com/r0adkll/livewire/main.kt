@@ -108,6 +108,9 @@ fun main() = application {
     host.connection.incomingMessages
       .filterIsInstance<ClientManifest>()
       .collect {
+        // TODO: There's gotta be a better way to do this.
+        //  Switch out the layoutNode parsing based on what the client is reporting.
+        host.connection.serializationStrategy = it.layoutNodeSerialization.toStrategy()
         clientManifest = it
       }
   }
@@ -166,8 +169,8 @@ fun main() = application {
           }
         }
       ) {
-        val layoutNode by host.connection.incomingLayoutNodes.collectAsState()
 
+        val layoutNode by host.connection.incomingLayoutNodes.collectAsState()
         CompositionLocalProvider(
           LocalLivewireActionDispatcher provides host,
         ) {

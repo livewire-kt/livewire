@@ -6,20 +6,14 @@ import com.r0adkll.livewire.logError
 import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
-import com.r0adkll.livewire.ui.data.LivewireUiJson
+import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import io.ktor.server.application.install
-import io.ktor.server.cio.CIO
-import io.ktor.server.cio.CIOApplicationEngine
-import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.routing.routing
-import io.ktor.server.websocket.WebSockets
-import io.ktor.server.websocket.webSocket
-import io.ktor.utils.io.core.toByteArray
-import io.ktor.websocket.Frame
-import io.ktor.websocket.WebSocketSession
-import io.ktor.websocket.readText
+import io.ktor.server.application.*
+import io.ktor.server.cio.*
+import io.ktor.server.engine.*
+import io.ktor.server.routing.*
+import io.ktor.server.websocket.*
+import io.ktor.websocket.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -31,7 +25,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import okio.utf8Size
 import kotlin.coroutines.CoroutineContext
 
 enum class ConnectionState {
@@ -43,12 +36,18 @@ enum class ConnectionState {
 
 class LivewireServer(
   vararg decoders: PayloadDecoder<*>,
+  private val serializationStrategy: LayoutNodeSerializationStrategy,
   context: CoroutineContext = Dispatchers.IO,
 ) {
   constructor(
     decoders: Collection<PayloadDecoder<*>>,
+    serializationStrategy: LayoutNodeSerializationStrategy,
     context: CoroutineContext = Dispatchers.IO,
-  ) : this(*decoders.toTypedArray(), context = context)
+  ) : this(
+    *decoders.toTypedArray(),
+    serializationStrategy = serializationStrategy,
+    context = context,
+  )
 
   private val scope = CoroutineScope(context + SupervisorJob())
 
@@ -113,13 +112,14 @@ class LivewireServer(
   }
 
   suspend fun sendLayoutNode(node: LayoutNode) {
-    val nodeJson = LivewireUiJson.encodeToString(node)
-    val nodeBinary = nodeJson.toByteArray()
-
-    outgoingLayoutSize.value = nodeBinary.size.toLong()
-    activeSession?.send(
-      Frame.Binary(true, nodeBinary)
-    )
+    try {
+      val nodeBinary = serializationStrategy.encodeToByteArray(node)
+      logDebug("Livewire", "Sending ${nodeBinary.decodeToString()}")
+      outgoingLayoutSize.value = nodeBinary.size.toLong()
+      activeSession?.send(Frame.Binary(true, nodeBinary))
+    } catch (e: Exception) {
+      logError("Livewire", "Error sending layout node", e)
+    }
   }
 
   fun stop() {
