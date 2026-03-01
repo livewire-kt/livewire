@@ -1,6 +1,9 @@
 package com.r0adkll.livewire
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,6 +59,7 @@ import com.r0adkll.livewire.theme.LivewireThemeContent
 import com.r0adkll.livewire.ui.PluginDrawerItem
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
+import com.r0adkll.livewire.ui.composables.DisconnectedStateLayout
 import com.r0adkll.livewire.ui.data.ClientManifest
 import com.r0adkll.livewire.ui.data.PluginSelected
 import com.r0adkll.livewire.ui.data.UiProtocol
@@ -153,23 +157,28 @@ fun main() = application {
           )
         },
         drawer = {
-          HostDrawerSheet {
-            DrawerContent(
-              expanded = menuExpanded,
-              selectedPlugin = selectedPlugin,
-              availablePlugins = clientManifest?.availablePlugins?.toList() ?: emptyList(),
-              onPluginClick = { plugin ->
-                selectedPlugin = plugin
-                scope.launch {
-                  val msg: UiProtocol = PluginSelected(plugin)
-                  host.connection.send(msg)
+          AnimatedVisibility(
+            visible = clientManifest != null,
+            enter = slideInHorizontally { -it },
+            exit = slideOutHorizontally { -it },
+          ) {
+            HostDrawerSheet {
+              DrawerContent(
+                expanded = menuExpanded,
+                selectedPlugin = selectedPlugin,
+                availablePlugins = clientManifest?.availablePlugins?.toList() ?: emptyList(),
+                onPluginClick = { plugin ->
+                  selectedPlugin = plugin
+                  scope.launch {
+                    val msg: UiProtocol = PluginSelected(plugin)
+                    host.connection.send(msg)
+                  }
                 }
-              }
-            )
+              )
+            }
           }
         }
       ) {
-
         val layoutNode by host.connection.incomingLayoutNodes.collectAsState()
         CompositionLocalProvider(
           LocalLivewireActionDispatcher provides host,
@@ -178,6 +187,10 @@ fun main() = application {
             node = layoutNode,
             modifier = Modifier.fillMaxSize(),
           )
+        }
+
+        if (state != CONNECTED) {
+          DisconnectedStateLayout()
         }
       }
     }

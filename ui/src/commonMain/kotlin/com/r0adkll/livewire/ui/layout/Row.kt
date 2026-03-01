@@ -9,6 +9,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.modifier.AlignModifier
 import com.r0adkll.livewire.ui.modifier.DimensionModifier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.modifier.WidthModifier
@@ -37,6 +38,9 @@ inline fun Row(
 interface RowScope {
 
   @Stable
+  fun LivewireModifier.align(alignment: Alignment.Vertical): LivewireModifier
+
+  @Stable
   fun LivewireModifier.weight(
     @FloatRange(from = 0.0, fromInclusive = false) weight: Float,
   ): LivewireModifier
@@ -44,6 +48,10 @@ interface RowScope {
 
 @PublishedApi
 internal object RowScopeInstance : RowScope {
+  override fun LivewireModifier.align(alignment: Alignment.Vertical): LivewireModifier {
+    return then(AlignModifier(alignment))
+  }
+
   override fun LivewireModifier.weight(weight: Float): LivewireModifier {
     require(weight > 0f) { "weight($weight) must be > 0" }
     return this.then(

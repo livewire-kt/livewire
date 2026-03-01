@@ -42,6 +42,7 @@ internal fun TableList(
 ) {
   Surface(
     modifier = modifier,
+    tonalElevation = 1f,
   ) {
     Column(
       modifier = LivewireModifier.fillMaxHeight()
@@ -50,7 +51,7 @@ internal fun TableList(
         verticalAlignment = Alignment.CenterVertically,
         modifier = LivewireModifier
           .background(LivewireTheme.colorScheme.surfaceContainer)
-          .height(48.dp)
+          .height(56.dp)
           .fillMaxWidth()
       ) {
         Text(

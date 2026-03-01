@@ -7,6 +7,7 @@ import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.modifier.AlignModifier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -31,11 +32,14 @@ inline fun Box(
 
 @Immutable
 interface BoxScope {
+  fun LivewireModifier.align(alignment: Alignment): LivewireModifier
 }
 
 @PublishedApi
 internal object BoxScopeInstance : BoxScope {
-
+  override fun LivewireModifier.align(alignment: Alignment): LivewireModifier {
+    return then(AlignModifier(alignment))
+  }
 }
 
 @LivewireSerializer

@@ -9,6 +9,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.currentCompositeKeyHashCode
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
+import com.r0adkll.livewire.ui.modifier.AlignModifier
 import com.r0adkll.livewire.ui.modifier.DimensionModifier
 import com.r0adkll.livewire.ui.modifier.HeightModifier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
@@ -37,6 +38,9 @@ inline fun Column(
 interface ColumnScope {
 
   @Stable
+  fun LivewireModifier.align(alignment: Alignment.Horizontal): LivewireModifier
+
+  @Stable
   fun LivewireModifier.weight(
     @FloatRange(from = 0.0, fromInclusive = false) weight: Float,
   ): LivewireModifier
@@ -44,6 +48,10 @@ interface ColumnScope {
 
 @PublishedApi
 internal object ColumnScopeInstance : ColumnScope {
+  override fun LivewireModifier.align(alignment: Alignment.Horizontal): LivewireModifier {
+    return then(AlignModifier(alignment))
+  }
+
   override fun LivewireModifier.weight(
     weight: Float,
   ): LivewireModifier {

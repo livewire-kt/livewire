@@ -1,6 +1,7 @@
 package com.r0adkll.livewire.plugin.database
 
 import android.content.Context
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -25,11 +26,14 @@ import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.modifier.animateContentSize
+import com.r0adkll.livewire.ui.modifier.background
 import com.r0adkll.livewire.ui.modifier.fillMaxHeight
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
+import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.width
+import com.r0adkll.livewire.ui.theme.LivewireTheme
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.ButtonShapes
@@ -39,7 +43,6 @@ import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.IconButtonStyle
-import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
@@ -64,56 +67,61 @@ class DatabasePlugin(context: Context) : Plugin {
 
     var selectedTabIndex by remember { mutableIntStateOf(0) }
 
-    Column(LivewireModifier.fillMaxSize()) {
-      DatabaseToolBar(
-        selectedDatabase = state.selectedDatabase,
-        availableDatabases = state.availableDatabases,
-        onDatabaseSelected = {
-          state.eventSink(DatabaseUiEvent.SelectDatabase(it))
-        },
-        tabs = {
-          TabRow(
-            selectedTabIndex = selectedTabIndex,
-            onTabSelected = intValueChangeAction {
-              selectedTabIndex = it
-            },
-            modifier = LivewireModifier.fillMaxWidth(),
-          ) {
-            state.pages.forEachIndexed { index, page ->
-              Tab(
-                text = page.name,
-              )
-            }
-          }
-        },
-        actions = {
-          Button(
-            action = clickAction {
-              state.eventSink(DatabaseUiEvent.AddQueryTab)
-            },
-            size = ButtonSize.ExtraSmall,
-            style = ButtonStyle.Tonal,
-            shapes = ButtonShapes(
-              shape = RoundedCornerShape(8.dp),
-              pressedShape = CircleShape,
-            )
-          ) {
-            Icon(Icons.DatabaseSearch)
-            Text("New Query")
-          }
-        }
-      )
-
-      Row(
+    Row(
+      modifier = LivewireModifier
+        .fillMaxSize(),
+    ) {
+      // Toolbar + Content
+      Column(
         modifier = LivewireModifier
+          .weight(1f)
+          .fillMaxHeight()
           .animateContentSize(),
       ) {
+        DatabaseToolBar(
+          selectedDatabase = state.selectedDatabase,
+          availableDatabases = state.availableDatabases,
+          onDatabaseSelected = {
+            state.eventSink(DatabaseUiEvent.SelectDatabase(it))
+          },
+          tabs = {
+            TabRow(
+              selectedTabIndex = selectedTabIndex,
+              onTabSelected = intValueChangeAction {
+                selectedTabIndex = it
+              },
+              modifier = LivewireModifier.fillMaxWidth(),
+            ) {
+              state.pages.forEachIndexed { index, page ->
+                Tab(
+                  text = page.name,
+                )
+              }
+            }
+          },
+          actions = {
+            Button(
+              action = clickAction {
+                state.eventSink(DatabaseUiEvent.AddQueryTab)
+              },
+              size = ButtonSize.ExtraSmall,
+              style = ButtonStyle.Tonal,
+              shapes = ButtonShapes(
+                shape = RoundedCornerShape(8.dp),
+                pressedShape = CircleShape,
+              )
+            ) {
+              Icon(Icons.DatabaseSearch)
+              Text("New Query")
+            }
+          }
+        )
 
         // Main Content
         Column(
           modifier = LivewireModifier
             .weight(1f)
-            .fillMaxHeight()
+            .fillMaxWidth()
         ) {
           state.pages.getOrNull(selectedTabIndex)?.let { page ->
             when (page) {
@@ -136,30 +144,30 @@ class DatabasePlugin(context: Context) : Plugin {
             }
           }
         }
+      }
 
-        // Side Content
-        AnimatedVisibility(
-          visible = state.selectedDatabase != null,
-          modifier = LivewireModifier.fillMaxHeight(),
+      // Side Content
+      AnimatedVisibility(
+        visible = state.selectedDatabase != null,
+        modifier = LivewireModifier.fillMaxHeight(),
+      ) {
+        Surface(
+          shadowElevation = 2f,
+          modifier = LivewireModifier
+            .fillMaxHeight()
+            .width(300.dp)
         ) {
-          Surface(
-            shadowElevation = 2f,
+
+          TableList(
+            tables = state.selectedDatabaseTables,
+            onTableClick = {
+              state.eventSink(DatabaseUiEvent.SelectTable(it))
+            },
             modifier = LivewireModifier
+              .weight(2f)
               .fillMaxHeight()
-              .width(300.dp)
-          ) {
+          )
 
-            TableList(
-              tables = state.selectedDatabaseTables,
-              onTableClick = {
-                state.eventSink(DatabaseUiEvent.SelectTable(it))
-              },
-              modifier = LivewireModifier
-                .weight(2f)
-                .fillMaxHeight()
-            )
-
-          }
         }
       }
     }
@@ -208,17 +216,23 @@ private fun QueryContentPage(
           .weight(1f)
           .height(128.dp),
       )
-      Spacer(LivewireModifier.width(16.dp))
-      IconButton(
-        action = clickAction {
-          onExecute()
-        },
-        size = ButtonSize.Medium,
-        style = IconButtonStyle.Filled,
+      Box(
+        modifier = LivewireModifier
+          .background(LivewireTheme.colorScheme.surfaceContainerHighest)
+          .height(128.dp)
+          .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.Center,
       ) {
-        Icon(Icons.Run)
+        IconButton(
+          action = clickAction {
+            onExecute()
+          },
+          size = ButtonSize.Medium,
+          style = IconButtonStyle.Filled,
+        ) {
+          Icon(Icons.Run)
+        }
       }
-      Spacer(LivewireModifier.width(16.dp))
     }
 
     HorizontalDivider(LivewireModifier.fillMaxWidth())
