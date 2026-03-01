@@ -43,5 +43,8 @@ include("compiler")
 include(
   ":plugins:database",
   ":plugins:playground",
+  ":plugins:network:core",
+  ":plugins:network:okhttp",
+  ":plugins:network:ktor",
 )
 

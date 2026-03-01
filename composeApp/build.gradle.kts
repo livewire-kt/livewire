@@ -55,6 +55,7 @@ kotlin {
     commonMain.dependencies {
       implementation(projects.client)
       implementation(projects.plugins.playground)
+      implementation(projects.plugins.network.core)
       api(projects.runtime)
 
       implementation(libs.compose.runtime)
