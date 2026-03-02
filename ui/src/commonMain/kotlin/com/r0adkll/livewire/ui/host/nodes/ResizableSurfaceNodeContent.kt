@@ -1,9 +1,15 @@
 package com.r0adkll.livewire.ui.host.nodes
 
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.contentColorFor
@@ -14,17 +20,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import com.r0adkll.livewire.ui.host.LayoutNodeContent
 import com.r0adkll.livewire.ui.host.debugFrame
+import com.r0adkll.livewire.ui.util.thenIf
+import com.r0adkll.livewire.ui.util.thenIfElse
 import com.r0adkll.livewire.ui.widget.ResizableSurfaceNode
+import com.r0adkll.livewire.ui.widget.ResizeAnchor
 
 @Composable
 internal fun ResizableSurfaceNodeContent(
@@ -33,85 +39,110 @@ internal fun ResizableSurfaceNodeContent(
 ) {
   val density = LocalDensity.current
 
-  val minWidth = node.minWidth.dp
-  val minHeight = node.minHeight.dp
-  val maxWidth = if (node.maxWidth == Float.MAX_VALUE) Dp.Infinity else node.maxWidth.dp
-  val maxHeight = if (node.maxHeight == Float.MAX_VALUE) Dp.Infinity else node.maxHeight.dp
-
-  var currentWidth by remember { mutableStateOf(node.initialWidth.dp) }
-  var currentHeight by remember { mutableStateOf(node.initialHeight.dp) }
+  var currentSize by remember { mutableStateOf(node.initialSize) }
 
   val shape = node.shape.toComposeUi()
   val color = node.color ?: MaterialTheme.colorScheme.surface
   val contentColor = node.contentColor ?: contentColorFor(color)
-  val tonalElevation = node.tonalElevation.dp
-  val shadowElevation = node.shadowElevation.dp
 
   Box(
     modifier = modifier
       .debugFrame()
-      .size(currentWidth),
+      .thenIfElse(
+        node.anchor.isHorizontal,
+        ifTrue = {
+          width(currentSize)
+        },
+        ifFalse = {
+          height(currentSize)
+        }
+      ),
   ) {
     Surface(
       shape = shape,
       color = color,
       contentColor = contentColor,
-      tonalElevation = tonalElevation,
-      shadowElevation = shadowElevation,
-      modifier = Modifier.fillMaxSize(),
+      tonalElevation = node.tonalElevation,
+      shadowElevation = node.shadowElevation,
+      modifier = Modifier
+        .fillMaxSize()
+        .zIndex(0f),
     ) {
-      Box {
-        node.children.forEach { child ->
-          LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
-        }
+      node.children.forEach { child ->
+        LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
       }
     }
 
     // Drag handle at bottom-end corner
     ResizeHandle(
+      anchor = node.anchor,
       onDrag = { dragAmount ->
         with(density) {
-          val newWidth = currentWidth - dragAmount.x.toDp()
-          currentWidth = newWidth.coerceIn(minWidth, maxWidth)
+          val newSize = currentSize - if (node.anchor.isHorizontal) {
+            dragAmount.x.toDp()
+          } else {
+            dragAmount.y.toDp()
+          }
+          currentSize = newSize.coerceIn(node.minSize, node.maxSize)
         }
       },
-      modifier = Modifier.align(Alignment.BottomStart),
+      modifier = Modifier
+        .zIndex(1f),
     )
   }
 }
 
 @Composable
-private fun ResizeHandle(
+private fun BoxScope.ResizeHandle(
+  anchor: ResizeAnchor,
   onDrag: (Offset) -> Unit,
   modifier: Modifier = Modifier,
+  interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
-  val handleColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+  var isDragging by remember { mutableStateOf(false) }
+
+  val baseModifier = if (anchor.isHorizontal) {
+    modifier
+      .thenIf(anchor == ResizeAnchor.Start) {
+        align(Alignment.CenterStart)
+      }
+      .thenIf(anchor == ResizeAnchor.End) {
+        align(Alignment.CenterEnd)
+      }
+      .width(DragHandleSize)
+      .fillMaxHeight()
+  } else {
+    modifier
+      .thenIf(anchor == ResizeAnchor.Top) {
+        align(Alignment.TopCenter)
+      }
+      .thenIf(anchor == ResizeAnchor.Bottom) {
+        align(Alignment.BottomCenter)
+      }
+      .height(DragHandleSize)
+      .fillMaxWidth()
+  }
 
   Box(
-    modifier = modifier
-      .size(24.dp)
+    modifier = baseModifier
+      .cursorForHorizontalResize(anchor.isHorizontal)
+      .hoverable(interactionSource)
       .pointerInput(Unit) {
-        detectDragGestures { change, dragAmount ->
+        detectDragGestures(
+          onDragStart = {
+            isDragging = true
+          },
+          onDragEnd = {
+            isDragging = false
+          }
+        ) { change, dragAmount ->
           change.consume()
           onDrag(dragAmount)
-        }
-      }
-      .drawBehind {
-        val strokeWidth = 1.5.dp.toPx()
-        val padding = 4.dp.toPx()
-        val spacing = 5.dp.toPx()
-
-        // Draw three diagonal lines (classic resize grip pattern)
-        for (i in 0..2) {
-          val offset = i * spacing
-          drawLine(
-            color = handleColor,
-            end = Offset(size.width - padding - offset, size.height - padding),
-            start = Offset(size.width - padding, size.height - padding - offset),
-            strokeWidth = strokeWidth,
-            cap = StrokeCap.Round,
-          )
         }
       },
   )
 }
+
+private val DragHandleSize = 8.dp
+
+expect fun Modifier.cursorForHorizontalResize(isHorizontal: Boolean): Modifier

@@ -1,7 +1,6 @@
 package com.r0adkll.livewire.plugin.database
 
 import android.content.Context
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -32,7 +31,6 @@ import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
-import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.Button
@@ -43,7 +41,8 @@ import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.IconButtonStyle
-import com.r0adkll.livewire.ui.widget.Surface
+import com.r0adkll.livewire.ui.widget.ResizableSurface
+import com.r0adkll.livewire.ui.widget.ResizeAnchor
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Table
@@ -151,11 +150,13 @@ class DatabasePlugin(context: Context) : Plugin {
         visible = state.selectedDatabase != null,
         modifier = LivewireModifier.fillMaxHeight(),
       ) {
-        Surface(
-          shadowElevation = 2f,
+        ResizableSurface(
+          anchor = ResizeAnchor.Start,
+          initialSize = 300.dp,
+          maxSize = 600.dp,
+          shadowElevation = 2.dp,
           modifier = LivewireModifier
             .fillMaxHeight()
-            .width(300.dp)
         ) {
 
           TableList(

@@ -22,6 +22,7 @@ import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.ResizableSurface
+import com.r0adkll.livewire.ui.widget.ResizeAnchor
 import com.r0adkll.livewire.ui.widget.Surface
 
 class NetworkPlugin : Plugin {
@@ -85,9 +86,11 @@ class NetworkPlugin : Plugin {
         modifier = LivewireModifier.fillMaxHeight(),
       ) {
         ResizableSurface(
-          initialWidth = 400f,
-          initialHeight = 0f,
-          shadowElevation = 2f,
+          anchor = ResizeAnchor.Start,
+          initialSize = 400.dp,
+          minSize = 200.dp,
+          maxSize = 600.dp,
+          shadowElevation = 2.dp,
           modifier = LivewireModifier
             .fillMaxHeight(),
         ) {
