@@ -42,6 +42,7 @@ kotlin {
       api(libs.coil.compose)
       api(libs.coil.network.ktor3)
       api(libs.coil.svg)
+      api(libs.ktor.clientWebsockets)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)

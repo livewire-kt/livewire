@@ -3,17 +3,20 @@ package com.r0adkll.livewire.client
 import com.r0adkll.livewire.LivewireConstants
 import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.logError
-import com.r0adkll.livewire.protocol.EnvelopeJson
-import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import io.ktor.server.application.*
-import io.ktor.server.cio.*
-import io.ktor.server.engine.*
-import io.ktor.server.routing.*
-import io.ktor.server.websocket.*
-import io.ktor.websocket.*
+import com.r0adkll.livewire.ui.transport.LivewireIncoming
+import com.r0adkll.livewire.ui.transport.LivewireWebSocketCodec
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.cio.CIOApplicationEngine
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
+import io.ktor.websocket.WebSocketSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -64,15 +67,14 @@ class LivewireServer(
   var activeSession: WebSocketSession? = null
     private set
 
-  private val envelopeDecoder = EnvelopeDecoder(
-    payloadDecoders = decoders.toSet()
-  )
+  val codec = LivewireWebSocketCodec(decoders.toSet())
 
   fun start() {
     if (server != null) {
       return
     }
 
+    logDebug("Livewire", "Starting server on port ${LivewireConstants.Port}")
     server = embeddedServer(CIO, port = LivewireConstants.Port) {
       install(WebSockets)
       routing {
@@ -81,14 +83,10 @@ class LivewireServer(
           _connectionState.value = ConnectionState.CONNECTED
           try {
             for (frame in incoming) {
-              if (frame is Frame.Text) {
-                val text = frame.readText()
-                val payload = envelopeDecoder.decode(text)
-                if (payload != null) {
-                  _incomingMessages.tryEmit(payload)
-                } else {
-                  logDebug("Livewire", "Unknown message: $text")
-                }
+              when (val incomingMessage = codec.decode(frame)) {
+                is LivewireIncoming.Payload -> _incomingMessages.tryEmit(incomingMessage.payload)
+                is LivewireIncoming.Layout -> Unit
+                null -> Unit
               }
             }
           } catch (e: Exception) {
@@ -105,20 +103,12 @@ class LivewireServer(
     }
   }
 
-  suspend inline fun <reified T> send(envelope: T) {
-    val envelopeJson = EnvelopeJson.encodeToString(envelope)
-    logDebug("Livewire", "Sending $envelopeJson")
-    activeSession?.send(Frame.Text(envelopeJson))
+  suspend inline fun <reified T : Any> send(envelope: T) {
+    activeSession?.send(codec.encodePayload(envelope))
   }
 
   suspend fun sendLayoutNode(node: LayoutNode) {
-    try {
-      val nodeBinary = serializationStrategy.encodeToByteArray(node)
-      outgoingLayoutSize.value = nodeBinary.size.toLong()
-      activeSession?.send(Frame.Binary(true, nodeBinary))
-    } catch (e: Exception) {
-      logError("Livewire", "Error sending layout node", e)
-    }
+    activeSession?.send(codec.encodeLayout(node))
   }
 
   fun stop() {

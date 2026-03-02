@@ -10,11 +10,8 @@
 		A10000000000000000001001 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000002010 /* iOSApp.swift */; };
 		A10000000000000000001002 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000002011 /* AppDelegate.swift */; };
 		A10000000000000000001003 /* ComposeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000002012 /* ComposeView.swift */; };
-		A10000000000000000001004 /* LivewirePortForwardingServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000002013 /* LivewirePortForwardingServer.swift */; };
 		A10000000000000000001005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000002018 /* Assets.xcassets */; };
 		A10000000000000000001006 /* ComposeApp.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000002020 /* ComposeApp.framework */; };
-		A10000000000000000001007 /* Peertalk in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000006030 /* Peertalk */; };
-		A10000000000000000001008 /* CocoaAsyncSocket in Frameworks */ = {isa = PBXBuildFile; productRef = A10000000000000000006031 /* CocoaAsyncSocket */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -22,7 +19,6 @@
 		A10000000000000000002010 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
 		A10000000000000000002011 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		A10000000000000000002012 /* ComposeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposeView.swift; sourceTree = "<group>"; };
-		A10000000000000000002013 /* LivewirePortForwardingServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LivewirePortForwardingServer.swift; sourceTree = "<group>"; };
 		A10000000000000000002018 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A10000000000000000002019 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A10000000000000000002020 /* ComposeApp.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; path = ComposeApp.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -34,8 +30,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000001006 /* ComposeApp.framework in Frameworks */,
-				A10000000000000000001007 /* Peertalk in Frameworks */,
-				A10000000000000000001008 /* CocoaAsyncSocket in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -48,7 +42,6 @@
 				A10000000000000000002010 /* iOSApp.swift */,
 				A10000000000000000002011 /* AppDelegate.swift */,
 				A10000000000000000002012 /* ComposeView.swift */,
-				A10000000000000000002013 /* LivewirePortForwardingServer.swift */,
 				A10000000000000000002018 /* Assets.xcassets */,
 				A10000000000000000002019 /* Info.plist */,
 			);
@@ -98,8 +91,6 @@
 			);
 			name = iosApp;
 			packageProductDependencies = (
-				A10000000000000000006030 /* Peertalk */,
-				A10000000000000000006031 /* CocoaAsyncSocket */,
 			);
 			productName = iosApp;
 			productReference = A1000000000000000000200F /* iosApp.app */;
@@ -130,8 +121,6 @@
 			);
 			mainGroup = A10000000000000000004023;
 			packageReferences = (
-				A10000000000000000008060 /* XCRemoteSwiftPackageReference "peertalk" */,
-				A10000000000000000008061 /* XCRemoteSwiftPackageReference "CocoaAsyncSocket" */,
 			);
 			productRefGroup = A10000000000000000004021 /* Products */;
 			projectDirPath = "";
@@ -178,7 +167,6 @@
 				A10000000000000000001001 /* iOSApp.swift in Sources */,
 				A10000000000000000001002 /* AppDelegate.swift in Sources */,
 				A10000000000000000001003 /* ComposeView.swift in Sources */,
-				A10000000000000000001004 /* LivewirePortForwardingServer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -281,38 +269,6 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		A10000000000000000008060 /* XCRemoteSwiftPackageReference "peertalk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/EmergeTools/peertalk";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
-			};
-		};
-		A10000000000000000008061 /* XCRemoteSwiftPackageReference "CocoaAsyncSocket" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/robbiehanson/CocoaAsyncSocket";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 7.6.5;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		A10000000000000000006030 /* Peertalk */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A10000000000000000008060 /* XCRemoteSwiftPackageReference "peertalk" */;
-			productName = Peertalk;
-		};
-		A10000000000000000006031 /* CocoaAsyncSocket */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = A10000000000000000008061 /* XCRemoteSwiftPackageReference "CocoaAsyncSocket" */;
-			productName = CocoaAsyncSocket;
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = A10000000000000000005038 /* Project object */;
 }

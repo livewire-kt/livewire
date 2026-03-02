@@ -42,22 +42,9 @@ kotlin {
       implementation(libs.coil.compose)
       implementation(libs.coil.network.ktor3)
       implementation(libs.coil.svg)
+      implementation(libs.dd.plist)
     }
   }
-}
-
-val buildIosBridge = tasks.register<Exec>("buildIosBridge") {
-  val bridgeDir = rootProject.layout.projectDirectory.dir("tools/ios-device-bridge")
-  workingDir = bridgeDir.asFile
-  commandLine("cargo", "build", "--release")
-
-  inputs.file(bridgeDir.file("Cargo.toml"))
-  inputs.dir(bridgeDir.dir("src"))
-  outputs.file(bridgeDir.file("target/release/livewire-ios-bridge"))
-}
-
-tasks.matching { it.name == "compileKotlinJvm" }.configureEach {
-  dependsOn(buildIosBridge)
 }
 
 compose.desktop {
