@@ -21,6 +21,7 @@ import com.r0adkll.livewire.ui.modifier.verticalScroll
 import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.HorizontalDivider
+import com.r0adkll.livewire.ui.widget.ResizableSurface
 import com.r0adkll.livewire.ui.widget.Surface
 
 class NetworkPlugin : Plugin {
@@ -83,11 +84,12 @@ class NetworkPlugin : Plugin {
         visible = state.selectedEvent != null,
         modifier = LivewireModifier.fillMaxHeight(),
       ) {
-        Surface(
+        ResizableSurface(
+          initialWidth = 400f,
+          initialHeight = 0f,
           shadowElevation = 2f,
           modifier = LivewireModifier
-            .fillMaxHeight()
-            .width(400.dp),
+            .fillMaxHeight(),
         ) {
           state.selectedEvent?.let { event ->
             RequestDetailPane(

@@ -53,6 +53,7 @@ import com.r0adkll.livewire.ui.icons.Connected
 import com.r0adkll.livewire.ui.icons.Disconnected
 import com.r0adkll.livewire.ui.icons.HomeFilled
 import com.r0adkll.livewire.ui.icons.HomeOutlined
+import com.r0adkll.livewire.rickandmorty.CharactersScreen
 import kotlinx.coroutines.launch
 import com.r0adkll.livewire.ui.theme.CustomLivewireTheme
 import kotlin.math.abs
@@ -86,6 +87,8 @@ fun LivewireApp(
       }
     }
 
+    val pagerState = rememberPagerState(pageCount = { 2 })
+
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
       topBar = {
@@ -107,44 +110,63 @@ fun LivewireApp(
             }
           },
           title = {
-            Text(
-              text = "Livewire",
-            )
+            Column {
+              Text(
+                text = "Livewire",
+              )
+              Text(
+                text = "Node Size: ${outgoingNodeSize.asReadableBytes()}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+              )
+            }
           }
         )
       },
       bottomBar = {
-        Surface(
-          shadowElevation = 2.dp,
-          color = MaterialTheme.colorScheme.primaryContainer,
-          modifier = Modifier.fillMaxWidth()
-        ) {
-          Column {
-            Row(
-              modifier = Modifier
-                .height(48.dp)
-                .padding(horizontal = 16.dp),
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              Text(
-                text = "Layout Node Size: ${outgoingNodeSize.asReadableBytes()}",
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
+        NavigationBar {
+          NavigationBarItem(
+            selected = pagerState.currentPage == 0,
+            onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
+            icon = {
+              Icon(
+                imageVector = if (pagerState.currentPage == 0) HomeFilled else HomeOutlined,
+                contentDescription = null,
               )
-            }
-
-            Spacer(Modifier.navigationBarsPadding())
-          }
+            },
+            label = { Text("Home") },
+          )
+          NavigationBarItem(
+            selected = pagerState.currentPage == 1,
+            onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
+            icon = {
+              Icon(
+                imageVector = if (pagerState.currentPage == 1) ChatBubbleFilled else ChatBubbleOutline,
+                contentDescription = null,
+              )
+            },
+            label = { Text("Characters") },
+          )
         }
       },
       modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
       contentWindowInsets = WindowInsets.systemBars
     ) { padding ->
-      MessagePage(
-        messages = messages,
-        contentPadding = padding,
-        modifier = Modifier
-          .padding(16.dp),
-      )
+      HorizontalPager(
+        state = pagerState,
+        modifier = Modifier.fillMaxSize(),
+      ) { page ->
+        when (page) {
+          0 -> MessagePage(
+            messages = messages,
+            contentPadding = padding,
+            modifier = Modifier.padding(16.dp),
+          )
+          1 -> CharactersScreen(
+            contentPadding = padding,
+          )
+        }
+      }
     }
   }
 }

@@ -114,7 +114,6 @@ class LivewireServer(
   suspend fun sendLayoutNode(node: LayoutNode) {
     try {
       val nodeBinary = serializationStrategy.encodeToByteArray(node)
-      logDebug("Livewire", "Sending ${nodeBinary.decodeToString()}")
       outgoingLayoutSize.value = nodeBinary.size.toLong()
       activeSession?.send(Frame.Binary(true, nodeBinary))
     } catch (e: Exception) {

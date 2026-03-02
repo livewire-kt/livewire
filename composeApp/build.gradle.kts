@@ -6,6 +6,7 @@ plugins {
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
   alias(libs.plugins.composeHotReload)
+  alias(libs.plugins.kotlinSerialization)
   alias(libs.plugins.sqldelight)
 }
 
@@ -51,11 +52,13 @@ kotlin {
       implementation(projects.plugins.database)
 
       implementation(libs.sqldelight.android.driver)
+      implementation(libs.ktor.clientAndroid)
     }
     commonMain.dependencies {
       implementation(projects.client)
       implementation(projects.plugins.playground)
       implementation(projects.plugins.network.core)
+      implementation(projects.plugins.network.ktor)
       api(projects.runtime)
 
       implementation(libs.compose.runtime)
@@ -67,13 +70,23 @@ kotlin {
       implementation(libs.androidx.lifecycle.viewmodelCompose)
       implementation(libs.androidx.lifecycle.runtimeCompose)
       implementation(libs.sqldelight.coroutines.extensions)
+
+      implementation(libs.ktor.clientCore)
+      implementation(libs.ktor.clientContentNegotiation)
+      implementation(libs.ktor.serializationKotlinxJson)
+      implementation(libs.coil.compose)
+      implementation(libs.coil.network.ktor3)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
     }
+    jvmMain.dependencies {
+      implementation(libs.ktor.clientCio)
+    }
     iosMain.dependencies {
       implementation(libs.compose.ui)
       implementation(projects.plugins.database)
+      implementation(libs.ktor.clientDarwin)
     }
   }
 }
