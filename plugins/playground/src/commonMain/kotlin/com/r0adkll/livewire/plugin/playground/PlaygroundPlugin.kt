@@ -394,7 +394,7 @@ class PlaygroundPlugin : Plugin {
             .size(150.dp, 80.dp)
             .padding(horizontal = 16.dp),
           shape = RoundedCornerShape(16.dp),
-          tonalElevation = 2f,
+          tonalElevation = 2.dp,
         ) {
           Text("Rounded")
         }
@@ -404,7 +404,7 @@ class PlaygroundPlugin : Plugin {
             .size(150.dp, 80.dp)
             .padding(horizontal = 16.dp),
           shape = RoundedCornerShape(24.dp),
-          shadowElevation = 4f,
+          shadowElevation = 4.dp,
         ) {
           Text("Shadow")
         }
@@ -414,7 +414,7 @@ class PlaygroundPlugin : Plugin {
             .size(150.dp, 80.dp)
             .padding(horizontal = 16.dp),
           shape = CircleShape,
-          tonalElevation = 2f,
+          tonalElevation = 2.dp,
         ) {
           Text("Circle")
         }
@@ -424,7 +424,7 @@ class PlaygroundPlugin : Plugin {
             .size(150.dp, 80.dp)
             .padding(horizontal = 16.dp),
           shape = RoundedCornerShape(12.dp),
-          tonalElevation = 1f,
+          tonalElevation = 1.dp,
           onClick = clickAction { },
         ) {
           Text("Click")
@@ -546,7 +546,7 @@ class PlaygroundPlugin : Plugin {
         modifier = LivewireModifier
           .fillMaxWidth()
           .padding(horizontal = 16.dp),
-        thickness = 3f,
+        thickness = 3.dp,
       )
 
       Column(

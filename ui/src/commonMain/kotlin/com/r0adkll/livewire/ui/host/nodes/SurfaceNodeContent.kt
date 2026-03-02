@@ -7,7 +7,6 @@ import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.host.LayoutNodeContent
 import com.r0adkll.livewire.ui.host.debugFrame
@@ -25,8 +24,8 @@ internal fun SurfaceNodeContent(
   val shape = node.shape.toComposeUi()
   val color = node.color ?: MaterialTheme.colorScheme.surface
   val contentColor = node.contentColor ?: contentColorFor(color)
-  val tonalElevation = node.tonalElevation.dp
-  val shadowElevation = node.shadowElevation.dp
+  val tonalElevation = node.tonalElevation
+  val shadowElevation = node.shadowElevation
 
   val content: @Composable () -> Unit = {
     Box {

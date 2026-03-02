@@ -42,7 +42,7 @@ internal fun TableList(
 ) {
   Surface(
     modifier = modifier,
-    tonalElevation = 1f,
+    tonalElevation = 1.dp,
   ) {
     Column(
       modifier = LivewireModifier.fillMaxHeight()

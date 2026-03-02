@@ -53,7 +53,7 @@ fun DatabaseToolBar(
       var menuExpanded by remember { mutableStateOf(false) }
       Surface(
         shape = RoundedCornerShape(8.dp),
-        tonalElevation = 2f,
+        tonalElevation = 2.dp,
         onClick = clickAction {
           menuExpanded = true
         },

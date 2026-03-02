@@ -4,7 +4,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.ui.host.debugFrame
 import com.r0adkll.livewire.ui.widget.DividerNode
 import com.r0adkll.livewire.ui.widget.DividerStyle
@@ -17,11 +16,11 @@ internal fun DividerNodeContent(
   when (node.style) {
     DividerStyle.Horizontal -> HorizontalDivider(
       modifier = modifier.debugFrame(),
-      thickness = node.thickness.dp,
+      thickness = node.thickness,
     )
     DividerStyle.Vertical -> VerticalDivider(
       modifier = modifier.debugFrame(),
-      thickness = node.thickness.dp,
+      thickness = node.thickness,
     )
   }
 }
