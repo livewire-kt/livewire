@@ -55,7 +55,7 @@ fun CharactersScreen(
   setSingletonImageLoaderFactory { context ->
     ImageLoader.Builder(context)
       .components {
-        add(KtorNetworkFetcherFactory(httpClient = api.httpClient))
+        add(KtorNetworkFetcherFactory(httpClient = api.imageHttpClient))
       }
       .build()
   }

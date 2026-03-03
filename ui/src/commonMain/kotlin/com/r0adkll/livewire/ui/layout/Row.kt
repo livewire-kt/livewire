@@ -19,6 +19,7 @@ import kotlinx.serialization.Serializable
 @Composable
 inline fun Row(
   modifier: LivewireModifier = LivewireModifier,
+  horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
   verticalAlignment: Alignment.Vertical = Alignment.Top,
   content: @Composable @LivewireComposable RowScope.() -> Unit,
 ) {
@@ -26,6 +27,7 @@ inline fun Row(
   ReusableComposeNode<RowNode, Applier<LayoutNode>>(
     factory = { RowNode() },
     update = {
+      set(horizontalArrangement, RowNode.SetHorizontalArrangement)
       set(verticalAlignment, RowNode.SetVerticalAlignment)
       set(modifier, LayoutNode.SetModifier)
       init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
@@ -66,10 +68,12 @@ internal object RowScopeInstance : RowScope {
 @LivewireSerializer
 @Serializable
 class RowNode(
+  var horizontalArrangement: Arrangement.Horizontal = Arrangement.Start,
   var verticalAlignment: Alignment.Vertical = Alignment.Top,
 ) : LayoutNode() {
 
   companion object {
+    val SetHorizontalArrangement: RowNode.(Arrangement.Horizontal) -> Unit = applier { horizontalArrangement = it }
     val SetVerticalAlignment: RowNode.(Alignment.Vertical) -> Unit = applier { verticalAlignment = it }
   }
 }

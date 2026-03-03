@@ -1,6 +1,5 @@
 package com.r0adkll.livewire.ui.host.nodes
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.contentColorFor
@@ -28,10 +27,8 @@ internal fun SurfaceNodeContent(
   val shadowElevation = node.shadowElevation
 
   val content: @Composable () -> Unit = {
-    Box {
-      node.children.forEach { child ->
-        LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
-      }
+    node.children.forEach { child ->
+      LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
     }
   }
 

@@ -49,6 +49,7 @@ internal fun IconButtonNodeContent(
     },
     style = node.style,
     shapes = IconButtonDefaults.shapes(),
+    enabled = node.enabled,
     modifier = modifier
       .size(buttonSize)
       .debugFrame(),
@@ -71,29 +72,34 @@ private fun IconButtonNodeContent(
   style: IconButtonStyle,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
+  enabled: Boolean = true,
   shapes: IconButtonShapes = IconButtonDefaults.shapes(),
   content: @Composable () -> Unit,
 ) {
   when (style) {
     IconButtonStyle.Default -> IconButton(
+      enabled = enabled,
       onClick = onClick,
       shapes = shapes,
       modifier = modifier,
       content = content,
     )
     IconButtonStyle.Filled -> FilledIconButton(
+      enabled = enabled,
       onClick = onClick,
       shapes = shapes,
       modifier = modifier,
       content = content,
     )
     IconButtonStyle.Tonal -> FilledTonalIconButton(
+      enabled = enabled,
       onClick = onClick,
       shapes = shapes,
       modifier = modifier,
       content = content,
     )
     IconButtonStyle.Outlined -> OutlinedIconButton(
+      enabled = enabled,
       onClick = onClick,
       shapes = shapes,
       modifier = modifier,

@@ -7,6 +7,7 @@ import com.r0adkll.livewire.ui.host.LayoutNodeContent
 import com.r0adkll.livewire.ui.host.debugFrame
 import com.r0adkll.livewire.ui.layout.Alignment
 import com.r0adkll.livewire.ui.layout.ColumnNode
+import com.r0adkll.livewire.ui.layout.toComposeUi
 
 @Composable
 internal fun ColumnNodeContent(
@@ -15,6 +16,7 @@ internal fun ColumnNodeContent(
 ) {
   Column(
     modifier = modifier.debugFrame(),
+    verticalArrangement = node.verticalArrangement.toComposeUi(),
     horizontalAlignment = when (node.horizontalAlignment) {
       Alignment.CenterHorizontally -> androidx.compose.ui.Alignment.CenterHorizontally
       Alignment.End -> androidx.compose.ui.Alignment.End

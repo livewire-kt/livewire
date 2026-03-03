@@ -12,7 +12,9 @@ import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.plugin.network.ui.Icons
+import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.theme.LivewireTheme
+import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.Spacer
@@ -33,7 +35,6 @@ internal fun NetworkToolbar(
     verticalAlignment = Alignment.CenterVertically,
     modifier = modifier
       .background(LivewireTheme.colorScheme.surfaceContainer)
-      .height(56.dp)
       .fillMaxWidth(),
   ) {
     TextField(
@@ -44,22 +45,19 @@ internal fun NetworkToolbar(
       style = TextFieldStyle.Outlined,
       modifier = LivewireModifier
         .weight(1f)
-        .padding(horizontal = 8.dp),
+        .padding(
+          horizontal = 16.dp,
+          vertical = 8.dp,
+        ),
     )
 
-    Text(
-      text = "$eventCount requests",
-      style = TextStyle.LabelMedium,
-      color = LivewireTheme.colorScheme.onSurfaceVariant,
-      modifier = LivewireModifier.padding(horizontal = 8.dp),
-    )
-
-    IconButton(
+    Button(
       action = onClearAll,
     ) {
       Icon(svgData = Icons.Delete)
+      Text("Clear")
     }
 
-    Spacer(modifier = LivewireModifier.padding(right = 8.dp))
+    Spacer(LivewireModifier.width(16.dp))
   }
 }

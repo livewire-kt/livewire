@@ -67,7 +67,10 @@ class LivewireServer(
   var activeSession: WebSocketSession? = null
     private set
 
-  val codec = LivewireWebSocketCodec(decoders.toSet())
+  val codec = LivewireWebSocketCodec(
+    decoders = decoders.toSet(),
+    serializationStrategy = serializationStrategy,
+  )
 
   fun start() {
     if (server != null) {

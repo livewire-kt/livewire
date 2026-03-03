@@ -29,6 +29,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -60,7 +61,9 @@ import com.r0adkll.livewire.ui.composables.DisconnectedStateLayout
 import com.r0adkll.livewire.ui.data.ClientManifest
 import com.r0adkll.livewire.ui.data.PluginSelected
 import com.r0adkll.livewire.ui.data.UiProtocol
+import com.r0adkll.livewire.ui.host.DebugNodes
 import com.r0adkll.livewire.ui.host.LayoutNodeContent
+import com.r0adkll.livewire.ui.icons.BugReport
 import com.r0adkll.livewire.ui.icons.Connected
 import com.r0adkll.livewire.ui.icons.Disconnected
 import com.r0adkll.livewire.ui.icons.MenuOpen
@@ -286,6 +289,23 @@ private fun DeviceTopBar(
           Text("Disconnect")
         }
       }
+
+      Spacer(Modifier.weight(1f))
+
+      Switch(
+        checked = DebugNodes,
+        onCheckedChange = {
+          DebugNodes = it
+        },
+        thumbContent = {
+          Icon(
+            BugReport,
+            contentDescription = null,
+          )
+        }
+      )
+
+      Spacer(Modifier.width(16.dp))
     }
   }
 }

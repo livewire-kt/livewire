@@ -1,5 +1,6 @@
 package com.r0adkll.livewire.ui.data
 
+import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
@@ -34,13 +35,24 @@ sealed interface LayoutNodeSerializationStrategy {
 class JsonLayoutNodeSerializationStrategy(
   private val json: Json = LivewireUiJson,
 ) : LayoutNodeSerializationStrategy {
+  private val debugJson by lazy {
+    Json(json) {
+      prettyPrint = true
+      prettyPrintIndent = "  "
+    }
+  }
 
   override fun encodeToByteArray(layoutNode: LayoutNode): ByteArray {
     return json.encodeToString(layoutNode).encodeToByteArray()
   }
 
   override fun decodeFromByteArray(bytes: ByteArray): LayoutNode {
-    return json.decodeFromString<LayoutNode>(bytes.decodeToString())
+    val layoutNode = json.decodeFromString<LayoutNode>(bytes.decodeToString())
+    // Uncomment to debug nodes
+//    println(
+//      debugJson.encodeToString(layoutNode)
+//    )
+    return layoutNode
   }
 }
 

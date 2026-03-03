@@ -14,21 +14,30 @@ import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.verticalScroll
 import com.r0adkll.livewire.plugin.network.ui.Icons
+import com.r0adkll.livewire.ui.actions.checkedChangeAction
+import com.r0adkll.livewire.ui.actions.intValueChangeAction
+import com.r0adkll.livewire.ui.layout.Arrangement
+import com.r0adkll.livewire.ui.modifier.background
+import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.theme.LivewireTheme
+import com.r0adkll.livewire.ui.widget.ButtonGroupDefaults
+import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.Spacer
+import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextStyle
+import com.r0adkll.livewire.ui.widget.ToggleButton
 
 @Composable
 internal fun RequestDetailPane(
   event: NetworkEvent,
   selectedTab: Int,
-  onTabSelected: IntValueChangeAction,
+  onTabSelected: (Int) -> Unit,
   onClose: ClickAction,
   modifier: LivewireModifier = LivewireModifier,
 ) {
@@ -36,33 +45,68 @@ internal fun RequestDetailPane(
     modifier = modifier.fillMaxSize(),
   ) {
     // Header bar
-    Row(
-      verticalAlignment = Alignment.CenterVertically,
-      modifier = LivewireModifier
-        .fillMaxWidth()
-        .padding(horizontal = 8.dp, vertical = 4.dp),
+    Surface(
+      shadowElevation = 4.dp
     ) {
-      Text(
-        text = "Request Detail",
-        style = TextStyle.TitleSmall,
-        modifier = LivewireModifier.weight(1f).padding(left = 8.dp),
-      )
-      IconButton(action = onClose) {
-        Icon(svgData = Icons.Close)
+      Column {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = LivewireModifier
+            .fillMaxWidth()
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        ) {
+          Text(
+            text = "Request Detail",
+            style = TextStyle.TitleSmall,
+            modifier = LivewireModifier.weight(1f).padding(left = 8.dp),
+          )
+          IconButton(action = onClose) {
+            Icon(svgData = Icons.Close)
+          }
+        }
+
+        Row(
+          horizontalArrangement = Arrangement.SpacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
+          modifier = LivewireModifier
+            .padding(horizontal = 16.dp)
+        ) {
+          ToggleButton(
+            checked = selectedTab == 0,
+            onCheckedChange = checkedChangeAction("overview") {
+              onTabSelected(0)
+            },
+            shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
+            size = ButtonSize.ExtraSmall,
+            modifier = LivewireModifier.weight(1f),
+          ) {
+            Text("Overview")
+          }
+          ToggleButton(
+            checked = selectedTab == 1,
+            onCheckedChange = checkedChangeAction("headers") {
+              onTabSelected(1)
+            },
+            shapes = ButtonGroupDefaults.connectedMiddleButtonShapes(),
+            size = ButtonSize.ExtraSmall,
+            modifier = LivewireModifier.weight(1f),
+          ) {
+            Text("Headers")
+          }
+          ToggleButton(
+            checked = selectedTab == 2,
+            onCheckedChange = checkedChangeAction("body") {
+              onTabSelected(2)
+            },
+            shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+            size = ButtonSize.ExtraSmall,
+            modifier = LivewireModifier.weight(1f),
+          ) {
+            Text("Body")
+          }
+        }
+
+        Spacer(LivewireModifier.height(8.dp))
       }
-    }
-
-    HorizontalDivider(LivewireModifier.fillMaxWidth())
-
-    // Tab row
-    TabRow(
-      selectedTabIndex = selectedTab,
-      onTabSelected = onTabSelected,
-      modifier = LivewireModifier.fillMaxWidth(),
-    ) {
-      Tab(text = "Overview")
-      Tab(text = "Headers")
-      Tab(text = "Body")
     }
 
     // Tab content

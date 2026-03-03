@@ -21,6 +21,7 @@ import kotlinx.serialization.Serializable
 fun IconButton(
   action: ClickAction,
   modifier: LivewireModifier = LivewireModifier,
+  enabled: Boolean = true,
   size: ButtonSize = ButtonSize.Small,
   style: IconButtonStyle = IconButtonStyle.Default,
   content: @Composable @LivewireComposable () -> Unit,
@@ -32,6 +33,7 @@ fun IconButton(
       set(modifier, LayoutNode.SetModifier)
       init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(action, IconButtonNode.SetAction)
+      set(enabled, IconButtonNode.SetEnabled)
       set(size, IconButtonNode.SetSize)
       set(style, IconButtonNode.SetStyle)
     },
@@ -43,12 +45,14 @@ fun IconButton(
 @Serializable
 class IconButtonNode(
   var action: ClickAction,
+  var enabled: Boolean = true,
   var size: ButtonSize = ButtonSize.Small,
   var style: IconButtonStyle = IconButtonStyle.Default,
 ) : LayoutNode() {
 
   companion object {
     val SetAction: IconButtonNode.(ClickAction) -> Unit = applier { action = it }
+    val SetEnabled: IconButtonNode.(Boolean) -> Unit = applier { enabled = it }
     val SetSize: IconButtonNode.(ButtonSize) -> Unit = applier { size = it }
     val SetStyle: IconButtonNode.(IconButtonStyle) -> Unit = applier { style = it }
   }

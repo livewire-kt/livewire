@@ -9,7 +9,7 @@ import kotlinx.serialization.modules.plus
 import kotlinx.serialization.protobuf.ProtoBuf
 
 internal val LivewireUiJson = Json {
-  classDiscriminator = "type"
+  classDiscriminator = "__type"
   serializersModule =
     LayoutNodeSerializers().serializersModule +
     LivewireModifierSerializers().serializersModule

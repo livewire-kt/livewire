@@ -14,15 +14,18 @@ import com.r0adkll.livewire.ui.actions.valueChangeAction
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import com.r0adkll.livewire.ui.modifier.animateContentSize
 import com.r0adkll.livewire.ui.modifier.fillMaxHeight
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
+import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.verticalScroll
 import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.ResizableSurface
 import com.r0adkll.livewire.ui.widget.ResizeAnchor
+import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Surface
 
 class NetworkPlugin : Plugin {
@@ -46,7 +49,8 @@ class NetworkPlugin : Plugin {
       Column(
         modifier = LivewireModifier
           .weight(1f)
-          .fillMaxHeight(),
+          .fillMaxHeight()
+          .animateContentSize(),
       ) {
         NetworkToolbar(
           filterText = state.filterText,
@@ -67,6 +71,7 @@ class NetworkPlugin : Plugin {
             .fillMaxWidth()
             .verticalScroll(),
         ) {
+          Spacer(LivewireModifier.height(8.dp))
           state.events.forEach { event ->
             RequestListItem(
               event = event,
@@ -75,8 +80,8 @@ class NetworkPlugin : Plugin {
                 state.eventSink(NetworkUiEvent.SelectEvent(event))
               },
             )
-            HorizontalDivider(LivewireModifier.fillMaxWidth())
           }
+          Spacer(LivewireModifier.height(8.dp))
         }
       }
 
@@ -98,7 +103,7 @@ class NetworkPlugin : Plugin {
             RequestDetailPane(
               event = event,
               selectedTab = state.selectedDetailTab,
-              onTabSelected = intValueChangeAction {
+              onTabSelected = {
                 state.eventSink(NetworkUiEvent.SelectDetailTab(it))
               },
               onClose = clickAction {

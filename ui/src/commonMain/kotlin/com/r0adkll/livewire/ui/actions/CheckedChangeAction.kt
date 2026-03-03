@@ -20,9 +20,10 @@ data class CheckedChangeAction(
 
 @Composable
 fun checkedChangeAction(
+  key: Any? = null,
   onCheckedChange: (Boolean) -> Unit,
 ): CheckedChangeAction {
-  val compositionKey = "onCheckedChange_${currentCompositeKeyHashCode}"
+  val compositionKey = "onCheckedChange_${key ?: currentCompositeKeyHashCode}"
   val updatedOnCheckedChange by rememberUpdatedState(onCheckedChange)
   val actionObserver = LocalLivewireActionObserver.current
 

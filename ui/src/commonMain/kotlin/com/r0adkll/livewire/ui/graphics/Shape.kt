@@ -36,10 +36,10 @@ data class RoundedCornerShape(
   constructor(all: CornerSize) : this(all, all, all, all)
 
   override fun toComposeUi(): ComposeShape = ComposeRoundedCornerShape(
-    topStart.toComposeUi(),
-    topEnd.toComposeUi(),
-    bottomStart.toComposeUi(),
-    bottomEnd.toComposeUi(),
+    topStart = topStart.toComposeUi(),
+    topEnd = topEnd.toComposeUi(),
+    bottomStart = bottomStart.toComposeUi(),
+    bottomEnd = bottomEnd.toComposeUi(),
   )
 
 }
@@ -84,3 +84,9 @@ data class CornerSize(
 fun CornerSize(size: Dp): CornerSize = CornerSize(size.value, CornerSize.Type.Dp)
 fun CornerSize(pixels: Float): CornerSize = CornerSize(pixels, CornerSize.Type.Px)
 fun CornerSize(percent: Int): CornerSize = CornerSize(percent.toFloat(), CornerSize.Type.Percent)
+
+object ShapeDefaults {
+
+  internal val CornerFull: CornerSize =CornerSize(100)
+  internal val Small: RoundedCornerShape = RoundedCornerShape(8.0.dp)
+}

@@ -51,7 +51,7 @@ internal fun ToggleButtonNodeContent(
     },
     style = node.style,
     enabled = node.enabled,
-    shapes = ToggleButtonDefaults.shapes(),
+    shapes = node.shapes.toComposeUi(),
     modifier = modifier
       .heightIn(buttonSize)
       .debugFrame(),

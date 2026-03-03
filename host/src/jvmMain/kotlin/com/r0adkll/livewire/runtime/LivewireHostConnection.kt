@@ -69,7 +69,9 @@ class LivewireHostConnection(
   var session: WebSocketSession? = null
     private set
 
-  val codec = LivewireWebSocketCodec(decoders.toSet())
+  val codec = LivewireWebSocketCodec(
+    decoders = decoders.toSet()
+  )
 
   suspend fun connect(device: HostDevice) {
     println("connect to $device")

@@ -1,24 +1,20 @@
 package com.r0adkll.livewire.ui.transport
 
-import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.actions.LivewireAction
 import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
-import com.r0adkll.livewire.ui.data.LivewireUiJson
 import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import io.ktor.utils.io.core.toByteArray
-import io.ktor.websocket.Frame
-import io.ktor.websocket.readBytes
-import io.ktor.websocket.readText
+import io.ktor.websocket.*
 
-class LivewireWebSocketCodec(decoders: Collection<PayloadDecoder<*>>) {
+class LivewireWebSocketCodec(
+  decoders: Collection<PayloadDecoder<*>>,
+  var serializationStrategy: LayoutNodeSerializationStrategy = LayoutNodeSerializationStrategy.Default,
+) {
   private val envelopeDecoder = EnvelopeDecoder(payloadDecoders = decoders.toSet())
 
-  var serializationStrategy: LayoutNodeSerializationStrategy =
-    LayoutNodeSerializationStrategy.Default
 
   suspend fun decode(frame: Frame): LivewireIncoming? {
     return when (frame) {

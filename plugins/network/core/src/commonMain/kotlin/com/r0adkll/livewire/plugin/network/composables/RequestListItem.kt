@@ -5,11 +5,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.plugin.network.data.NetworkEvent
 import com.r0adkll.livewire.ui.actions.ClickAction
+import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
 import com.r0adkll.livewire.ui.layout.Alignment
+import com.r0adkll.livewire.ui.layout.Box
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.padding
+import com.r0adkll.livewire.ui.modifier.size
 import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import com.r0adkll.livewire.ui.widget.ProgressIndicator
@@ -29,35 +32,45 @@ internal fun RequestListItem(
   Surface(
     onClick = onClick,
     color = if (isSelected) LivewireTheme.colorScheme.surfaceContainerHighest else null,
-    modifier = modifier.fillMaxWidth(),
+    shape = RoundedCornerShape(8.dp),
+    modifier = modifier
+      .padding(
+        horizontal = 8.dp,
+        vertical = 2.dp,
+      )
+      .fillMaxWidth(),
   ) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
       modifier = LivewireModifier
         .fillMaxWidth()
-        .padding(horizontal = 12.dp, vertical = 8.dp),
+        .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
-      // Status code or in-flight indicator
-      if (event.response != null) {
-        val statusCode = event.response.statusCode
-        Text(
-          text = statusCode.toString(),
-          style = TextStyle.LabelMedium,
-          color = statusColor(statusCode),
-          modifier = LivewireModifier.width(40.dp),
-        )
-      } else if (event.error != null) {
-        Text(
-          text = "ERR",
-          style = TextStyle.LabelMedium,
-          color = Color.Red,
-          modifier = LivewireModifier.width(40.dp),
-        )
-      } else {
-        ProgressIndicator(
-          style = ProgressIndicatorStyle.Circular,
-          modifier = LivewireModifier.width(40.dp),
-        )
+      Box(
+        contentAlignment = Alignment.Center,
+        modifier = LivewireModifier
+          .size(40.dp),
+      ) {
+        // Status code or in-flight indicator
+        if (event.response != null) {
+          val statusCode = event.response.statusCode
+          Text(
+            text = statusCode.toString(),
+            style = TextStyle.LabelMedium,
+            color = statusColor(statusCode),
+          )
+        } else if (event.error != null) {
+          Text(
+            text = "ERR",
+            style = TextStyle.LabelMedium,
+            color = Color.Red,
+          )
+        } else {
+          ProgressIndicator(
+            style = ProgressIndicatorStyle.Circular,
+            modifier = LivewireModifier.size(24.dp),
+          )
+        }
       }
 
       // Method

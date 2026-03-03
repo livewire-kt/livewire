@@ -10,10 +10,14 @@ import kotlinx.serialization.json.Json
 
 class RickAndMortyApi {
 
-  val httpClient = HttpClient {
+  private val httpClient = HttpClient {
     install(ContentNegotiation) {
       json(Json { ignoreUnknownKeys = true })
     }
+    install(LivewireNetworkPlugin)
+  }
+
+  val imageHttpClient = HttpClient {
     install(LivewireNetworkPlugin)
   }
 

@@ -24,6 +24,8 @@ object ServiceLocator {
       install(DatabasePlugin(context))
       install(NetworkPlugin())
       install(PlaygroundPlugin())
+
+      layoutNodeSerialization(LayoutNodeSerialization.Json)
     }
   }
 
