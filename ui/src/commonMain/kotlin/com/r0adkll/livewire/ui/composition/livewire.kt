@@ -17,6 +17,7 @@ import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RootNode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -32,7 +33,7 @@ fun livewireFlow(
 ): Flow<LayoutNode> = flow {
   coroutineScope {
     val clock = GatedFrameClock(this, EmptyCoroutineContext)
-    val outputBuffer = Channel<LayoutNode>(1)
+    val outputBuffer = Channel<LayoutNode>(1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     launch(clock, start = UNDISPATCHED) {
       launchLivewire(

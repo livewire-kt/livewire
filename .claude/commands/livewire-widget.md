@@ -25,6 +25,7 @@ This file contains both the client-side `@Composable` function and the serializa
 - Annotated with `@LivewireSerializer` (from `com.r0adkll.livewire.annotations.LivewireSerializer`) and `@Serializable` — the `@LivewireSerializer` annotation auto-registers the node with the KSP-generated polymorphic serializer, no manual registration needed
 - Extends `LayoutNode()`
 - All mutable properties are `var`
+- Must override `shallowCopy(): LayoutNode` — returns a new instance of the node with the same property values but no children. Used by `deepCopy()` for fast structural copies. Pass all constructor parameters and manually copy any properties declared outside the constructor.
 - Companion object contains setter lambdas using the `applier { }` helper: `val SetFoo: {Name}Node.(Type) -> Unit = applier { foo = it }`
 - All properties must be serializable. For non-serializable types (like Color), convert to a serializable form (e.g. Int ARGB)
 
@@ -80,6 +81,8 @@ class TextNode(
   var style: TextStyle? = null,
   var fontWeight: Int? = null,
 ) : LayoutNode() {
+
+  override fun shallowCopy(): TextNode = TextNode(text, style, fontWeight)
 
   companion object {
     val SetText: TextNode.(String) -> Unit = applier { text = it }
@@ -139,6 +142,8 @@ class CheckboxNode(
   var onCheckedChange: CheckedChangeAction,
   var enabled: Boolean,
 ) : LayoutNode() {
+
+  override fun shallowCopy(): CheckboxNode = CheckboxNode(checked, onCheckedChange, enabled)
 
   companion object {
     val SetChecked: CheckboxNode.(Boolean) -> Unit = applier { checked = it }
