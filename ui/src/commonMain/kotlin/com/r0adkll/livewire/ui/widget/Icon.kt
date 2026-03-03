@@ -41,6 +41,8 @@ class IconNode(
   @Serializable(with = ColorSerializer::class)
   var tint: Color = Color.Unspecified
 
+  override fun shallowCopy(): IconNode = IconNode(svgData).also { it.tint = tint }
+
   companion object {
     val SetSvgData: IconNode.(String) -> Unit = { svgData = it }
     val SetTint: IconNode.(Color) -> Unit = applier { tint = it }

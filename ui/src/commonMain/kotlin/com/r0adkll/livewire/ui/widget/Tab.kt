@@ -44,6 +44,8 @@ class TabRowNode(
   var style: TabStyle = TabStyle.Primary,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): TabRowNode = TabRowNode(selectedTabIndex, onTabSelected, style)
+
   companion object {
     val SetSelectedTabIndex: TabRowNode.(Int) -> Unit = applier { selectedTabIndex = it }
     val SetOnTabSelected: TabRowNode.(IntValueChangeAction) -> Unit = applier { onTabSelected = it }
@@ -79,6 +81,8 @@ class TabNode(
   var iconData: String? = null,
   var enabled: Boolean = true,
 ) : LayoutNode() {
+
+  override fun shallowCopy(): TabNode = TabNode(text, iconData, enabled)
 
   companion object {
     val SetText: TabNode.(String?) -> Unit = applier { text = it }

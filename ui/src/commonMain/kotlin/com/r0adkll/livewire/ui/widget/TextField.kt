@@ -59,6 +59,10 @@ class TextFieldNode(
   var style: TextFieldStyle = TextFieldStyle.Filled,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): TextFieldNode = TextFieldNode(
+    initialValue, onValueChange, enabled, readOnly, label, placeholder, singleLine, maxLines, style,
+  )
+
   companion object {
     val SetInitialValue: TextFieldNode.(String) -> Unit = applier { initialValue = it }
     val SetOnValueChange: TextFieldNode.(ValueChangeAction) -> Unit = applier { onValueChange = it }

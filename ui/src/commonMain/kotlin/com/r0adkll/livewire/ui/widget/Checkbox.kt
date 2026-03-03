@@ -41,6 +41,8 @@ class CheckboxNode(
   var enabled: Boolean,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): CheckboxNode = CheckboxNode(checked, onCheckedChange, enabled)
+
   companion object {
     val SetChecked: CheckboxNode.(Boolean) -> Unit = applier { checked = it }
     val SetCheckedChange: CheckboxNode.(CheckedChangeAction) -> Unit = applier { onCheckedChange = it }

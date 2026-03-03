@@ -26,9 +26,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.measureTimedValue
 
 enum class ConnectionState {
   STOPPED,
@@ -54,11 +53,11 @@ class LivewireServer(
 
   private val scope = CoroutineScope(context + SupervisorJob())
 
-  private val _connectionState = MutableStateFlow(ConnectionState.STOPPED)
-  val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+  val connectionState: StateFlow<ConnectionState>
+    field = MutableStateFlow(ConnectionState.STOPPED)
 
-  private val _incomingMessages = MutableSharedFlow<Any>(extraBufferCapacity = 64)
-  val incomingMessages: SharedFlow<Any> = _incomingMessages.asSharedFlow()
+  val incomingMessages: SharedFlow<Any>
+    field = MutableSharedFlow<Any>(extraBufferCapacity = 64)
 
   val outgoingLayoutSize: StateFlow<Long>
     field = MutableStateFlow(0L)
@@ -70,6 +69,9 @@ class LivewireServer(
   val codec = LivewireWebSocketCodec(
     decoders = decoders.toSet(),
     serializationStrategy = serializationStrategy,
+    outgoingSizeReporter = { bytes ->
+      outgoingLayoutSize.value = bytes
+    }
   )
 
   fun start() {
@@ -83,11 +85,11 @@ class LivewireServer(
       routing {
         webSocket(LivewireConstants.WsPath) {
           activeSession = this
-          _connectionState.value = ConnectionState.CONNECTED
+          connectionState.value = ConnectionState.CONNECTED
           try {
             for (frame in incoming) {
               when (val incomingMessage = codec.decode(frame)) {
-                is LivewireIncoming.Payload -> _incomingMessages.tryEmit(incomingMessage.payload)
+                is LivewireIncoming.Payload -> incomingMessages.tryEmit(incomingMessage.payload)
                 is LivewireIncoming.Layout -> Unit
                 null -> Unit
               }
@@ -96,13 +98,13 @@ class LivewireServer(
             logError("Livewire", "Server websocket error", e)
           } finally {
             activeSession = null
-            _connectionState.value = ConnectionState.STARTED
+            connectionState.value = ConnectionState.STARTED
           }
         }
       }
     }.also {
       it.start(wait = false)
-      _connectionState.value = ConnectionState.STARTED
+      connectionState.value = ConnectionState.STARTED
     }
   }
 
@@ -111,14 +113,16 @@ class LivewireServer(
   }
 
   suspend fun sendLayoutNode(node: LayoutNode) {
-    activeSession?.send(codec.encodeLayout(node))
+    val (snapshot, duration) = measureTimedValue { node.deepCopy() }
+    logDebug("Livewire", "LayoutNode DeepCopy took $duration")
+    activeSession?.send(codec.encodeLayout(snapshot))
   }
 
   fun stop() {
     server?.stop(1000, 2000)
     server = null
     activeSession = null
-    _connectionState.value = ConnectionState.STOPPED
+    connectionState.value = ConnectionState.STOPPED
     scope.cancel()
   }
 }

@@ -59,6 +59,8 @@ class SurfaceNode(
   var onClick: ClickAction? = null,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): SurfaceNode = SurfaceNode(shape, color, contentColor, tonalElevation, shadowElevation, onClick)
+
   companion object {
     val SetShape: SurfaceNode.(Shape) -> Unit = applier { shape = it }
     val SetColor: SurfaceNode.(Color?) -> Unit = applier { color = it }

@@ -40,6 +40,8 @@ class TableNode(
   var pageSize: Int = 10,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): TableNode = TableNode(columns, rows, pageSize)
+
   companion object {
     val SetColumns: TableNode.(List<String>) -> Unit = applier { columns = it }
     val SetRows: TableNode.(List<List<String>>) -> Unit = applier { rows = it }

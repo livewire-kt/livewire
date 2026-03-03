@@ -41,6 +41,8 @@ class SwitchNode(
   var enabled: Boolean,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): SwitchNode = SwitchNode(checked, onCheckedChange, enabled)
+
   companion object {
     val SetChecked: SwitchNode.(Boolean) -> Unit = applier { checked = it }
     val SetCheckedChange: SwitchNode.(CheckedChangeAction) -> Unit = applier { onCheckedChange = it }

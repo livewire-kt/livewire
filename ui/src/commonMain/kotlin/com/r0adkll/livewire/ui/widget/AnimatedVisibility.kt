@@ -42,6 +42,8 @@ class AnimatedVisibilityNode(
   var exit: ExitTransition = ExitTransition.FadeOut,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): AnimatedVisibilityNode = AnimatedVisibilityNode(visible, enter, exit)
+
   companion object {
     val SetVisible: AnimatedVisibilityNode.(Boolean) -> Unit = applier { visible = it }
     val SetEnter: AnimatedVisibilityNode.(EnterTransition) -> Unit = applier { enter = it }

@@ -12,6 +12,7 @@ import io.ktor.websocket.*
 class LivewireWebSocketCodec(
   decoders: Collection<PayloadDecoder<*>>,
   var serializationStrategy: LayoutNodeSerializationStrategy = LayoutNodeSerializationStrategy.Default,
+  private val outgoingSizeReporter: (Long) -> Unit = {},
 ) {
   private val envelopeDecoder = EnvelopeDecoder(payloadDecoders = decoders.toSet())
 
@@ -49,6 +50,7 @@ class LivewireWebSocketCodec(
 
   fun encodeLayout(node: LayoutNode): Frame.Binary {
     val nodeBinary = serializationStrategy.encodeToByteArray(node)
+    outgoingSizeReporter(nodeBinary.size.toLong())
     return Frame.Binary(true, nodeBinary)
   }
 }

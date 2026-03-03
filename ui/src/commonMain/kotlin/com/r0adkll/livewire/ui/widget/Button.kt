@@ -55,6 +55,8 @@ class ButtonNode(
   var shapes: ButtonShapes = ButtonShapes(),
 ) : LayoutNode() {
 
+  override fun shallowCopy(): ButtonNode = ButtonNode(action, size, style, shapes)
+
   companion object {
     val SetAction: ButtonNode.(ClickAction) -> Unit = applier { action = it }
     val SetSize: ButtonNode.(ButtonSize) -> Unit = applier { size = it }

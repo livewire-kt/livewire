@@ -27,4 +27,6 @@ fun Spacer(
 
 @LivewireSerializer
 @Serializable
-class SpacerNode : LayoutNode()
+class SpacerNode : LayoutNode() {
+  override fun shallowCopy(): SpacerNode = SpacerNode()
+}

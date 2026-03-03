@@ -55,6 +55,8 @@ class DividerNode(
   @Serializable(with = DpSerializer::class) var thickness: Dp = 1.dp,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): DividerNode = DividerNode(style, thickness)
+
   companion object {
     val SetStyle: DividerNode.(DividerStyle) -> Unit = applier { style = it }
     val SetThickness: DividerNode.(Dp) -> Unit = applier { thickness = it }

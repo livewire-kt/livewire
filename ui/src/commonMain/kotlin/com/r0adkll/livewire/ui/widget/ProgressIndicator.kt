@@ -37,6 +37,8 @@ class ProgressIndicatorNode(
   var style: ProgressIndicatorStyle = ProgressIndicatorStyle.Linear,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): ProgressIndicatorNode = ProgressIndicatorNode(progress, style)
+
   companion object {
     val SetProgress: ProgressIndicatorNode.(Float?) -> Unit = applier { progress = it }
     val SetStyle: ProgressIndicatorNode.(ProgressIndicatorStyle) -> Unit = applier { style = it }

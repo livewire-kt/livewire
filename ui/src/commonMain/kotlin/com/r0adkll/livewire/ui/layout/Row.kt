@@ -72,6 +72,8 @@ class RowNode(
   var verticalAlignment: Alignment.Vertical = Alignment.Top,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): RowNode = RowNode(horizontalArrangement, verticalAlignment)
+
   companion object {
     val SetHorizontalArrangement: RowNode.(Arrangement.Horizontal) -> Unit = applier { horizontalArrangement = it }
     val SetVerticalAlignment: RowNode.(Alignment.Vertical) -> Unit = applier { verticalAlignment = it }

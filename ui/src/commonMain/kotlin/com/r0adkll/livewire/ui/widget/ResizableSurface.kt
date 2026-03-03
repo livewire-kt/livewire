@@ -71,6 +71,10 @@ class ResizableSurfaceNode(
   @Serializable(with = DpSerializer::class) var shadowElevation: Dp = 0.dp,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): ResizableSurfaceNode = ResizableSurfaceNode(
+    anchor, initialSize, minSize, maxSize, shape, color, contentColor, tonalElevation, shadowElevation,
+  )
+
   companion object {
     val SetAnchor: ResizableSurfaceNode.(ResizeAnchor) -> Unit = applier { anchor = it }
     val SetInitialSize: ResizableSurfaceNode.(Dp) -> Unit = applier { initialSize = it }

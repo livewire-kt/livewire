@@ -47,6 +47,8 @@ class TextNode(
   var fontWeight: Int? = null,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): TextNode = TextNode(text, color, style, fontWeight)
+
   companion object {
     val SetText: TextNode.(String) -> Unit = applier { text = it }
     val SetColor: TextNode.(Color) -> Unit = applier { color = it }

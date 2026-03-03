@@ -42,6 +42,8 @@ class DropdownMenuNode(
   var onDismissRequest: ClickAction,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): DropdownMenuNode = DropdownMenuNode(expanded, onDismissRequest)
+
   companion object {
     val SetExpanded: DropdownMenuNode.(Boolean) -> Unit = applier { expanded = it }
     val SetOnDismissRequest: DropdownMenuNode.(ClickAction) -> Unit = applier { onDismissRequest = it }
@@ -82,6 +84,8 @@ class DropdownMenuItemNode(
   var trailingIconData: String? = null,
   var enabled: Boolean = true,
 ) : LayoutNode() {
+
+  override fun shallowCopy(): DropdownMenuItemNode = DropdownMenuItemNode(text, onClick, leadingIconData, trailingIconData, enabled)
 
   companion object {
     val SetText: DropdownMenuItemNode.(String) -> Unit = applier { text = it }

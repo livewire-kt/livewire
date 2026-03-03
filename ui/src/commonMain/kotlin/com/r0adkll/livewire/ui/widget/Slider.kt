@@ -50,6 +50,8 @@ class SliderNode(
   var steps: Int,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): SliderNode = SliderNode(value, onValueChange, enabled, valueRangeStart, valueRangeEnd, steps)
+
   companion object {
     val SetValue: SliderNode.(Float) -> Unit = applier { value = it }
     val SetOnValueChange: SliderNode.(FloatValueChangeAction) -> Unit = applier { onValueChange = it }

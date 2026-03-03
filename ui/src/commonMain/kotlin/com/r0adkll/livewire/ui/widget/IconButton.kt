@@ -50,6 +50,8 @@ class IconButtonNode(
   var style: IconButtonStyle = IconButtonStyle.Default,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): IconButtonNode = IconButtonNode(action, enabled, size, style)
+
   companion object {
     val SetAction: IconButtonNode.(ClickAction) -> Unit = applier { action = it }
     val SetEnabled: IconButtonNode.(Boolean) -> Unit = applier { enabled = it }

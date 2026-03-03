@@ -31,6 +31,26 @@ abstract class LayoutNode(
   @Transient
   internal open var invalidateListener: ((LayoutNode) -> Unit)? = null
 
+  /**
+   * Create a shallow copy of this node with the same property values but no children.
+   * Used by [deepCopy] to perform fast structural copies.
+   */
+  abstract fun shallowCopy(): LayoutNode
+
+  /**
+   * Create a deep copy of this node and all its children.
+   * This is a fast structural copy that avoids serialization overhead.
+   */
+  fun deepCopy(): LayoutNode {
+    val copy = shallowCopy()
+    copy.modifier = modifier
+    copy.compositeKeyHash = compositeKeyHash
+    for (child in children) {
+      copy.children.add(child.deepCopy())
+    }
+    return copy
+  }
+
   fun invalidate() {
     invalidateListener?.invoke(this)
   }
@@ -89,4 +109,6 @@ fun <T : LayoutNode, C> applier(block: T.(C) -> Unit): T.(C) -> Unit {
 
 @LivewireSerializer
 @Serializable
-class RootNode : LayoutNode()
+class RootNode : LayoutNode() {
+  override fun shallowCopy(): RootNode = RootNode()
+}

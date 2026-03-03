@@ -60,6 +60,8 @@ class ToggleButtonNode(
   var shapes: ToggleButtonShapes = ToggleButtonShapes(),
 ) : LayoutNode() {
 
+  override fun shallowCopy(): ToggleButtonNode = ToggleButtonNode(checked, onCheckedChange, enabled, size, style, shapes)
+
   companion object {
     val SetChecked: ToggleButtonNode.(Boolean) -> Unit = applier { checked = it }
     val SetOnCheckedChange: ToggleButtonNode.(CheckedChangeAction) -> Unit = applier { onCheckedChange = it }

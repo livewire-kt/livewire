@@ -38,6 +38,8 @@ class FloatingToolbarNode(
   var expanded: Boolean,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): FloatingToolbarNode = FloatingToolbarNode(expanded)
+
   companion object {
     val SetExpanded: FloatingToolbarNode.(Boolean) -> Unit = applier { expanded = it }
   }

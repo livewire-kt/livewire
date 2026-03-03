@@ -41,6 +41,8 @@ class RadioButtonNode(
   var enabled: Boolean = true,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): RadioButtonNode = RadioButtonNode(selected, onClick, enabled)
+
   companion object {
     val SetSelected: RadioButtonNode.(Boolean) -> Unit = applier { selected = it }
     val SetOnClick: RadioButtonNode.(ClickAction) -> Unit = applier { onClick = it }

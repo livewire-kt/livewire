@@ -24,8 +24,8 @@ import com.r0adkll.livewire.ui.data.ClientManifest
 import com.r0adkll.livewire.ui.data.DarkModeChange
 import com.r0adkll.livewire.ui.data.JsonLayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.data.LayoutNodeSerialization
-import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Protobuf
 import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Json
+import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Protobuf
 import com.r0adkll.livewire.ui.data.PluginSelected
 import com.r0adkll.livewire.ui.data.ProtobufLayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.data.UiDecoders

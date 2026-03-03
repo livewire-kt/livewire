@@ -48,6 +48,8 @@ class FloatingActionButtonNode(
   var expanded: Boolean = true,
 ) : LayoutNode() {
 
+  override fun shallowCopy(): FloatingActionButtonNode = FloatingActionButtonNode(action, size, style, expanded)
+
   companion object {
     val SetAction: FloatingActionButtonNode.(ClickAction) -> Unit = applier { action = it }
     val SetSize: FloatingActionButtonNode.(FabSize) -> Unit = applier { size = it }
