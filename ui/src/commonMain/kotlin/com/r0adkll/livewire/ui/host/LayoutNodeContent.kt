@@ -7,6 +7,7 @@ import com.r0adkll.livewire.ui.host.nodes.AnimatedVisibilityNodeContent
 import com.r0adkll.livewire.ui.host.nodes.BoxNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.CheckboxNodeContent
+import com.r0adkll.livewire.ui.host.nodes.ChipNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ColumnNodeContent
 import com.r0adkll.livewire.ui.host.nodes.DividerNodeContent
 import com.r0adkll.livewire.ui.host.nodes.DropdownMenuNodeContent
@@ -34,6 +35,7 @@ import com.r0adkll.livewire.ui.layout.RowNode
 import com.r0adkll.livewire.ui.widget.AnimatedVisibilityNode
 import com.r0adkll.livewire.ui.widget.ButtonNode
 import com.r0adkll.livewire.ui.widget.CheckboxNode
+import com.r0adkll.livewire.ui.widget.ChipNode
 import com.r0adkll.livewire.ui.widget.DividerNode
 import com.r0adkll.livewire.ui.widget.DropdownMenuNode
 import com.r0adkll.livewire.ui.widget.FloatingActionButtonNode
@@ -68,6 +70,7 @@ fun LayoutNodeContent(
     is IconButtonNode -> IconButtonNodeContent(node, modifier)
     is IconNode -> IconNodeContent(node, modifier)
     is CheckboxNode -> CheckboxNodeContent(node, modifier)
+    is ChipNode -> ChipNodeContent(node, modifier)
     is DividerNode -> DividerNodeContent(node, modifier)
     is DropdownMenuNode -> DropdownMenuNodeContent(node, modifier)
     is FloatingActionButtonNode -> FloatingActionButtonNodeContent(node, modifier)

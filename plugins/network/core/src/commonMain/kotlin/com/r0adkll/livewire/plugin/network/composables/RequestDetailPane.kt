@@ -1,6 +1,8 @@
 package com.r0adkll.livewire.plugin.network.composables
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.plugin.network.data.NetworkEvent
 import com.r0adkll.livewire.ui.actions.ClickAction
@@ -16,10 +18,13 @@ import com.r0adkll.livewire.ui.modifier.verticalScroll
 import com.r0adkll.livewire.plugin.network.ui.Icons
 import com.r0adkll.livewire.ui.actions.checkedChangeAction
 import com.r0adkll.livewire.ui.actions.intValueChangeAction
+import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
 import com.r0adkll.livewire.ui.layout.Arrangement
 import com.r0adkll.livewire.ui.modifier.background
 import com.r0adkll.livewire.ui.modifier.height
+import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.theme.LivewireTheme
+import com.r0adkll.livewire.ui.util.asReadableBytes
 import com.r0adkll.livewire.ui.widget.ButtonGroupDefaults
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.HorizontalDivider
@@ -128,29 +133,103 @@ internal fun RequestDetailPane(
 
 @Composable
 private fun OverviewTab(event: NetworkEvent) {
-  DetailRow("URL", event.request.url)
-  DetailRow("Method", event.request.method)
-  event.response?.let { response ->
-    DetailRow("Status", response.statusCode.toString())
+  Column(
+    modifier = LivewireModifier,
+  ) {
+    Surface(
+      shape = RoundedCornerShape(8.dp),
+      color = LivewireTheme.colorScheme.secondaryContainer,
+      modifier = LivewireModifier.fillMaxWidth(),
+    ) {
+      Text(
+        text = event.request.url,
+        style = TextStyle.LabelLarge,
+        modifier = LivewireModifier.padding(
+          horizontal = 12.dp,
+          vertical = 8.dp,
+        )
+      )
+    }
+
+    Spacer(LivewireModifier.height(8.dp))
+
+    Row {
+      Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = LivewireTheme.colorScheme.primaryContainer,
+      ) {
+        Text(
+          text = event.request.method.uppercase(),
+          style = TextStyle.LabelSmall,
+          fontWeight = FontWeight.Bold.weight,
+          modifier = LivewireModifier.padding(
+            horizontal = 16.dp,
+            vertical = 8.dp,
+          )
+        )
+      }
+
+      event.response?.let { response ->
+        Spacer(LivewireModifier.width(8.dp))
+        Surface(
+          shape = RoundedCornerShape(8.dp),
+          color = LivewireTheme.colorScheme.tertiaryContainer,
+        ) {
+          Text(
+            text = response.statusCode.toString(),
+            style = TextStyle.LabelSmall,
+            fontWeight = FontWeight.Bold.weight,
+            modifier = LivewireModifier.padding(
+              horizontal = 16.dp,
+              vertical = 8.dp,
+            )
+          )
+        }
+      }
+
+      event.response?.contentLength?.let { contentLength ->
+        Spacer(LivewireModifier.width(8.dp))
+        Surface(
+          shape = RoundedCornerShape(8.dp),
+          color = LivewireTheme.colorScheme.tertiaryContainer,
+        ) {
+          Text(
+            text = contentLength.asReadableBytes(),
+            style = TextStyle.LabelSmall,
+            fontWeight = FontWeight.Bold.weight,
+            modifier = LivewireModifier.padding(
+              horizontal = 16.dp,
+              vertical = 8.dp,
+            )
+          )
+        }
+      }
+    }
   }
-  event.durationMs?.let { duration ->
-    DetailRow("Duration", "${duration}ms")
-  }
-  event.request.contentType?.let { contentType ->
-    DetailRow("Request Content-Type", contentType)
-  }
-  event.request.contentLength?.let { contentLength ->
-    DetailRow("Request Content-Length", "$contentLength bytes")
-  }
-  event.response?.contentType?.let { contentType ->
-    DetailRow("Response Content-Type", contentType)
-  }
-  event.response?.contentLength?.let { contentLength ->
-    DetailRow("Response Content-Length", "$contentLength bytes")
-  }
-  event.error?.let { error ->
-    DetailRow("Error", error)
-  }
+
+//  DetailRow("URL", event.request.url)
+//  DetailRow("Method", event.request.method)
+//  event.response?.let { response ->
+//    DetailRow("Status", response.statusCode.toString())
+//  }
+//  event.durationMs?.let { duration ->
+//    DetailRow("Duration", "${duration}ms")
+//  }
+//  event.request.contentType?.let { contentType ->
+//    DetailRow("Request Content-Type", contentType)
+//  }
+//  event.request.contentLength?.let { contentLength ->
+//    DetailRow("Request Content-Length", "$contentLength bytes")
+//  }
+//  event.response?.contentType?.let { contentType ->
+//    DetailRow("Response Content-Type", contentType)
+//  }
+//  event.response?.contentLength?.let { contentLength ->
+//    DetailRow("Response Content-Length", "$contentLength bytes")
+//  }
+//  event.error?.let { error ->
+//    DetailRow("Error", error)
+//  }
 }
 
 @Composable

@@ -51,6 +51,8 @@ import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextField
 import com.r0adkll.livewire.ui.widget.TextFieldStyle
+import com.r0adkll.livewire.ui.widget.Chip
+import com.r0adkll.livewire.ui.widget.ChipStyle
 import com.r0adkll.livewire.ui.widget.Switch
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
@@ -66,7 +68,11 @@ class PlaygroundPlugin : Plugin {
 
   @Composable
   override fun Content() {
-    Column(LivewireModifier.fillMaxSize()) {
+    Column(
+      LivewireModifier
+        .fillMaxSize()
+        .verticalScroll()
+    ) {
 
       // Buttons
       Row(
@@ -558,6 +564,51 @@ class PlaygroundPlugin : Plugin {
         repeat(20) {
           Text("Item $it")
         }
+      }
+
+      // Chips
+      Row(
+        LivewireModifier
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Chip(
+          label = "Assist",
+          action = clickAction { },
+        )
+        Chip(
+          label = "Assist Icon",
+          action = clickAction { },
+          leadingIconData = Icons.Sync,
+        )
+        Chip(
+          label = "Elevated",
+          action = clickAction { },
+          elevated = true,
+        )
+
+        var filterSelected by remember { mutableStateOf(false) }
+        Chip(
+          label = "Filter",
+          action = clickAction { filterSelected = !filterSelected },
+          style = ChipStyle.Filter,
+          selected = filterSelected,
+        )
+
+        Chip(
+          label = "Input",
+          action = clickAction { },
+          style = ChipStyle.Input,
+          selected = true,
+          leadingIconData = Icons.Sync,
+        )
+
+        Chip(
+          label = "Suggestion",
+          action = clickAction { },
+          style = ChipStyle.Suggestion,
+        )
       }
 
       // TabRow
