@@ -2,6 +2,7 @@ package com.r0adkll.livewire.plugin.network.composables
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.plugin.network.data.NetworkEvent
@@ -151,85 +152,54 @@ private fun OverviewTab(event: NetworkEvent) {
       )
     }
 
-    Spacer(LivewireModifier.height(8.dp))
+    Spacer(LivewireModifier.height(4.dp))
 
     Row {
-      Surface(
-        shape = RoundedCornerShape(8.dp),
+      OverviewChip(
+        text = event.request.method.uppercase(),
         color = LivewireTheme.colorScheme.primaryContainer,
-      ) {
-        Text(
-          text = event.request.method.uppercase(),
-          style = TextStyle.LabelSmall,
-          fontWeight = FontWeight.Bold.weight,
-          modifier = LivewireModifier.padding(
-            horizontal = 16.dp,
-            vertical = 8.dp,
-          )
+      )
+
+      event.response?.let { response ->
+        Spacer(LivewireModifier.width(4.dp))
+        OverviewChip(
+          text = response.statusCode.toString(),
+          color = LivewireTheme.colorScheme.tertiaryContainer,
         )
       }
 
-      event.response?.let { response ->
-        Spacer(LivewireModifier.width(8.dp))
-        Surface(
-          shape = RoundedCornerShape(8.dp),
-          color = LivewireTheme.colorScheme.tertiaryContainer,
-        ) {
-          Text(
-            text = response.statusCode.toString(),
-            style = TextStyle.LabelSmall,
-            fontWeight = FontWeight.Bold.weight,
-            modifier = LivewireModifier.padding(
-              horizontal = 16.dp,
-              vertical = 8.dp,
-            )
-          )
-        }
-      }
-
       event.response?.contentLength?.let { contentLength ->
-        Spacer(LivewireModifier.width(8.dp))
-        Surface(
-          shape = RoundedCornerShape(8.dp),
+        Spacer(LivewireModifier.width(4.dp))
+        OverviewChip(
+          text = contentLength.asReadableBytes(),
           color = LivewireTheme.colorScheme.tertiaryContainer,
-        ) {
-          Text(
-            text = contentLength.asReadableBytes(),
-            style = TextStyle.LabelSmall,
-            fontWeight = FontWeight.Bold.weight,
-            modifier = LivewireModifier.padding(
-              horizontal = 16.dp,
-              vertical = 8.dp,
-            )
-          )
-        }
+        )
       }
     }
   }
+}
 
-//  DetailRow("URL", event.request.url)
-//  DetailRow("Method", event.request.method)
-//  event.response?.let { response ->
-//    DetailRow("Status", response.statusCode.toString())
-//  }
-//  event.durationMs?.let { duration ->
-//    DetailRow("Duration", "${duration}ms")
-//  }
-//  event.request.contentType?.let { contentType ->
-//    DetailRow("Request Content-Type", contentType)
-//  }
-//  event.request.contentLength?.let { contentLength ->
-//    DetailRow("Request Content-Length", "$contentLength bytes")
-//  }
-//  event.response?.contentType?.let { contentType ->
-//    DetailRow("Response Content-Type", contentType)
-//  }
-//  event.response?.contentLength?.let { contentLength ->
-//    DetailRow("Response Content-Length", "$contentLength bytes")
-//  }
-//  event.error?.let { error ->
-//    DetailRow("Error", error)
-//  }
+@Composable
+private fun OverviewChip(
+  text: String,
+  color: Color = LivewireTheme.colorScheme.primaryContainer,
+  modifier: LivewireModifier = LivewireModifier,
+) {
+  Surface(
+    shape = RoundedCornerShape(8.dp),
+    color = color,
+    modifier = modifier,
+  ) {
+    Text(
+      text = text,
+      style = TextStyle.LabelSmall,
+      fontWeight = FontWeight.Bold.weight,
+      modifier = LivewireModifier.padding(
+        horizontal = 16.dp,
+        vertical = 8.dp,
+      )
+    )
+  }
 }
 
 @Composable
