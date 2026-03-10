@@ -259,6 +259,7 @@ private fun DeviceTopBar(
       // Menu button
       IconButton(
         onClick = onNavigationItemClick,
+        enabled = hostConnectionState == Connected,
       ) {
         Icon(
           MenuOpen,
