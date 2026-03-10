@@ -70,7 +70,6 @@ class LivewireClient private constructor(
         when (connectionState) {
           Started,
           Stopped,
-          ConnectionState.Error -> Unit
 
           Connected -> {
             // Send ClientManifest to the new host connection

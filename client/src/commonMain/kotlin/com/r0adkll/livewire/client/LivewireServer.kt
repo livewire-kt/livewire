@@ -33,7 +33,6 @@ enum class ConnectionState {
   Stopped,
   Started,
   Connected,
-  Error,
 }
 
 class LivewireServer(

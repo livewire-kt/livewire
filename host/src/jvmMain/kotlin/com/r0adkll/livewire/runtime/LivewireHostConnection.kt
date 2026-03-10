@@ -20,6 +20,7 @@ import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -89,6 +90,10 @@ class LivewireHostConnection(
           socketJob = startClientConnection(),
         )
       } catch (e: Exception) {
+        if (e is CancellationException) {
+          throw e
+        }
+
         e.printStackTrace()
         connectionState.value = Error
       }
@@ -107,6 +112,10 @@ class LivewireHostConnection(
       try {
         activeConnection = ActiveConnection.IosConnection.Simulator(startClientConnection())
       } catch (e: Exception) {
+        if (e is CancellationException) {
+          throw e
+        }
+
         e.printStackTrace()
         connectionState.value = Error
       }
@@ -124,6 +133,10 @@ class LivewireHostConnection(
         }
         activeConnection = ActiveConnection.IosConnection.Physical(startClientConnection())
       } catch (e: Exception) {
+        if (e is CancellationException) {
+          throw e
+        }
+
         e.printStackTrace()
         connectionState.value = Error
       }
@@ -172,6 +185,10 @@ class LivewireHostConnection(
           }
         }
       } catch (e: Exception) {
+        if (e is CancellationException) {
+          throw e
+        }
+
         logDebug("failed to connect or communicate: ${e.message}")
         e.printStackTrace()
         connectionState.value = Error

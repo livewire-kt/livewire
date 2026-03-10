@@ -2,6 +2,11 @@ package com.r0adkll.livewire
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.Arrangement
@@ -42,6 +47,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -238,13 +244,33 @@ private fun DeviceTopBar(
         contentAlignment = Alignment.Center,
       ) {
         val tint by animateColorAsState(
-          if (hostConnectionState == Connected) Color(0xff118F00) else MaterialTheme.colorScheme.error
+          when (hostConnectionState) {
+            Connected -> Color(0xff118F00)
+            Forwarding, Connecting -> Color(0xffD4A017)
+            Error -> MaterialTheme.colorScheme.error
+            Disconnected -> MaterialTheme.colorScheme.onSurfaceVariant
+          }
         )
+
+        val pulse = if (hostConnectionState == Forwarding || hostConnectionState == Connecting) {
+          val infiniteTransition = rememberInfiniteTransition()
+          infiniteTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 0.3f,
+            animationSpec = infiniteRepeatable(
+              animation = tween(800),
+              repeatMode = RepeatMode.Reverse,
+            ),
+          ).value
+        } else {
+          1f
+        }
 
         Icon(
           imageVector = if (hostConnectionState == Connected) ConnectedIcon else DisconnectedIcon,
           contentDescription = null,
           tint = tint,
+          modifier = Modifier.alpha(pulse),
         )
       }
 
@@ -283,7 +309,7 @@ private fun DeviceTopBar(
         }
         Button(
           onClick = onDisconnectClick,
-          enabled = hostConnectionState == Connected,
+          enabled = hostConnectionState == Connected || hostConnectionState == Connecting,
         ) {
           Text("Disconnect")
         }
