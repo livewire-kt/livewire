@@ -61,31 +61,19 @@ class LivewireClient private constructor(
     },
   )
 
-  @OptIn(ExperimentalCoroutinesApi::class)
   fun start() {
-    server.start()
+    server.onConnected = {
+      val manifest: UiProtocol = ClientManifest(
+        theme = configuration.theme,
+        layoutNodeSerialization = configuration.layoutNodeSerialization,
+        availablePlugins = configuration.plugins
+          .map { it.info }
+          .toSet()
+      )
 
-    scope.launch {
-      server.connectionState.collect { connectionState ->
-        when (connectionState) {
-          Started,
-          Stopped,
-
-          Connected -> {
-            // Send ClientManifest to the new host connection
-            val manifest: UiProtocol = ClientManifest(
-              theme = configuration.theme,
-              layoutNodeSerialization = configuration.layoutNodeSerialization,
-              availablePlugins = configuration.plugins
-                .map { it.info }
-                .toSet()
-            )
-
-            server.send(manifest)
-          }
-        }
-      }
+      send(manifest)
     }
+    server.start()
 
     scope.launchMolecule(RecompositionMode.Immediate) {
       val connectionState by server.connectionState.collectAsState()
@@ -118,7 +106,7 @@ class LivewireClient private constructor(
       }
 
       LaunchedEffect(activePluginInfo, connectionState) {
-        if (activePluginInfo != null && connectionState == Connected) {
+        if (activePluginInfo != null && connectionState == ConnectionState.Connected) {
           val plugin = configuration.plugins.find { plugin ->
             plugin.info.pluginId == activePluginInfo?.pluginId
           }

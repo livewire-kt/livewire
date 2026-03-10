@@ -33,9 +33,6 @@ kotlin {
       api(projects.ui)
 
       implementation(libs.compose.runtime)
-      implementation(libs.ktor.serverCore)
-      implementation(libs.ktor.serverCio)
-      implementation(libs.ktor.serverWebsockets)
       implementation(libs.ktor.clientCore)
       implementation(libs.ktor.clientWebsockets)
       implementation(libs.molecule.runtime)
@@ -45,7 +42,7 @@ kotlin {
     }
     androidMain.dependencies {
       implementation(libs.kotlin.reflect)
-      implementation(libs.ktor.clientAndroid)
+      implementation(libs.ktor.clientOkhttp)
     }
     iosMain.dependencies {
       implementation(libs.ktor.clientDarwin)

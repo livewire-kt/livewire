@@ -8,30 +8,29 @@ import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.transport.LivewireIncoming
 import com.r0adkll.livewire.ui.transport.LivewireWebSocketCodec
-import io.ktor.server.application.install
-import io.ktor.server.cio.CIO
-import io.ktor.server.cio.CIOApplicationEngine
-import io.ktor.server.engine.EmbeddedServer
-import io.ktor.server.engine.embeddedServer
-import io.ktor.server.routing.routing
-import io.ktor.server.websocket.WebSockets
-import io.ktor.server.websocket.webSocket
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.WebSocketSession
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.time.measureTimedValue
 
 enum class ConnectionState {
   Stopped,
-  Started,
+  Connecting,
   Connected,
 }
 
@@ -61,9 +60,16 @@ class LivewireServer(
   val outgoingLayoutSize: StateFlow<Long>
     field = MutableStateFlow(0L)
 
-  private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
+  private var connectionJob: Job? = null
+
   var activeSession: WebSocketSession? = null
     private set
+
+  var onConnected: (suspend LivewireServer.() -> Unit)? = null
+
+  private val httpClient = HttpClient(createPlatformEngine()) {
+    install(WebSockets)
+  }
 
   val codec = LivewireWebSocketCodec(
     decoders = decoders.toSet(),
@@ -74,18 +80,33 @@ class LivewireServer(
   )
 
   fun start() {
-    if (server != null) {
-      return
-    }
+    if (connectionJob != null) return
 
-    logDebug("Livewire", "Starting server on port ${LivewireConstants.Port}")
-    server = embeddedServer(CIO, port = LivewireConstants.Port) {
-      install(WebSockets)
-      routing {
-        webSocket(LivewireConstants.WsPath) {
+    logDebug("Livewire", "Starting client connection loop")
+    connectionJob = scope.launch { connectionLoop() }
+  }
+
+  private suspend fun connectionLoop() {
+    while (true) {
+      connectionState.value = Connecting
+      logDebug("Livewire", "Attempting connection to 127.0.0.1:${LivewireConstants.Port}")
+
+      try {
+        httpClient.webSocket(
+          host = "127.0.0.1",
+          port = LivewireConstants.Port,
+          path = LivewireConstants.WsPath,
+          request = {
+            simulatorId()?.let { id ->
+              url.parameters.append("device_id", id)
+            }
+          }
+        ) {
           activeSession = this
           connectionState.value = Connected
+          logDebug("Livewire", "Connected")
           try {
+            onConnected?.invoke(this@LivewireServer)
             for (frame in incoming) {
               when (val incomingMessage = codec.decode(frame)) {
                 is LivewireIncoming.Payload -> incomingMessages.tryEmit(incomingMessage.payload)
@@ -93,17 +114,23 @@ class LivewireServer(
                 null -> Unit
               }
             }
+          } catch (e: CancellationException) {
+            throw e
           } catch (e: Exception) {
-            logError("Livewire", "Server websocket error", e)
+            logError("Livewire", "WebSocket error", e)
           } finally {
             activeSession = null
-            connectionState.value = Started
           }
         }
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        logDebug("Livewire", "Connection failed: ${e.message}")
       }
-    }.also {
-      it.start(wait = false)
-      connectionState.value = Started
+
+      connectionState.value = Connecting
+      logDebug("Livewire", "Reconnecting in ${ReconnectDelay}ms")
+      delay(ReconnectDelay)
     }
   }
 
@@ -118,10 +145,13 @@ class LivewireServer(
   }
 
   fun stop() {
-    server?.stop(1000, 2000)
-    server = null
+    connectionJob?.cancel()
+    connectionJob = null
     activeSession = null
     connectionState.value = Stopped
+    httpClient.close()
     scope.cancel()
   }
 }
+
+private const val ReconnectDelay = 3000L

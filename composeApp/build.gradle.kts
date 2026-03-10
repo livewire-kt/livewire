@@ -55,7 +55,7 @@ kotlin {
       implementation(projects.plugins.database)
 
       implementation(libs.sqldelight.android.driver)
-      implementation(libs.ktor.clientAndroid)
+      implementation(libs.ktor.clientOkhttp)
     }
     commonMain.dependencies {
       implementation(projects.client)

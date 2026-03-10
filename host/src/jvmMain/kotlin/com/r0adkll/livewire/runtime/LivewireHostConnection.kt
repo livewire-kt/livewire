@@ -6,24 +6,27 @@ import com.r0adkll.livewire.runtime.HostConnectionState.Error
 import com.r0adkll.livewire.runtime.devicemanager.AdbDevice
 import com.r0adkll.livewire.runtime.devicemanager.HostDevice
 import com.r0adkll.livewire.runtime.devicemanager.IosDevice
-import com.r0adkll.livewire.runtime.devicemanager.IosDeviceManager
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RootNode
 import com.r0adkll.livewire.ui.transport.LivewireIncoming
 import com.r0adkll.livewire.ui.transport.LivewireWebSocketCodec
-import dadb.Dadb
-import io.ktor.client.HttpClient
-import io.ktor.client.engine.cio.CIO
-import io.ktor.client.engine.cio.endpoint
-import io.ktor.client.plugins.websocket.WebSockets
-import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.http.HttpStatusCode
+import io.ktor.server.application.ApplicationCallPipeline
+import io.ktor.server.application.install
+import io.ktor.server.cio.CIO
+import io.ktor.server.cio.CIOApplicationEngine
+import io.ktor.server.engine.EmbeddedServer
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.response.respond
+import io.ktor.server.routing.route
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -31,12 +34,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.io.IOException
 import kotlin.coroutines.CoroutineContext
 
 enum class HostConnectionState {
   Disconnected,
   Forwarding,
-  Connecting,
+  Listening,
   Connected,
   Error,
 }
@@ -62,6 +66,9 @@ class LivewireHostConnection(
     field = MutableStateFlow<LayoutNode>(RootNode())
 
   private var activeConnection: ActiveConnection? = null
+  private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
+
+  private var expectedDeviceId: String? = null
 
   var session: WebSocketSession? = null
     private set
@@ -71,8 +78,11 @@ class LivewireHostConnection(
   )
 
   suspend fun connect(device: HostDevice) {
-    println("connect to $device")
+    logDebug("connect to ${device.id}")
     disconnect()
+
+    // device id filtering only for ios simulators, since they share the host's network stack
+    expectedDeviceId = if (device is IosDevice && device.deviceType == Simulator) device.udid else null
 
     when (device) {
       is AdbDevice -> connectAndroid(device)
@@ -84,16 +94,10 @@ class LivewireHostConnection(
     scope.launch {
       try {
         connectionState.value = Forwarding
-        activeConnection = ActiveConnection.AndroidConnection(
-          dadb = device.connection,
-          forwarder = device.connection.tcpForward(LivewireConstants.Port, LivewireConstants.Port),
-          socketJob = startClientConnection(),
-        )
+        val forwarder = AdbReverseForwarder(device, LivewireConstants.Port).also { it.start() }
+        startServer()
+        activeConnection = ActiveConnection.AndroidConnection(forwarder)
       } catch (e: Exception) {
-        if (e is CancellationException) {
-          throw e
-        }
-
         e.printStackTrace()
         connectionState.value = Error
       }
@@ -110,12 +114,9 @@ class LivewireHostConnection(
   private fun connectIosSimulator() {
     scope.launch {
       try {
-        activeConnection = ActiveConnection.IosConnection.Simulator(startClientConnection())
+        startServer()
+        activeConnection = ActiveConnection.IosSimulatorConnection
       } catch (e: Exception) {
-        if (e is CancellationException) {
-          throw e
-        }
-
         e.printStackTrace()
         connectionState.value = Error
       }
@@ -126,76 +127,75 @@ class LivewireHostConnection(
     scope.launch {
       try {
         connectionState.value = Forwarding
-        val ok = IosDeviceManager.activate(device.udid)
+        val ok = device.connection.activate()
         if (!ok) {
           connectionState.value = Error
           return@launch
         }
-        activeConnection = ActiveConnection.IosConnection.Physical(startClientConnection())
+        startServer()
+        activeConnection = ActiveConnection.IosPhysicalConnection(device.connection)
       } catch (e: Exception) {
-        if (e is CancellationException) {
-          throw e
-        }
-
         e.printStackTrace()
         connectionState.value = Error
       }
     }
   }
 
-  private fun startClientConnection(): Job {
-    connectionState.value = Connecting
-
-    val httpClient = HttpClient(CIO) {
-      engine {
-        endpoint {
-          connectAttempts = 1
-          connectTimeout = 3000
-        }
-        requestTimeout = 3000
-      }
-      install(WebSockets)
+  private fun startServer() {
+    if (server != null) {
+      connectionState.value = Listening
+      return
     }
 
-    val job = scope.launch {
-      try {
-        httpClient.webSocket(
-          host = "127.0.0.1",
-          port = LivewireConstants.Port,
-          path = LivewireConstants.WsPath,
-        ) {
-          session = this
-          connectionState.value = Connected
-          try {
-            for (frame in incoming) {
-              try {
-                when (val incomingMessage = codec.decode(frame)) {
-                  is LivewireIncoming.Payload -> incomingMessages.tryEmit(incomingMessage.payload)
-                  is LivewireIncoming.Layout -> incomingLayoutNodes.emit(incomingMessage.node)
-                  null -> Unit
+    server = embeddedServer(CIO, port = LivewireConstants.Port) {
+      install(WebSockets)
+      routing {
+        route(LivewireConstants.WsPath) {
+          // prevent clients from entering the Connected state on a connection that will be immediately closed.
+          intercept(ApplicationCallPipeline.Plugins) {
+            val deviceId = context.request.queryParameters["device_id"]
+            if (deviceId != expectedDeviceId) {
+              context.respond(HttpStatusCode.Forbidden)
+              finish()
+            }
+          }
+          webSocket {
+            session?.close()
+            session = this
+            connectionState.value = Connected
+            logDebug("client connected (session=${this.hashCode()})")
+            try {
+              for (frame in incoming) {
+                try {
+                  when (val incomingMessage = codec.decode(frame)) {
+                    is LivewireIncoming.Payload -> incomingMessages.tryEmit(incomingMessage.payload)
+                    is LivewireIncoming.Layout -> incomingLayoutNodes.emit(incomingMessage.node)
+                    null -> Unit
+                  }
+                } catch (e: Exception) {
+                  logDebug("failed to decode frame: ${e.message}")
+                  e.printStackTrace()
                 }
-              } catch (e: Exception) {
-                logDebug("failed to decode frame: ${e.message}")
-                e.printStackTrace()
+              }
+            } finally {
+              if (session == this@webSocket) {
+                session = null
+                connectionState.value = if (server != null) Listening else Disconnected
+                logDebug("client disconnected")
               }
             }
-          } finally {
-            logDebug("websocket closed")
-            disconnect()
           }
         }
-      } catch (e: Exception) {
-        if (e is CancellationException) {
-          throw e
-        }
-
-        logDebug("failed to connect or communicate: ${e.message}")
-        e.printStackTrace()
-        connectionState.value = Error
       }
+    }.also {
+      it.start(wait = false)
+      connectionState.value = Listening
     }
+  }
 
-    return job
+  private fun stopServer() {
+    server?.stop(1000, 2000)
+    server = null
   }
 
   suspend inline fun <reified T : Any> send(payload: T) {
@@ -203,14 +203,12 @@ class LivewireHostConnection(
   }
 
   suspend fun disconnect() {
+    expectedDeviceId = null
+
     session?.close()
     session = null
 
-    activeConnection?.let { connection ->
-      scope.launch {
-        connection.close()
-      }
-    }
+    activeConnection?.close()
     activeConnection = null
 
     connectionState.value = Disconnected
@@ -219,6 +217,8 @@ class LivewireHostConnection(
 
   suspend fun close() {
     disconnect()
+    stopServer()
+    connectionState.value = Disconnected
     scope.cancel()
   }
 
@@ -231,33 +231,43 @@ sealed interface ActiveConnection {
   suspend fun close()
 
   data class AndroidConnection(
-    private val dadb: Dadb,
     private val forwarder: AutoCloseable,
-    private val socketJob: Job,
   ) : ActiveConnection {
     override suspend fun close() {
-      dadb.close()
       forwarder.close()
-      socketJob.cancel()
     }
   }
 
-  sealed interface IosConnection : ActiveConnection {
-    data class Simulator(
-      private val socketJob: Job,
-    ) : IosConnection {
-      override suspend fun close() {
-        socketJob.cancel()
-      }
-    }
+  data object IosSimulatorConnection : ActiveConnection {
+    override suspend fun close() = Unit
+  }
 
-    data class Physical(
-      private val socketJob: Job,
-    ) : IosConnection {
-      override suspend fun close() {
-        socketJob.cancel()
-        IosDeviceManager.deactivate()
-      }
+  data class IosPhysicalConnection(
+    private val connection: AutoCloseable,
+  ) : ActiveConnection {
+    override suspend fun close() {
+      connection.close()
+    }
+  }
+}
+
+private class AdbReverseForwarder(
+  private val device: AdbDevice,
+  private val port: Int,
+) : AutoCloseable {
+  fun start() {
+    try {
+      device.connection.open("reverse:forward:tcp:$port;tcp:$port").close()
+    } catch (e: IOException) {
+      throw IOException("Failed to set up reverse forward", e)
+    }
+  }
+
+  override fun close() {
+    try {
+      device.connection.open("reverse:killforward:tcp:$port").close()
+    } catch (e: IOException) {
+      logDebug("adb", "failed to remove reverse forward: ${e.message}")
     }
   }
 }
