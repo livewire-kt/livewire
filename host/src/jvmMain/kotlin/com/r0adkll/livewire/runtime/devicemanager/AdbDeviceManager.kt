@@ -10,6 +10,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -19,10 +20,8 @@ data class AdbDevice(
   val serial: String,
   val model: String,
 ) : HostDevice {
-  override val id: String
-    get() = "android:$serial"
-  override val displayName: String
-    get() = if (model.isNotEmpty() && model != serial) "$model ($serial)" else serial
+  override val id: String = "android:$serial"
+  override val displayName: String = model.ifEmpty { serial }
 }
 
 object AdbDeviceManager : PlatformDeviceManager {
@@ -31,6 +30,9 @@ object AdbDeviceManager : PlatformDeviceManager {
   private val started = AtomicBoolean(false)
   private val _devices = MutableStateFlow<List<HostDevice>>(emptyList())
   override val devices: Flow<List<HostDevice>> = _devices
+
+  final override val isReady: StateFlow<Boolean>
+    field = MutableStateFlow(false)
 
   override suspend fun ensureStarted() {
     if (started.compareAndSet(expectedValue = false, newValue = true)) {
@@ -55,6 +57,7 @@ object AdbDeviceManager : PlatformDeviceManager {
           }
 
           result.getOrNull()?.let { _devices.value = it }
+          isReady.value = true
           delay(RefreshRateMs)
         }
       }

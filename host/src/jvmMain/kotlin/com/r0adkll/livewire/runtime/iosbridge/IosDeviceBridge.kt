@@ -25,6 +25,12 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
   val devices: StateFlow<List<IosDevice>>
     field = MutableStateFlow<List<IosDevice>>(emptyList())
 
+  val isReady: StateFlow<Boolean>
+    field = MutableStateFlow(false)
+
+  private var usbmuxReady = false
+  private var simulatorReady = false
+
   private val physicalByUdid = mutableMapOf<String, PhysicalDevice>()
   private val physicalInfoByUdid = mutableMapOf<String, IosDevice>()
   private var simulatorDevices: List<IosDevice> = emptyList()
@@ -99,6 +105,10 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
       for (event in initialEvents) {
         handleUsbMuxEvent(event)
       }
+      if (!usbmuxReady) {
+        usbmuxReady = true
+        updateReadyState()
+      }
 
       while (scope.isActive) {
         val event = client.nextEvent() ?: break
@@ -116,6 +126,10 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
       stateLock.withLock {
         simulatorDevices = simulators
         updateDeviceList()
+      }
+      if (!simulatorReady) {
+        simulatorReady = true
+        updateReadyState()
       }
       delay(2000)
     }
@@ -156,6 +170,12 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
 
   private fun updateDeviceList() {
     devices.value = physicalInfoByUdid.values + simulatorDevices
+  }
+
+  private fun updateReadyState() {
+    if (usbmuxReady && simulatorReady) {
+      isReady.value = true
+    }
   }
 
   private fun logDebug(message: String) {

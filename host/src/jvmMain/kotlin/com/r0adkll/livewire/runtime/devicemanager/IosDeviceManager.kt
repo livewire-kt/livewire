@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 
 data class IosDevice(
   val udid: String,
@@ -14,10 +15,7 @@ data class IosDevice(
   val osVersion: String,
 ) : HostDevice {
   override val id: String = "ios:$udid"
-  override val displayName: String = when (deviceType) {
-    Physical -> "$name (iOS device)"
-    Simulator -> "$name (iOS simulator)"
-  }
+  override val displayName: String = name
 }
 
 enum class IosDeviceType {
@@ -30,6 +28,7 @@ object IosDeviceManager : PlatformDeviceManager {
   private val bridge = IosDeviceBridge(scope)
 
   override val devices: Flow<List<IosDevice>> = bridge.devices
+  override val isReady: StateFlow<Boolean> = bridge.isReady
 
   override suspend fun ensureStarted() {
     bridge.start()

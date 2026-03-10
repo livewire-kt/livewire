@@ -12,6 +12,10 @@ object CompositeDeviceManager {
     }
   }
 
+  fun isReady(): Flow<Boolean> = combine(DeviceManagers.map { it.isReady }) { readyStates ->
+    readyStates.all { it }
+  }
+
   fun shutdown() {
     DeviceManagers.forEach { it.shutdown() }
   }
