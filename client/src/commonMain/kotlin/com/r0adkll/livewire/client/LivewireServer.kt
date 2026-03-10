@@ -30,10 +30,10 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.time.measureTimedValue
 
 enum class ConnectionState {
-  STOPPED,
-  STARTED,
-  CONNECTED,
-  ERROR,
+  Stopped,
+  Started,
+  Connected,
+  Error,
 }
 
 class LivewireServer(
@@ -54,7 +54,7 @@ class LivewireServer(
   private val scope = CoroutineScope(context + SupervisorJob())
 
   val connectionState: StateFlow<ConnectionState>
-    field = MutableStateFlow(ConnectionState.STOPPED)
+    field = MutableStateFlow(Stopped)
 
   val incomingMessages: SharedFlow<Any>
     field = MutableSharedFlow<Any>(extraBufferCapacity = 64)
@@ -85,7 +85,7 @@ class LivewireServer(
       routing {
         webSocket(LivewireConstants.WsPath) {
           activeSession = this
-          connectionState.value = ConnectionState.CONNECTED
+          connectionState.value = Connected
           try {
             for (frame in incoming) {
               when (val incomingMessage = codec.decode(frame)) {
@@ -98,13 +98,13 @@ class LivewireServer(
             logError("Livewire", "Server websocket error", e)
           } finally {
             activeSession = null
-            connectionState.value = ConnectionState.STARTED
+            connectionState.value = Started
           }
         }
       }
     }.also {
       it.start(wait = false)
-      connectionState.value = ConnectionState.STARTED
+      connectionState.value = Started
     }
   }
 
@@ -122,7 +122,7 @@ class LivewireServer(
     server?.stop(1000, 2000)
     server = null
     activeSession = null
-    connectionState.value = ConnectionState.STOPPED
+    connectionState.value = Stopped
     scope.cancel()
   }
 }

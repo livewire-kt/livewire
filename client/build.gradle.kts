@@ -10,8 +10,11 @@ plugins {
 
 kotlin {
   compilerOptions {
-    freeCompilerArgs.add("-Xcontext-parameters")
-    freeCompilerArgs.add("-Xexplicit-backing-fields")
+    freeCompilerArgs.addAll(
+      "-Xcontext-parameters",
+      "-Xexplicit-backing-fields",
+      "-Xcontext-sensitive-resolution",
+    )
   }
 
   androidTarget {

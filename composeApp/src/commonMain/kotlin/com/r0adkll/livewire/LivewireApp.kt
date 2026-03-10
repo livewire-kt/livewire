@@ -88,11 +88,11 @@ fun LivewireApp(
               modifier = Modifier.padding(8.dp)
             ) {
               val tint by animateColorAsState(
-                if (connectionState == ConnectionState.CONNECTED) Color(0xff118F00) else MaterialTheme.colorScheme.error
+                if (connectionState == ConnectionState.Connected) Color(0xff118F00) else MaterialTheme.colorScheme.error
               )
 
               Icon(
-                imageVector = if (connectionState == ConnectionState.CONNECTED) Connected else Disconnected,
+                imageVector = if (connectionState == ConnectionState.Connected) Connected else Disconnected,
                 contentDescription = null,
                 tint = tint,
               )

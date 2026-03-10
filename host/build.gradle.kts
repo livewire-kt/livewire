@@ -9,6 +9,13 @@ plugins {
 }
 
 kotlin {
+  compilerOptions {
+    freeCompilerArgs.addAll(
+      "-Xexplicit-backing-fields",
+      "-Xcontext-sensitive-resolution",
+    )
+  }
+
   jvm()
 
   sourceSets {

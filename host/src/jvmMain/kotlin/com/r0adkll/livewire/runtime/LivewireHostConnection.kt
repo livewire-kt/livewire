@@ -2,13 +2,12 @@ package com.r0adkll.livewire.runtime
 
 import com.r0adkll.livewire.LivewireConstants
 import com.r0adkll.livewire.logDebug
+import com.r0adkll.livewire.runtime.HostConnectionState.Error
 import com.r0adkll.livewire.runtime.devicemanager.AdbDevice
 import com.r0adkll.livewire.runtime.devicemanager.HostDevice
-import com.r0adkll.livewire.runtime.devicemanager.IosDeviceInfo
+import com.r0adkll.livewire.runtime.devicemanager.IosDevice
 import com.r0adkll.livewire.runtime.devicemanager.IosDeviceManager
-import com.r0adkll.livewire.runtime.devicemanager.IosDeviceType
 import com.r0adkll.livewire.transport.PayloadDecoder
-import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RootNode
 import com.r0adkll.livewire.ui.transport.LivewireIncoming
@@ -30,17 +29,15 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 enum class HostConnectionState {
-  DISCONNECTED,
-  FORWARDING,
-  CONNECTING,
-  CONNECTED,
-  ERROR,
+  Disconnected,
+  Forwarding,
+  Connecting,
+  Connected,
+  Error,
 }
 
 class LivewireHostConnection(
@@ -54,15 +51,14 @@ class LivewireHostConnection(
 
   private val scope = CoroutineScope(context + SupervisorJob())
 
-  private val _connectionState = MutableStateFlow(HostConnectionState.DISCONNECTED)
-  val connectionState: StateFlow<HostConnectionState> = _connectionState.asStateFlow()
+  val connectionState: StateFlow<HostConnectionState>
+    field = MutableStateFlow(Disconnected)
 
-  private val _incomingMessages = MutableSharedFlow<Any>(extraBufferCapacity = 64)
-  val incomingMessages: SharedFlow<Any> = _incomingMessages.asSharedFlow()
+  val incomingMessages: SharedFlow<Any>
+    field = MutableSharedFlow<Any>(extraBufferCapacity = 64)
 
-
-  private val _incomingLayoutNodes = MutableStateFlow<LayoutNode>(RootNode())
-  val incomingLayoutNodes: StateFlow<LayoutNode> = _incomingLayoutNodes.asStateFlow()
+  val incomingLayoutNodes: StateFlow<LayoutNode>
+    field = MutableStateFlow<LayoutNode>(RootNode())
 
   private var activeConnection: ActiveConnection? = null
 
@@ -79,14 +75,14 @@ class LivewireHostConnection(
 
     when (device) {
       is AdbDevice -> connectAndroid(device)
-      is IosDeviceInfo -> connectIos(device)
+      is IosDevice -> connectIos(device)
     }
   }
 
   private fun connectAndroid(device: AdbDevice) {
     scope.launch {
       try {
-        _connectionState.value = HostConnectionState.FORWARDING
+        connectionState.value = Forwarding
         activeConnection = ActiveConnection.AndroidConnection(
           dadb = device.connection,
           forwarder = device.connection.tcpForward(LivewireConstants.Port, LivewireConstants.Port),
@@ -94,15 +90,15 @@ class LivewireHostConnection(
         )
       } catch (e: Exception) {
         e.printStackTrace()
-        _connectionState.value = HostConnectionState.ERROR
+        connectionState.value = Error
       }
     }
   }
 
-  private fun connectIos(device: IosDeviceInfo) {
+  private fun connectIos(device: IosDevice) {
     when (device.deviceType) {
-      IosDeviceType.Simulator -> connectIosSimulator()
-      IosDeviceType.Physical -> connectIosPhysical(device)
+      Simulator -> connectIosSimulator()
+      Physical -> connectIosPhysical(device)
     }
   }
 
@@ -112,30 +108,30 @@ class LivewireHostConnection(
         activeConnection = ActiveConnection.IosConnection.Simulator(startClientConnection())
       } catch (e: Exception) {
         e.printStackTrace()
-        _connectionState.value = HostConnectionState.ERROR
+        connectionState.value = Error
       }
     }
   }
 
-  private fun connectIosPhysical(device: IosDeviceInfo) {
+  private fun connectIosPhysical(device: IosDevice) {
     scope.launch {
       try {
-        _connectionState.value = HostConnectionState.FORWARDING
+        connectionState.value = Forwarding
         val ok = IosDeviceManager.activate(device.udid)
         if (!ok) {
-          _connectionState.value = HostConnectionState.ERROR
+          connectionState.value = Error
           return@launch
         }
         activeConnection = ActiveConnection.IosConnection.Physical(startClientConnection())
       } catch (e: Exception) {
         e.printStackTrace()
-        _connectionState.value = HostConnectionState.ERROR
+        connectionState.value = Error
       }
     }
   }
 
   private fun startClientConnection(): Job {
-    _connectionState.value = HostConnectionState.CONNECTING
+    connectionState.value = Connecting
 
     val httpClient = HttpClient(CIO) {
       engine {
@@ -156,13 +152,13 @@ class LivewireHostConnection(
           path = LivewireConstants.WsPath,
         ) {
           session = this
-          _connectionState.value = HostConnectionState.CONNECTED
+          connectionState.value = Connected
           try {
             for (frame in incoming) {
               try {
                 when (val incomingMessage = codec.decode(frame)) {
-                  is LivewireIncoming.Payload -> _incomingMessages.tryEmit(incomingMessage.payload)
-                  is LivewireIncoming.Layout -> _incomingLayoutNodes.emit(incomingMessage.node)
+                  is LivewireIncoming.Payload -> incomingMessages.tryEmit(incomingMessage.payload)
+                  is LivewireIncoming.Layout -> incomingLayoutNodes.emit(incomingMessage.node)
                   null -> Unit
                 }
               } catch (e: Exception) {
@@ -178,7 +174,7 @@ class LivewireHostConnection(
       } catch (e: Exception) {
         logDebug("failed to connect or communicate: ${e.message}")
         e.printStackTrace()
-        _connectionState.value = HostConnectionState.ERROR
+        connectionState.value = Error
       }
     }
 
@@ -200,8 +196,8 @@ class LivewireHostConnection(
     }
     activeConnection = null
 
-    _connectionState.value = HostConnectionState.DISCONNECTED
-    _incomingLayoutNodes.value = RootNode()
+    connectionState.value = Disconnected
+    incomingLayoutNodes.value = RootNode()
   }
 
   suspend fun close() {

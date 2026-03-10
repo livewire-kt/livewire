@@ -49,7 +49,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.r0adkll.livewire.runtime.HostConnectionState
-import com.r0adkll.livewire.runtime.HostConnectionState.CONNECTED
+import com.r0adkll.livewire.runtime.HostConnectionState.Error
 import com.r0adkll.livewire.runtime.LivewireHost
 import com.r0adkll.livewire.runtime.devicemanager.CompositeDeviceManager
 import com.r0adkll.livewire.runtime.devicemanager.HostDevice
@@ -64,8 +64,8 @@ import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.host.DebugNodes
 import com.r0adkll.livewire.ui.host.LayoutNodeContent
 import com.r0adkll.livewire.ui.icons.BugReport
-import com.r0adkll.livewire.ui.icons.Connected
-import com.r0adkll.livewire.ui.icons.Disconnected
+import com.r0adkll.livewire.ui.icons.ConnectedIcon
+import com.r0adkll.livewire.ui.icons.DisconnectedIcon
 import com.r0adkll.livewire.ui.icons.MenuOpen
 import com.r0adkll.livewire.ui.layout.HostDrawerSheet
 import com.r0adkll.livewire.ui.layout.HostScaffold
@@ -119,7 +119,7 @@ fun main() = application {
   }
 
   LaunchedEffect(state) {
-    if (state != CONNECTED) {
+    if (state != Connected) {
       selectedPlugin = null
       clientManifest = null
     }
@@ -188,7 +188,7 @@ fun main() = application {
           )
         }
 
-        if (state != CONNECTED) {
+        if (state != Connected) {
           DisconnectedStateLayout()
         }
       }
@@ -238,11 +238,11 @@ private fun DeviceTopBar(
         contentAlignment = Alignment.Center,
       ) {
         val tint by animateColorAsState(
-          if (hostConnectionState == CONNECTED) Color(0xff118F00) else MaterialTheme.colorScheme.error
+          if (hostConnectionState == Connected) Color(0xff118F00) else MaterialTheme.colorScheme.error
         )
 
         Icon(
-          imageVector = if (hostConnectionState == CONNECTED) Connected else Disconnected,
+          imageVector = if (hostConnectionState == Connected) ConnectedIcon else DisconnectedIcon,
           contentDescription = null,
           tint = tint,
         )
@@ -277,14 +277,13 @@ private fun DeviceTopBar(
               onConnectClick(it)
             }
           },
-          enabled = selectedDevice != null &&
-            (hostConnectionState == HostConnectionState.DISCONNECTED || hostConnectionState == HostConnectionState.ERROR),
+          enabled = selectedDevice != null && (hostConnectionState == Disconnected || hostConnectionState == Error),
         ) {
           Text("Connect")
         }
         Button(
           onClick = onDisconnectClick,
-          enabled = hostConnectionState == CONNECTED,
+          enabled = hostConnectionState == Connected,
         ) {
           Text("Disconnect")
         }

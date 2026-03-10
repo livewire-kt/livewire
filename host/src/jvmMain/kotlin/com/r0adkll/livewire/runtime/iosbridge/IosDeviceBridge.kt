@@ -2,7 +2,7 @@ package com.r0adkll.livewire.runtime.iosbridge
 
 import com.r0adkll.livewire.LivewireConstants
 import com.r0adkll.livewire.logDebug
-import com.r0adkll.livewire.runtime.devicemanager.IosDeviceInfo
+import com.r0adkll.livewire.runtime.devicemanager.IosDevice
 import com.r0adkll.livewire.runtime.devicemanager.IosDeviceType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -22,12 +22,12 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
   private val started = AtomicBoolean(false)
   private val stateLock = Mutex()
 
-  private val _devices = MutableStateFlow<List<IosDeviceInfo>>(emptyList())
-  val devices: StateFlow<List<IosDeviceInfo>> = _devices.asStateFlow()
+  val devices: StateFlow<List<IosDevice>>
+    field = MutableStateFlow<List<IosDevice>>(emptyList())
 
   private val physicalByUdid = mutableMapOf<String, PhysicalDevice>()
-  private val physicalInfoByUdid = mutableMapOf<String, IosDeviceInfo>()
-  private var simulatorDevices: List<IosDeviceInfo> = emptyList()
+  private val physicalInfoByUdid = mutableMapOf<String, IosDevice>()
+  private var simulatorDevices: List<IosDevice> = emptyList()
 
   private var usbmuxJob: Job? = null
   private var simulatorJob: Job? = null
@@ -155,7 +155,7 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
   }
 
   private fun updateDeviceList() {
-    _devices.value = physicalInfoByUdid.values + simulatorDevices
+    devices.value = physicalInfoByUdid.values + simulatorDevices
   }
 
   private fun logDebug(message: String) {
@@ -163,7 +163,7 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
   }
 }
 
-private fun loadPhysicalInfo(udid: String): IosDeviceInfo {
+private fun loadPhysicalInfo(udid: String): IosDevice {
   var name: String? = null
   var osVersion: String? = null
 
@@ -207,15 +207,15 @@ private fun loadPhysicalInfo(udid: String): IosDeviceInfo {
     }
   }
 
-  return IosDeviceInfo(
+  return IosDevice(
     udid = udid,
     name = name ?: udid,
-    deviceType = IosDeviceType.Physical,
+    deviceType = Physical,
     osVersion = osVersion ?: "unknown",
   )
 }
 
-private fun querySimulators(): List<IosDeviceInfo> {
+private fun querySimulators(): List<IosDevice> {
   if (!isMacOs()) return emptyList()
 
   val result = runCommand("xcrun", "simctl", "list", "devices", "booted")
@@ -231,10 +231,10 @@ private fun querySimulators(): List<IosDeviceInfo> {
       } else if (line.startsWith("  ") && osVersion != null) {
         val match = SimLineRegex.matchEntire(line.trim()) ?: return@forEach
         add(
-          IosDeviceInfo(
+          IosDevice(
             udid = match.groupValues[2],
             name = match.groupValues[1],
-            deviceType = IosDeviceType.Simulator,
+            deviceType = Simulator,
             osVersion = osVersion,
           )
         )

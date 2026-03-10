@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-val Disconnected: ImageVector by lazy(LazyThreadSafetyMode.NONE) {
+val DisconnectedIcon: ImageVector by lazy(LazyThreadSafetyMode.NONE) {
   ImageVector.Builder(
     name = "Disconnected",
     defaultWidth = 24.dp,

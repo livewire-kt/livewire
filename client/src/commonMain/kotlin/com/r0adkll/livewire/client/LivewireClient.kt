@@ -68,11 +68,11 @@ class LivewireClient private constructor(
     scope.launch {
       server.connectionState.collect { connectionState ->
         when (connectionState) {
-          ConnectionState.STARTED,
-          ConnectionState.STOPPED,
-          ConnectionState.ERROR -> Unit
+          Started,
+          Stopped,
+          ConnectionState.Error -> Unit
 
-          ConnectionState.CONNECTED -> {
+          Connected -> {
             // Send ClientManifest to the new host connection
             val manifest: UiProtocol = ClientManifest(
               theme = configuration.theme,
@@ -119,7 +119,7 @@ class LivewireClient private constructor(
       }
 
       LaunchedEffect(activePluginInfo, connectionState) {
-        if (activePluginInfo != null && connectionState == ConnectionState.CONNECTED) {
+        if (activePluginInfo != null && connectionState == Connected) {
           val plugin = configuration.plugins.find { plugin ->
             plugin.info.pluginId == activePluginInfo?.pluginId
           }

@@ -6,7 +6,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.unit.dp
 
-val Connected: ImageVector by lazy(LazyThreadSafetyMode.NONE) {
+val ConnectedIcon: ImageVector by lazy(LazyThreadSafetyMode.NONE) {
   ImageVector.Builder(
     name = "Connected",
     defaultWidth = 24.dp,
