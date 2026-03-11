@@ -27,6 +27,8 @@ kotlin {
       api(libs.compose.runtime)
       api(libs.kotlinx.serialization.json)
       api(libs.kotlinx.coroutines.core)
+      implementation(libs.cryptography.core)
+      implementation(libs.cryptography.provider.optimal)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)

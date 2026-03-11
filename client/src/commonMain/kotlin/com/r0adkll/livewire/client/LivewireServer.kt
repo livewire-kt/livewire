@@ -1,6 +1,7 @@
 package com.r0adkll.livewire.client
 
 import com.r0adkll.livewire.LivewireConstants
+import com.r0adkll.livewire.crypto.LivewireHandshake
 import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.logError
 import com.r0adkll.livewire.transport.PayloadDecoder
@@ -11,7 +12,9 @@ import com.r0adkll.livewire.ui.transport.LivewireWebSocketCodec
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
 import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
+import io.ktor.websocket.readBytes
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -103,6 +106,14 @@ class LivewireServer(
           }
         ) {
           activeSession = this
+
+          logDebug("Livewire", "Performing encryption handshake…")
+          codec.secureSession = LivewireHandshake().perform(
+            sendBytes = { bytes -> send(Frame.Binary(true, bytes)) },
+            receiveBytes = { (incoming.receive() as Frame.Binary).readBytes() },
+          )
+          logDebug("Livewire", "Encryption handshake complete")
+
           connectionState.value = Connected
           logDebug("Livewire", "Connected")
           try {
@@ -119,6 +130,7 @@ class LivewireServer(
           } catch (e: Exception) {
             logError("Livewire", "WebSocket error", e)
           } finally {
+            codec.secureSession = null
             activeSession = null
           }
         }

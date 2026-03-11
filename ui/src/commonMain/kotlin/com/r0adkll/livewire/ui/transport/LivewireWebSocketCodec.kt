@@ -1,5 +1,8 @@
 package com.r0adkll.livewire.ui.transport
 
+import com.r0adkll.livewire.logDebug
+import com.r0adkll.livewire.logError
+import com.r0adkll.livewire.crypto.SecureSession
 import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.transport.EnvelopeDecoder
 import com.r0adkll.livewire.transport.PayloadDecoder
@@ -16,21 +19,27 @@ class LivewireWebSocketCodec(
 ) {
   private val envelopeDecoder = EnvelopeDecoder(payloadDecoders = decoders.toSet())
 
+  var secureSession: SecureSession? = null
 
   suspend fun decode(frame: Frame): LivewireIncoming? {
-    return when (frame) {
+    val plaintextFrame = if (secureSession != null && frame is Frame.Binary) {
+      val (tag, plaintext) = secureSession!!.decrypt(frame.readBytes())
+      when (tag) {
+        SecureSession.TagText -> Frame.Text(true, plaintext)
+        SecureSession.TagBinary -> Frame.Binary(true, plaintext)
+        else -> frame
+      }
+    } else {
+      frame
+    }
+
+    return when (plaintextFrame) {
       is Frame.Text -> {
-        val text = frame.readText()
-        val payload = envelopeDecoder.decode(text)
-        if (payload != null) {
-          LivewireIncoming.Payload(payload)
-        } else {
-          null
-        }
+        envelopeDecoder.decode(plaintextFrame.readText())?.let { LivewireIncoming.Payload(it) }
       }
 
       is Frame.Binary -> {
-        val bytes = frame.readBytes()
+        val bytes = plaintextFrame.readBytes()
         val layoutNode = serializationStrategy.decodeFromByteArray(bytes)
         LivewireIncoming.Layout(layoutNode)
       }
@@ -39,19 +48,30 @@ class LivewireWebSocketCodec(
     }
   }
 
-  fun encodePayload(payload: Any): Frame.Text {
+  fun encodePayload(payload: Any): Frame {
     val json = when (payload) {
       is UiProtocol -> EnvelopeJson.encodeToString(UiProtocol.serializer(), payload)
       is LivewireAction -> EnvelopeJson.encodeToString(LivewireAction.serializer(), payload)
       else -> EnvelopeJson.encodeToString(payload)
     }
-    return Frame.Text(json)
+    return tryEncryptFrame(Frame.Text(json))
   }
 
-  fun encodeLayout(node: LayoutNode): Frame.Binary {
+  fun encodeLayout(node: LayoutNode): Frame {
     val nodeBinary = serializationStrategy.encodeToByteArray(node)
     outgoingSizeReporter(nodeBinary.size.toLong())
-    return Frame.Binary(true, nodeBinary)
+    return tryEncryptFrame(Frame.Binary(true, nodeBinary))
+  }
+
+  private fun tryEncryptFrame(frame: Frame): Frame {
+    if (secureSession == null) return frame
+
+    val encrypted = when (frame) {
+      is Frame.Text -> secureSession!!.encryptText(frame.readBytes())
+      is Frame.Binary -> secureSession!!.encryptBinary(frame.readBytes())
+      else -> secureSession!!.encryptText(frame.readBytes())
+    }
+    return Frame.Binary(true, encrypted)
   }
 }
 
