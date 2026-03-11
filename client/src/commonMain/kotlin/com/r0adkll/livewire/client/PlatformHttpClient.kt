@@ -1,5 +1,6 @@
 package com.r0adkll.livewire.client
 
-import io.ktor.client.HttpClient
+import io.ktor.client.engine.HttpClientEngineFactory
 
-expect fun createHttpClient(): HttpClient
+expect fun createPlatformEngine(): HttpClientEngineFactory<*>
+expect fun simulatorId(): String?

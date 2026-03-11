@@ -13,9 +13,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.net.StandardProtocolFamily
 import java.nio.channels.Channels
-import java.nio.channels.ServerSocketChannel
 import java.nio.channels.SocketChannel
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -26,7 +24,7 @@ internal class IosForwarder(
   private val forwardPort: Int,
   private val bridgePort: Int,
   private val socketPath: Path = Paths.get(UsbmuxdPath),
-) {
+) : AutoCloseable {
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private val running = AtomicBoolean(false)
 
@@ -35,7 +33,7 @@ internal class IosForwarder(
     scope.launch { runLoop() }
   }
 
-  fun stop() {
+  override fun close() {
     if (running.compareAndSet(true, false)) {
       scope.coroutineContext[Job]?.cancel()
     }
@@ -73,35 +71,34 @@ internal class IosForwarder(
     }
   }
 
-  @Suppress("BlockingMethodInNonBlockingContext")
   private suspend fun runConnected(stream: SocketChannel) {
-    val server = ServerSocketChannel.open(StandardProtocolFamily.INET)
-    server.bind(InetSocketAddress(InetAddress.getByName("127.0.0.1"), forwardPort))
-    logDebug("listening on 127.0.0.1:$forwardPort")
+    val local = runCatching {
+      SocketChannel.open(InetSocketAddress(InetAddress.getByName("127.0.0.1"), forwardPort))
+    }.getOrNull()
 
-    while (running.get()) {
-      val socket = runCatching { server.accept() }.getOrNull() ?: break
-      logDebug("accepted local socket, starting stream")
-      val result = runCatching {
-        coroutineScope {
-          val toSocket = launch { copyStream(Channels.newInputStream(stream), Channels.newOutputStream(socket)) }
-          val toStream = launch { copyStream(Channels.newInputStream(socket), Channels.newOutputStream(stream)) }
-
-          toSocket.join()
-          toStream.cancelAndJoin()
-        }
-      }
-
-      runCatching { socket.close() }
-      runCatching { stream.close() }
-
-      if (result.isFailure) {
-        logDebug("forwarding ended (will reconnect)")
-      }
-      break
+    if (local == null) {
+      logDebug("failed to connect to 127.0.0.1:$forwardPort")
+      return
     }
 
-    runCatching { server.close() }
+    logDebug("connected to 127.0.0.1:$forwardPort")
+
+    val result = runCatching {
+      coroutineScope {
+        val toLocal = launch { copyStream(Channels.newInputStream(stream), Channels.newOutputStream(local)) }
+        val toStream = launch { copyStream(Channels.newInputStream(local), Channels.newOutputStream(stream)) }
+
+        toLocal.join()
+        toStream.cancelAndJoin()
+      }
+    }
+
+    runCatching { local.close() }
+    runCatching { stream.close() }
+
+    if (result.isFailure) {
+      logDebug("forwarding ended (will reconnect)")
+    }
   }
 
   private fun copyStream(input: InputStream, output: OutputStream) {

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 
 data class IosDevice(
+  val connection: IosDeviceConnection,
   val udid: String,
   val name: String,
   val deviceType: IosDeviceType,
@@ -31,20 +32,32 @@ object IosDeviceManager : PlatformDeviceManager {
   override val isReady: StateFlow<Boolean> = bridge.isReady
 
   override suspend fun ensureStarted() {
-    bridge.start()
+    bridge.ensureStarted()
   }
 
   override fun shutdown() {
     bridge.shutdown()
     scope.cancel()
   }
+}
 
-  suspend fun activate(udid: String): Boolean {
-    ensureStarted()
-    return bridge.activate(udid)
+class IosDeviceConnection internal constructor(private val physicalUdid: String?, private val bridge: IosDeviceBridge) : AutoCloseable {
+  private var forwarder: AutoCloseable? = null
+
+  suspend fun activate(): Boolean {
+    forwarder?.close()
+
+    bridge.ensureStarted()
+
+    return if (physicalUdid != null) {
+      forwarder = bridge.activate(physicalUdid)
+      forwarder != null
+    } else {
+      true
+    }
   }
 
-  fun deactivate() {
-    bridge.deactivate()
+  override fun close() {
+    forwarder?.close()
   }
 }

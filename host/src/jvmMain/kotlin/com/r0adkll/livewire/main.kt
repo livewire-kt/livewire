@@ -275,13 +275,13 @@ private fun DeviceTopBar(
         val tint by animateColorAsState(
           when (hostConnectionState) {
             Connected -> Color(0xff118F00)
-            Forwarding, Connecting -> Color(0xffD4A017)
+            Forwarding, Listening -> Color(0xffD4A017)
             Error -> MaterialTheme.colorScheme.error
             Disconnected -> MaterialTheme.colorScheme.onSurfaceVariant
           }
         )
 
-        val pulse = if (hostConnectionState == Forwarding || hostConnectionState == Connecting) {
+        val pulse = if (hostConnectionState == Forwarding || hostConnectionState == Listening) {
           val infiniteTransition = rememberInfiniteTransition()
           infiniteTransition.animateFloat(
             initialValue = 1f,
@@ -331,7 +331,7 @@ private fun DeviceTopBar(
         }
         Button(
           onClick = onDisconnectClick,
-          enabled = hostConnectionState == Connected || hostConnectionState == Connecting,
+          enabled = hostConnectionState == Connected || hostConnectionState == Forwarding || hostConnectionState == Listening,
         ) {
           Text("Disconnect")
         }

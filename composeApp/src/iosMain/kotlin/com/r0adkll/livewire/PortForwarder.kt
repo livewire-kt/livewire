@@ -22,35 +22,20 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import platform.posix.AF_INET
-import platform.posix.EINPROGRESS
-import platform.posix.F_GETFL
-import platform.posix.F_SETFL
 import platform.posix.INADDR_LOOPBACK
-import platform.posix.O_NONBLOCK
-import platform.posix.POLLERR
-import platform.posix.POLLHUP
-import platform.posix.POLLOUT
 import platform.posix.SOCK_STREAM
 import platform.posix.SOL_SOCKET
-import platform.posix.SO_ERROR
 import platform.posix.SO_NOSIGPIPE
 import platform.posix.SO_REUSEADDR
 import platform.posix.accept
 import platform.posix.bind
 import platform.posix.bzero
 import platform.posix.close
-import platform.posix.connect
-import platform.posix.errno
-import platform.posix.fcntl
-import platform.posix.getsockopt
 import platform.posix.listen
-import platform.posix.poll
-import platform.posix.pollfd
 import platform.posix.read
 import platform.posix.setsockopt
 import platform.posix.sockaddr_in
 import platform.posix.socket
-import platform.posix.strerror
 import platform.posix.write
 
 class PortForwarder(
@@ -59,52 +44,70 @@ class PortForwarder(
 ) {
   private val scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
-  private var serverSocket: Int? = null
-  private var peerSocket: Int? = null
-  private var acceptJob: Job? = null
-  private var readJob: Job? = null
-
-  private var activeSocket: Int? = null
+  private var bridgeServerSocket: Int? = null
+  private var localServerSocket: Int? = null
+  private var forwardJob: Job? = null
 
   fun start() {
-    if (serverSocket != null) return
+    if (bridgeServerSocket != null) return
 
-    val socket = openServerSocket(bridgePort.toUShort(), INADDR_LOOPBACK)
-    if (socket == null) {
-      logDebug("listen failed")
+    val bridge = openServerSocket(bridgePort.toUShort(), INADDR_LOOPBACK)
+    if (bridge == null) {
+      logDebug("bridge listen failed on $bridgePort")
       return
     }
 
-    serverSocket = socket
-
-    acceptJob?.cancel()
-    acceptJob = scope.launch {
-      while (scope.isActive && socket == serverSocket) {
-        val clientSocket = acceptClient(socket) ?: continue
-
-        peerSocket?.let { close(it) }
-        peerSocket = clientSocket
-
-        closeActiveSocket()
-        logDebug("connection accepted")
-        startForwarding(clientSocket)
-      }
+    val local = openServerSocket(forwardPort.toUShort(), INADDR_LOOPBACK)
+    if (local == null) {
+      logDebug("local listen failed on $forwardPort")
+      close(bridge)
+      return
     }
 
-    logDebug("listening on 127.0.0.1:$bridgePort")
+    bridgeServerSocket = bridge
+    localServerSocket = local
+
+    logDebug("listening on 127.0.0.1:$bridgePort (USB) and 127.0.0.1:$forwardPort (app)")
+
+    forwardJob = scope.launch {
+      while (isActive) {
+        val usbSocket = acceptClient(bridge) ?: continue
+        logDebug("USB connection accepted")
+
+        val appSocket = acceptClient(local)
+        if (appSocket == null) {
+          close(usbSocket)
+          continue
+        }
+        logDebug("app connection accepted, bridging")
+
+        try {
+          val toApp = launch { pump(usbSocket, appSocket) }
+          val toUsb = launch { pump(appSocket, usbSocket) }
+
+          toApp.join()
+          toUsb.cancel()
+        } catch (t: Throwable) {
+          logError("forwarding exception", t)
+        } finally {
+          close(usbSocket)
+          close(appSocket)
+          logDebug("bridge ended")
+        }
+      }
+    }
   }
 
   fun stop() {
-    acceptJob?.cancel()
-    readJob?.cancel()
+    forwardJob?.cancel()
+    forwardJob = null
 
-    peerSocket?.let { close(it) }
-    peerSocket = null
+    bridgeServerSocket?.let { close(it) }
+    bridgeServerSocket = null
 
-    serverSocket?.let { close(it) }
-    serverSocket = null
+    localServerSocket?.let { close(it) }
+    localServerSocket = null
 
-    closeActiveSocket()
     scope.cancel()
     logDebug("stopped")
   }
@@ -117,7 +120,6 @@ class PortForwarder(
     )
 
     if (!isValidSocket(clientSocket)) {
-      if (errno == platform.posix.EINTR) return@memScoped null
       return@memScoped null
     }
 
@@ -132,47 +134,6 @@ class PortForwarder(
     clientSocket
   }
 
-  private fun startForwarding(socket: Int) {
-    readJob?.cancel()
-    readJob = scope.launch {
-      try {
-        closeActiveSocket()
-
-        logDebug("opening local socket to 127.0.0.1:$forwardPort")
-        val localSocket = connectLocalSocket(forwardPort)
-        if (localSocket == null) {
-          logDebug("failed to connect to 127.0.0.1:$forwardPort")
-          close(socket)
-          return@launch
-        }
-
-        if (activeSocket != null) {
-          logDebug("rejecting local socket since there is already an active socket")
-          close(localSocket)
-          return@launch
-        }
-
-        activeSocket = localSocket
-        logDebug("connected to 127.0.0.1:$forwardPort")
-
-        val peerToLocal = launch { pump(socket, localSocket) }
-        val localToPeer = launch { pump(localSocket, socket) }
-
-        peerToLocal.join()
-        localToPeer.cancel()
-      } catch (t: Throwable) {
-        logError("forwarding exception", t)
-      } finally {
-        if (socket == peerSocket) {
-          peerSocket = null
-        }
-        closeActiveSocket()
-        close(socket)
-        logDebug("channel ended")
-      }
-    }
-  }
-
   private fun pump(input: Int, output: Int) {
     val buffer = ByteArray(StreamBufferSize)
     while (true) {
@@ -182,11 +143,6 @@ class PortForwarder(
       if (readCount <= 0) return
       if (!writeFully(output, buffer, readCount)) return
     }
-  }
-
-  private fun closeActiveSocket() {
-    activeSocket?.let { close(it) }
-    activeSocket = null
   }
 }
 
@@ -228,69 +184,6 @@ private fun openServerSocket(port: UShort, address: UInt): Int? {
   }
 
   return socket
-}
-
-private fun connectLocalSocket(port: UInt): Int? = memScoped {
-  val socket = socket(AF_INET, SOCK_STREAM, 0).takeIf { isValidSocket(it) } ?: return null
-
-  setsockopt(
-    socket,
-    SOL_SOCKET,
-    SO_NOSIGPIPE,
-    alloc<IntVar> { value = 1 }.ptr,
-    sizeOf<IntVar>().toUInt(),
-  )
-
-  val addr = alloc<sockaddr_in> {
-    bzero(ptr, sizeOf<sockaddr_in>().toULong())
-    sin_family = AF_INET.toUByte()
-    sin_port = hostToNetworkShort(port.toUShort())
-    sin_addr.s_addr = hostToNetworkInt(0x7F000001u) // 127.0.0.1 in network order
-  }
-
-  val flags = fcntl(socket, F_GETFL, 0)
-  fcntl(socket, F_SETFL, flags or O_NONBLOCK)
-
-  val result = connect(socket, addr.ptr.reinterpret(), sizeOf<sockaddr_in>().toUInt())
-  if (result != 0 && errno != EINPROGRESS) {
-    val err = errno
-    logDebug("connect failed errno=$err (${strerror(err)})")
-    close(socket)
-    return null
-  }
-
-  if (result != 0) {
-    val pollRequest = alloc<pollfd> {
-      fd = socket
-      events = POLLOUT.toShort()
-      revents = 0
-    }
-
-    val pollResult = poll(pollRequest.ptr, 1u, 2000)
-    if (pollResult <= 0 || (pollRequest.revents.toInt() and (POLLERR or POLLHUP)) != 0) {
-      logDebug("connect poll timeout or error (revents=${pollRequest.revents.toInt()})")
-      close(socket)
-      return null
-    }
-
-    val socketError = alloc<IntVar>()
-    getsockopt(
-      socket,
-      SOL_SOCKET,
-      SO_ERROR,
-      socketError.ptr,
-      alloc<UIntVar> { value = sizeOf<IntVar>().toUInt() }.ptr,
-    )
-    if (socketError.value != 0) {
-      val err = socketError.value
-      logDebug("connect SO_ERROR=$err (${strerror(err)})")
-      close(socket)
-      return null
-    }
-  }
-
-  fcntl(socket, F_SETFL, flags)
-  socket
 }
 
 private fun hostToNetworkShort(value: UShort): UShort {
