@@ -155,7 +155,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -e\nif [ -z \"$ARCHS\" ]; then\n  ARCHS=\"arm64\"\n  export ARCHS\nfi\n\"$SRCROOT/../gradlew\" -p \"$SRCROOT/..\" :composeApp:embedAndSignAppleFrameworkForXcode\n";
+			shellScript = "set -e\nif [ -z \"$ARCHS\" ]; then\n  ARCHS=\"arm64\"\n  export ARCHS\nfi\n\"$SRCROOT/../gradlew\" -p \"$SRCROOT/..\" :demo:embedAndSignAppleFrameworkForXcode\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
