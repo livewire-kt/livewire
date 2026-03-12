@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Desktop + Host" type="CompoundRunConfigurationType">
+    <toRun name="host [jvm, hot] 🔥" type="GradleRunConfiguration" />
+    <toRun name="composeApp [jvm]" type="ShConfigurationType" />
+    <method v="2" />
+  </configuration>
+</component>
