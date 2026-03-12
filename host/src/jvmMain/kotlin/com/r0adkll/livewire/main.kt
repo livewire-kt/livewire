@@ -63,6 +63,7 @@ import com.r0adkll.livewire.runtime.HostConnectionState.Error
 import com.r0adkll.livewire.runtime.LivewireHost
 import com.r0adkll.livewire.runtime.devicemanager.AdbDevice
 import com.r0adkll.livewire.runtime.devicemanager.CompositeDeviceManager
+import com.r0adkll.livewire.runtime.devicemanager.DesktopDevice
 import com.r0adkll.livewire.runtime.devicemanager.HostDevice
 import com.r0adkll.livewire.runtime.devicemanager.IosDevice
 import com.r0adkll.livewire.theme.LivewireThemeContent
@@ -80,6 +81,7 @@ import com.r0adkll.livewire.ui.icons.AppleIcon
 import com.r0adkll.livewire.ui.icons.BugReport
 import com.r0adkll.livewire.ui.icons.ChevronDown
 import com.r0adkll.livewire.ui.icons.ConnectedIcon
+import com.r0adkll.livewire.ui.icons.DesktopIcon
 import com.r0adkll.livewire.ui.icons.DisconnectedIcon
 import com.r0adkll.livewire.ui.icons.MenuOpen
 import com.r0adkll.livewire.ui.layout.HostDrawerSheet
@@ -424,6 +426,24 @@ private fun DeviceSelector(
     ) {
       val androidDevices = devices.filterIsInstance<AdbDevice>()
       val iosDevices = devices.filterIsInstance<IosDevice>()
+      val desktopDevices = devices.filterIsInstance<DesktopDevice>()
+
+      if (desktopDevices.isNotEmpty()) {
+        DeviceSectionHeader(title = "Desktop")
+        desktopDevices.forEach { device ->
+          DeviceDropdownItem(
+            device = device,
+            selected = device.id == selectedDevice?.id,
+            primaryText = device.displayName,
+            secondaryText = "PID: ${device.processId}",
+            onClick = { onDeviceClick(device) },
+          )
+        }
+      }
+
+      if (desktopDevices.isNotEmpty() && (androidDevices.isNotEmpty() || iosDevices.isNotEmpty())) {
+        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+      }
 
       if (androidDevices.isNotEmpty()) {
         DeviceSectionHeader(title = "Android")
@@ -531,6 +551,7 @@ private val HostDevice.platformIcon: ImageVector
   get() = when (this) {
     is AdbDevice -> AndroidIcon
     is IosDevice -> AppleIcon
+    is DesktopDevice -> DesktopIcon
   }
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)

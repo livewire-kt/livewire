@@ -28,8 +28,9 @@ object AdbDeviceManager : PlatformDeviceManager {
 
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private val started = AtomicBoolean(false)
-  private val _devices = MutableStateFlow<List<HostDevice>>(emptyList())
-  override val devices: Flow<List<HostDevice>> = _devices
+
+  final override val devices: Flow<List<HostDevice>>
+    field = MutableStateFlow<List<HostDevice>>(emptyList())
 
   final override val isReady: StateFlow<Boolean>
     field = MutableStateFlow(false)
@@ -56,7 +57,7 @@ object AdbDeviceManager : PlatformDeviceManager {
             }
           }
 
-          result.getOrNull()?.let { _devices.value = it }
+          result.getOrNull()?.let { devices.value = it }
           isReady.value = true
           delay(RefreshRateMs)
         }
@@ -66,7 +67,7 @@ object AdbDeviceManager : PlatformDeviceManager {
 
   override fun shutdown() {
     scope.cancel()
-    _devices.value = emptyList()
+    devices.value = emptyList()
   }
 }
 

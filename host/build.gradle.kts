@@ -45,6 +45,7 @@ kotlin {
       implementation(libs.ktor.clientCore)
       implementation(libs.ktor.clientCio)
       implementation(libs.ktor.clientWebsockets)
+      implementation(libs.ktor.network)
       implementation(libs.dadb)
       implementation(libs.coil.compose)
       implementation(libs.coil.network.ktor3)

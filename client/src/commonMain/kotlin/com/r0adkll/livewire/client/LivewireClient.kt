@@ -33,11 +33,9 @@ import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlin.coroutines.CoroutineContext
 
@@ -52,6 +50,8 @@ class LivewireClient private constructor(
   )
 
   private val scope = CoroutineScope(context + SupervisorJob())
+
+  private val discoveryBroadcaster = DiscoveryBroadcaster()
 
   val server = LivewireServer(
     decoders = configuration.decoders + DefaultDecoders + UiDecoders,
@@ -74,6 +74,12 @@ class LivewireClient private constructor(
       send(manifest)
     }
     server.start()
+
+    discoveryBroadcaster.start(
+      scope = scope,
+      instanceId = deviceIdFilter(),
+      appName = configuration.appName,
+    )
 
     scope.launchMolecule(RecompositionMode.Immediate) {
       val connectionState by server.connectionState.collectAsState()
@@ -151,6 +157,7 @@ class LivewireClient private constructor(
 @LivewireClientDsl
 class LivewireClientBuilder {
   private var theme: LivewireTheme? = null
+  private var appName: String = "Livewire Client"
   private val plugins = mutableSetOf<Plugin>()
   private val decoders = mutableSetOf<PayloadDecoder<*>>()
   private var layoutNodeSerialization = Protobuf
@@ -163,6 +170,10 @@ class LivewireClientBuilder {
     this.theme = theme
   }
 
+  fun appName(name: String) {
+    this.appName = name
+  }
+
   fun layoutNodeSerialization(
     strategy: LayoutNodeSerialization,
   ) {
@@ -172,6 +183,7 @@ class LivewireClientBuilder {
   fun build(): LivewireClientConfiguration {
     return LivewireClientConfiguration(
       theme = theme ?: LivewireTheme(),
+      appName = appName,
       plugins = plugins,
       decoders = decoders,
       layoutNodeSerialization = layoutNodeSerialization,
@@ -181,6 +193,7 @@ class LivewireClientBuilder {
 
 class LivewireClientConfiguration(
   val theme: LivewireTheme,
+  val appName: String,
   val plugins: Set<Plugin>,
   val decoders: Set<PayloadDecoder<*>>,
   val layoutNodeSerialization: LayoutNodeSerialization,

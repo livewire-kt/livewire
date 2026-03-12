@@ -24,4 +24,5 @@ object CompositeDeviceManager {
 private val DeviceManagers = listOf(
   AdbDeviceManager,
   IosDeviceManager,
+  DesktopDeviceManager,
 )

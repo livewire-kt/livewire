@@ -1,3 +1,4 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -84,7 +85,12 @@ kotlin {
       implementation(libs.kotlin.test)
     }
     jvmMain.dependencies {
+      implementation(compose.desktop.currentOs)
       implementation(libs.ktor.clientCio)
+      implementation(libs.kotlinx.coroutinesSwing)
+
+      implementation(projects.client)
+      implementation(projects.plugins.database)
     }
     iosMain.dependencies {
       implementation(libs.compose.ui)
@@ -123,4 +129,16 @@ android {
 
 dependencies {
   debugImplementation(libs.compose.uiTooling)
+}
+
+compose.desktop {
+  application {
+    mainClass = "com.r0adkll.livewire.MainKt"
+
+    nativeDistributions {
+      targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+      packageName = "com.r0adkll.livewire.client"
+      packageVersion = "1.0.0"
+    }
+  }
 }

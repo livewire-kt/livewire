@@ -19,7 +19,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -63,8 +62,6 @@ class LivewireServer(
   val outgoingLayoutSize: StateFlow<Long>
     field = MutableStateFlow(0L)
 
-  private var connectionJob: Job? = null
-
   var activeSession: WebSocketSession? = null
     private set
 
@@ -83,10 +80,10 @@ class LivewireServer(
   )
 
   fun start() {
-    if (connectionJob != null) return
+    if (connectionState.value != Stopped) return
 
     logDebug("Livewire", "Starting client connection loop")
-    connectionJob = scope.launch { connectionLoop() }
+    scope.launch { connectionLoop() }
   }
 
   private suspend fun connectionLoop() {
@@ -100,7 +97,7 @@ class LivewireServer(
           port = LivewireConstants.Port,
           path = LivewireConstants.WsPath,
           request = {
-            simulatorId()?.let { id ->
+            deviceIdFilter()?.let { id ->
               url.parameters.append("device_id", id)
             }
           }
@@ -157,8 +154,6 @@ class LivewireServer(
   }
 
   fun stop() {
-    connectionJob?.cancel()
-    connectionJob = null
     activeSession = null
     connectionState.value = Stopped
     httpClient.close()

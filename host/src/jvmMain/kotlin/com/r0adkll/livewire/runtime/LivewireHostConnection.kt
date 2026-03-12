@@ -5,6 +5,7 @@ import com.r0adkll.livewire.crypto.LivewireHandshake
 import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.runtime.HostConnectionState.Error
 import com.r0adkll.livewire.runtime.devicemanager.AdbDevice
+import com.r0adkll.livewire.runtime.devicemanager.DesktopDevice
 import com.r0adkll.livewire.runtime.devicemanager.HostDevice
 import com.r0adkll.livewire.runtime.devicemanager.IosDevice
 import com.r0adkll.livewire.transport.PayloadDecoder
@@ -84,12 +85,17 @@ class LivewireHostConnection(
     logDebug("connect to ${device.id}")
     disconnect()
 
-    // device id filtering only for ios simulators, since they share the host's network stack
-    expectedDeviceId = if (device is IosDevice && device.deviceType == Simulator) device.udid else null
+    // device id filtering for ios simulators and desktop apps, since they share the host's network stack
+    expectedDeviceId = when (device) {
+      is IosDevice -> if (device.deviceType == Simulator) device.udid else null
+      is DesktopDevice -> device.instanceId
+      is AdbDevice -> null
+    }
 
     when (device) {
       is AdbDevice -> connectAndroid(device)
       is IosDevice -> connectIos(device)
+      is DesktopDevice -> connectDesktop()
     }
   }
 
@@ -144,6 +150,19 @@ class LivewireHostConnection(
     }
   }
 
+  private fun connectDesktop() {
+    scope.launch {
+      try {
+        startServer()
+        connectionState.value = Listening
+        activeConnection = ActiveConnection.DesktopConnection
+      } catch (e: Exception) {
+        e.printStackTrace()
+        connectionState.value = Error
+      }
+    }
+  }
+
   private fun startServer() {
     if (server != null) {
       connectionState.value = Listening
@@ -152,6 +171,7 @@ class LivewireHostConnection(
 
     server = embeddedServer(CIO, port = LivewireConstants.Port) {
       install(WebSockets)
+
       routing {
         route(LivewireConstants.WsPath) {
           // prevent clients from entering the Connected state on a connection that will be immediately closed.
@@ -162,6 +182,7 @@ class LivewireHostConnection(
               finish()
             }
           }
+
           webSocket {
             session?.close()
             session = this
@@ -260,6 +281,10 @@ sealed interface ActiveConnection {
     override suspend fun close() {
       connection.close()
     }
+  }
+
+  data object DesktopConnection : ActiveConnection {
+    override suspend fun close() = Unit
   }
 }
 

@@ -50,6 +50,7 @@ kotlin {
     jvmMain.dependencies {
       implementation(libs.kotlin.reflect)
       implementation(libs.ktor.clientCio)
+      implementation(libs.ktor.network)
       implementation(libs.kotlinx.coroutinesSwing)
     }
   }
