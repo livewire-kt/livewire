@@ -1,9 +1,10 @@
 @file:OptIn(ExperimentalAtomicApi::class)
 
-package com.r0adkll.livewire.runtime.devicemanager
+package com.r0adkll.livewire.runtime.discoverymanager
 
 import com.r0adkll.livewire.LivewireConstants
 import com.r0adkll.livewire.discovery.DiscoveryPacket
+import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.logError
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
@@ -26,21 +27,12 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
-data class DesktopDevice(
-  val instanceId: String,
-  val appName: String,
-  val processId: Long,
-) : HostDevice {
-  override val id: String = "desktop:$instanceId"
-  override val displayName: String = appName
-}
-
-object DesktopDeviceManager : PlatformDeviceManager {
+object LocalHostDiscoveryManager : PlatformDiscoveryManager {
 
   private val started = AtomicBoolean(false)
 
-  final override val devices: Flow<List<HostDevice>>
-    field = MutableStateFlow<List<HostDevice>>(emptyList())
+  final override val devices: Flow<List<HostApp>>
+    field = MutableStateFlow<List<HostApp>>(emptyList())
 
   final override val isReady: StateFlow<Boolean>
     field = MutableStateFlow(true)
@@ -49,7 +41,7 @@ object DesktopDeviceManager : PlatformDeviceManager {
 
   private val timeSource = TimeSource.Monotonic
   private val lastSeen = mutableMapOf<String, TimeSource.Monotonic.ValueTimeMark>()
-  private val knownDevices = mutableMapOf<String, DesktopDevice>()
+  private val knownApps = mutableMapOf<String, HostApp>()
   private val lock = Any()
 
   override suspend fun ensureStarted() {
@@ -60,35 +52,35 @@ object DesktopDeviceManager : PlatformDeviceManager {
       try {
         aSocket(selectorManager)
           .udp()
-          .bind(InetSocketAddress("0.0.0.0", LivewireConstants.DiscoveryPort))
+          .bind(InetSocketAddress("0.0.0.0", LivewireConstants.UdpDiscoveryPort))
           .use { socket ->
             while (isActive) {
               try {
                 val json = socket.receive().packet.readText()
                 val packet = Json.decodeFromString<DiscoveryPacket>(json)
 
-                val device = DesktopDevice(
-                  instanceId = packet.instanceId,
-                  appName = packet.appName,
-                  processId = packet.processId,
-                )
+                val app = packet.toHostApp()
 
                 synchronized(lock) {
-                  lastSeen[packet.instanceId] = timeSource.markNow()
-                  knownDevices[packet.instanceId] = device
-                  devices.value = knownDevices.values.toList()
+                  val isNew = app.id !in knownApps
+                  lastSeen[app.id] = timeSource.markNow()
+                  knownApps[app.id] = app
+                  devices.value = knownApps.values.toList()
+                  if (isNew) {
+                    logDebug("discovered ${app.displayName} (${app.id})")
+                  }
                 }
               } catch (e: CancellationException) {
                 throw e
               } catch (t: Throwable) {
-                logError("DesktopDeviceManager", "error receiving packet: ${t.message}", t)
+                logError("error receiving packet: ${t.message}", t)
               }
             }
           }
       } catch (e: CancellationException) {
         throw e
       } catch (e: Exception) {
-        logError("DesktopDeviceManager", "failed to start listener", e)
+        logError("failed to start listener", e)
       } finally {
         selectorManager.close()
       }
@@ -102,12 +94,12 @@ object DesktopDeviceManager : PlatformDeviceManager {
             .filter { (_, mark) -> mark.elapsedNow() > StaleDeviceThreshold }
             .onEach { (id, _) ->
               lastSeen.remove(id)
-              knownDevices.remove(id)
+              knownApps.remove(id)
             }
             .isNotEmpty()
 
           if (performedPrune) {
-            devices.value = knownDevices.values.toList()
+            devices.value = knownApps.values.toList()
           }
         }
       }
@@ -117,12 +109,43 @@ object DesktopDeviceManager : PlatformDeviceManager {
   override fun shutdown() {
     synchronized(lock) {
       lastSeen.clear()
-      knownDevices.clear()
+      knownApps.clear()
       devices.value = emptyList()
     }
 
     scope.cancel()
   }
+
+  private fun logDebug(message: String) {
+    logDebug("AppDiscoveryManager", message)
+  }
+
+  private fun logError(message: String, throwable: Throwable) {
+    logError("AppDiscoveryManager", message, throwable)
+  }
+}
+
+private fun DiscoveryPacket.toHostApp(): HostApp = when (platform) {
+  Desktop -> DesktopApp(
+    instanceId = instanceId,
+    appName = appName,
+    processId = processId,
+  )
+  IosSimulator -> {
+    IosApp(
+      instanceId = instanceId,
+      appName = appName,
+      bundleId = packageName,
+      device = IosDevice(
+        connection = IosDeviceConnection.forSimulator(),
+        udid = instanceId,
+        name = deviceName,
+        deviceType = Simulator,
+        osVersion = osVersion,
+      ),
+    )
+  }
+  else -> error("Unexpected platform: $platform")
 }
 
 private const val PruneInterval = 2000L

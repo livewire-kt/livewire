@@ -1,10 +1,11 @@
 package com.r0adkll.livewire.runtime.iosbridge
 
 import com.r0adkll.livewire.LivewireConstants
+import com.r0adkll.livewire.discovery.DiscoveryPacket
 import com.r0adkll.livewire.logDebug
-import com.r0adkll.livewire.runtime.devicemanager.IosDevice
-import com.r0adkll.livewire.runtime.devicemanager.IosDeviceConnection
-import com.r0adkll.livewire.runtime.devicemanager.IosDeviceType
+import com.r0adkll.livewire.runtime.discoverymanager.IosApp
+import com.r0adkll.livewire.runtime.discoverymanager.IosDevice
+import com.r0adkll.livewire.runtime.discoverymanager.IosDeviceConnection
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -14,7 +15,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
 import java.io.BufferedReader
+import java.nio.channels.Channels
 import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -22,27 +25,23 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
   private val started = AtomicBoolean(false)
   private val stateLock = Mutex()
 
-  val devices: StateFlow<List<IosDevice>>
-    field = MutableStateFlow<List<IosDevice>>(emptyList())
+  val devices: StateFlow<List<IosApp>>
+    field = MutableStateFlow<List<IosApp>>(emptyList())
 
   val isReady: StateFlow<Boolean>
     field = MutableStateFlow(false)
 
-  private var usbmuxReady = false
-  private var simulatorReady = false
-
-  private val physicalByUdid = mutableMapOf<String, PhysicalDevice>()
-  private val physicalInfoByUdid = mutableMapOf<String, IosDevice>()
-  private var simulatorDevices: List<IosDevice> = emptyList()
+  private val deviceIdMap = mutableMapOf<Udid, Int>()
+  private val physicalDeviceMap = mutableMapOf<Udid, IosDevice>()
+  private val discoveredApps = mutableMapOf<Udid, IosApp>()
+  private val discoveryJobs = mutableMapOf<Udid, Job>()
 
   private var usbmuxJob: Job? = null
-  private var simulatorJob: Job? = null
 
   fun ensureStarted() {
     if (!started.compareAndSet(false, true)) return
 
     usbmuxJob = scope.launch { runUsbMuxLoop() }
-    simulatorJob = scope.launch { runSimulatorLoop() }
   }
 
   fun shutdown(forwarder: AutoCloseable? = null) {
@@ -51,17 +50,17 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
     usbmuxJob?.cancel()
     usbmuxJob = null
 
-    simulatorJob?.cancel()
-    simulatorJob = null
+    discoveryJobs.values.forEach { it.cancel() }
+    discoveryJobs.clear()
 
     started.set(false)
   }
 
   suspend fun activate(udid: String): AutoCloseable? {
-    val physical = stateLock.withLock { physicalByUdid[udid] } ?: return null
+    val deviceId = stateLock.withLock { deviceIdMap[Udid(udid)] } ?: return null
 
     return IosForwarder(
-      deviceId = physical.deviceId,
+      deviceId = deviceId,
       forwardPort = LivewireConstants.Port,
       bridgePort = LivewireConstants.BridgePort,
     ).also { it.start() }
@@ -95,9 +94,8 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
         handleUsbMuxEvent(event)
       }
 
-      if (!usbmuxReady) {
-        usbmuxReady = true
-        updateReadyState()
+      if (!isReady.value) {
+        isReady.value = true
       }
 
       while (scope.isActive) {
@@ -110,69 +108,113 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
     }
   }
 
-  private suspend fun runSimulatorLoop() {
-    while (scope.isActive) {
-      val simulators = querySimulators()
-      stateLock.withLock {
-        simulatorDevices = simulators
-        updateDeviceList()
-      }
-      if (!simulatorReady) {
-        simulatorReady = true
-        updateReadyState()
-      }
-      delay(2000)
-    }
-  }
-
   private suspend fun handleUsbMuxEvent(event: UsbMuxEvent) {
     when (event) {
       is UsbMuxEvent.Attach -> {
-        logDebug("device attached deviceId=${event.deviceId} udid=${event.udid}")
-        val udid = event.udid ?: return
-        val device = PhysicalDevice(deviceId = event.deviceId, udid = udid)
-        val info = loadPhysicalInfo(udid)
+        logDebug("device attached: deviceId=${event.deviceId} udid=${event.udid}")
+        val udid = event.udid?.let { Udid(it) } ?: return
+
         stateLock.withLock {
-          physicalByUdid[udid] = device
-          physicalInfoByUdid[udid] = info
-          updateDeviceList()
+          deviceIdMap[udid] = event.deviceId
+          physicalDeviceMap[udid] = loadPhysicalDevice(udid.value)
+        }
+
+        discoveryJobs[udid]?.cancel()
+        discoveryJobs[udid] = scope.launch {
+          runPhysicalDeviceDiscovery(event.deviceId, udid)
         }
       }
 
       is UsbMuxEvent.Detach -> {
-        logDebug("device detached deviceId=${event.deviceId} udid=${event.udid}")
-        stateLock.withLock {
-          if (event.udid != null) {
-            physicalByUdid.remove(event.udid)
-            physicalInfoByUdid.remove(event.udid)
-          } else {
-            val existing = physicalByUdid.entries.firstOrNull { it.value.deviceId == event.deviceId }
-            if (existing != null) {
-              physicalByUdid.remove(existing.key)
-              physicalInfoByUdid.remove(existing.key)
-            }
+        logDebug("device detached: deviceId=${event.deviceId} udid=${event.udid}")
+        val udid = event.udid ?: run {
+          stateLock.withLock {
+            deviceIdMap.entries.firstOrNull { it.value == event.deviceId }?.key
           }
+        } ?: return
+
+        discoveryJobs[udid]?.cancel()
+        discoveryJobs.remove(udid)
+
+        stateLock.withLock {
+          deviceIdMap.remove(udid)
+          physicalDeviceMap.remove(udid)
+          discoveredApps.remove(udid)
           updateDeviceList()
         }
       }
     }
   }
 
-  private fun updateDeviceList() {
-    devices.value = physicalInfoByUdid.values + simulatorDevices
+  private suspend fun runPhysicalDeviceDiscovery(deviceId: Int, udid: Udid) {
+    while (scope.isActive) {
+      val packet = tryTcpDiscoveryRange(deviceId)
+
+      stateLock.withLock {
+        if (packet != null) {
+          val device = physicalDeviceMap[udid]
+          if (device != null) {
+            discoveredApps[udid] = IosApp(
+              instanceId = packet.instanceId,
+              appName = packet.appName,
+              bundleId = packet.packageName,
+              device = device,
+            )
+            updateDeviceList()
+          }
+        } else {
+          if (discoveredApps.remove(udid) != null) {
+            updateDeviceList()
+          }
+        }
+      }
+
+      delay(RefreshRateMs)
+    }
   }
 
-  private fun updateReadyState() {
-    if (usbmuxReady && simulatorReady) {
-      isReady.value = true
+  private fun tryTcpDiscoveryRange(deviceId: Int): DiscoveryPacket? {
+    for (port in LivewireConstants.TcpDiscoveryPorts) {
+      val packet = tryTcpDiscovery(deviceId, port)
+      if (packet != null) return packet
     }
+    return null
+  }
+
+  private fun tryTcpDiscovery(deviceId: Int, port: Int): DiscoveryPacket? {
+    val client = runCatching {
+      UsbMuxClient.connect(Paths.get(UsbmuxdPath))
+    }.getOrNull() ?: return null
+
+    val stream = runCatching {
+      client.connectToDevice(deviceId, port)
+    }.getOrNull()
+
+    if (stream == null) {
+      client.close()
+      return null
+    }
+
+    return try {
+      Channels.newInputStream(stream).bufferedReader().readLine()?.let { Json.decodeFromString<DiscoveryPacket>(it) }
+    } catch (e: Exception) {
+      logDebug("tcp discovery failed for deviceId=$deviceId: ${e.message}")
+      null
+    } finally {
+      runCatching { stream.close() }
+      runCatching { client.close() }
+    }
+  }
+
+  private fun updateDeviceList() {
+    devices.value = discoveredApps.values.toList()
   }
 
   private fun logDebug(message: String) {
     logDebug("ios-bridge", message)
   }
 
-  private fun loadPhysicalInfo(udid: String): IosDevice {
+  private fun loadPhysicalDevice(udid: String): IosDevice {
     var name: String? = null
     var osVersion: String? = null
 
@@ -216,42 +258,13 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
       }
     }
 
-  return IosDevice(
-    connection = IosDeviceConnection(physicalUdid = udid, bridge = this),
-    udid = udid,
-    name = name ?: udid,
-    deviceType = Physical,
-    osVersion = osVersion ?: "unknown",
-  )
-}
-
-private fun querySimulators(): List<IosDevice> {
-  if (!isMacOs()) return emptyList()
-
-    val result = runCommand("xcrun", "simctl", "list", "devices", "booted")
-
-    if (result.exitCode != 0) return emptyList()
-
-    return buildList {
-      var osVersion: String? = null
-
-      result.stdout.lines().forEach { line ->
-        if (line.startsWith("-- ") && line.endsWith(" --")) {
-          osVersion = line.substringAfter("-- ").substringBefore(" --").removePrefix("iOS ")
-        } else if (line.startsWith("  ") && osVersion != null) {
-          val match = SimLineRegex.matchEntire(line.trim()) ?: return@forEach
-          add(
-            IosDevice(
-              connection = IosDeviceConnection(physicalUdid = null, bridge = this@IosDeviceBridge),
-              udid = match.groupValues[2],
-              name = match.groupValues[1],
-              deviceType = Simulator,
-              osVersion = osVersion,
-            )
-          )
-        }
-      }
-    }
+    return IosDevice(
+      connection = IosDeviceConnection.forPhysical(udid, this),
+      udid = udid,
+      name = name ?: udid,
+      deviceType = Physical,
+      osVersion = osVersion ?: "unknown",
+    )
   }
 }
 
@@ -275,11 +288,9 @@ private data class CommandResult(
   val stderr: String,
 )
 
-private data class PhysicalDevice(
-  val deviceId: Int,
-  val udid: String,
-)
+@JvmInline
+value class Udid(val value: String)
 
 private fun isMacOs(): Boolean = System.getProperty("os.name").lowercase().contains("mac")
 
-private val SimLineRegex = Regex("""^(.*?) \(([A-F0-9-]{36})\) \((.*?)\)$""")
+private const val RefreshRateMs = 2000L

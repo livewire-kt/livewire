@@ -2,6 +2,7 @@ package com.r0adkll.livewire.runtime
 
 import java.util.prefs.Preferences
 
+// TODO: what to do with this now that we're app-based instead of device-based?
 object DevicePreferences {
   private val prefs = Preferences.userNodeForPackage(DevicePreferences::class.java)
 

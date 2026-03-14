@@ -77,8 +77,7 @@ class LivewireClient private constructor(
 
     discoveryBroadcaster.start(
       scope = scope,
-      instanceId = deviceIdFilter(),
-      appName = configuration.appName,
+      instanceId = connectionId,
     )
 
     scope.launchMolecule(RecompositionMode.Immediate) {
@@ -157,7 +156,6 @@ class LivewireClient private constructor(
 @LivewireClientDsl
 class LivewireClientBuilder {
   private var theme: LivewireTheme? = null
-  private var appName: String = "Livewire Client"
   private val plugins = mutableSetOf<Plugin>()
   private val decoders = mutableSetOf<PayloadDecoder<*>>()
   private var layoutNodeSerialization = Protobuf
@@ -170,10 +168,6 @@ class LivewireClientBuilder {
     this.theme = theme
   }
 
-  fun appName(name: String) {
-    this.appName = name
-  }
-
   fun layoutNodeSerialization(
     strategy: LayoutNodeSerialization,
   ) {
@@ -183,7 +177,6 @@ class LivewireClientBuilder {
   fun build(): LivewireClientConfiguration {
     return LivewireClientConfiguration(
       theme = theme ?: LivewireTheme(),
-      appName = appName,
       plugins = plugins,
       decoders = decoders,
       layoutNodeSerialization = layoutNodeSerialization,
@@ -193,7 +186,6 @@ class LivewireClientBuilder {
 
 class LivewireClientConfiguration(
   val theme: LivewireTheme,
-  val appName: String,
   val plugins: Set<Plugin>,
   val decoders: Set<PayloadDecoder<*>>,
   val layoutNodeSerialization: LayoutNodeSerialization,

@@ -35,6 +35,7 @@ kotlin {
       implementation(libs.compose.runtime)
       implementation(libs.ktor.clientCore)
       implementation(libs.ktor.clientWebsockets)
+      implementation(libs.ktor.network)
       implementation(libs.molecule.runtime)
     }
     commonTest.dependencies {
@@ -43,6 +44,7 @@ kotlin {
     androidMain.dependencies {
       implementation(libs.kotlin.reflect)
       implementation(libs.ktor.clientOkhttp)
+      implementation(libs.androidx.startup)
     }
     iosMain.dependencies {
       implementation(libs.ktor.clientDarwin)
@@ -50,7 +52,6 @@ kotlin {
     jvmMain.dependencies {
       implementation(libs.kotlin.reflect)
       implementation(libs.ktor.clientCio)
-      implementation(libs.ktor.network)
       implementation(libs.kotlinx.coroutinesSwing)
     }
   }

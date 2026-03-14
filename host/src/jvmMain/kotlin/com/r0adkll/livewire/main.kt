@@ -61,11 +61,15 @@ import com.r0adkll.livewire.runtime.DevicePreferences
 import com.r0adkll.livewire.runtime.HostConnectionState
 import com.r0adkll.livewire.runtime.HostConnectionState.Error
 import com.r0adkll.livewire.runtime.LivewireHost
-import com.r0adkll.livewire.runtime.devicemanager.AdbDevice
-import com.r0adkll.livewire.runtime.devicemanager.CompositeDeviceManager
-import com.r0adkll.livewire.runtime.devicemanager.DesktopDevice
-import com.r0adkll.livewire.runtime.devicemanager.HostDevice
-import com.r0adkll.livewire.runtime.devicemanager.IosDevice
+import com.r0adkll.livewire.runtime.discoverymanager.AdbDevice
+import com.r0adkll.livewire.runtime.discoverymanager.AndroidApp
+import com.r0adkll.livewire.runtime.discoverymanager.CompositeDiscoveryManager
+import com.r0adkll.livewire.runtime.discoverymanager.DesktopApp
+import com.r0adkll.livewire.runtime.discoverymanager.DesktopDevice
+import com.r0adkll.livewire.runtime.discoverymanager.HostApp
+import com.r0adkll.livewire.runtime.discoverymanager.HostDevice
+import com.r0adkll.livewire.runtime.discoverymanager.IosApp
+import com.r0adkll.livewire.runtime.discoverymanager.IosDevice
 import com.r0adkll.livewire.theme.LivewireThemeContent
 import com.r0adkll.livewire.ui.PluginDrawerItem
 import com.r0adkll.livewire.ui.PluginInfo
@@ -101,37 +105,37 @@ fun main() = application {
         host.connection.close()
       }
 
-      CompositeDeviceManager.shutdown()
+      CompositeDiscoveryManager.shutdown()
     })
   }
 
   val scope = rememberCoroutineScope()
   val state by host.connection.connectionState.collectAsState()
 
-  var devices by remember { mutableStateOf<List<HostDevice>>(emptyList()) }
-  var selectedDevice by remember { mutableStateOf<HostDevice?>(null) }
+  var apps by remember { mutableStateOf<List<HostApp>>(emptyList()) }
+  var selectedApp by remember { mutableStateOf<HostApp?>(null) }
   var devicesReady by remember { mutableStateOf(false) }
   var initialSelectionDone by remember { mutableStateOf(false) }
 
   LaunchedEffect(Unit) {
-    CompositeDeviceManager.deviceList().collect { deviceList ->
-      devices = deviceList
+    CompositeDiscoveryManager.appList().collect { appList ->
+      apps = appList
 
-      if (selectedDevice == null || deviceList.none { selectedDevice?.id == it.id }) {
+      if (selectedApp == null || appList.none { selectedApp?.id == it.id }) {
         if (initialSelectionDone) {
-          selectedDevice = deviceList.firstOrNull()
+          selectedApp = appList.firstOrNull()
         }
       }
     }
   }
 
   LaunchedEffect(Unit) {
-    CompositeDeviceManager.isReady().first { it }
+    CompositeDiscoveryManager.isReady().first { it }
     devicesReady = true
 
     val lastId = DevicePreferences.lastConnectedDeviceId
-    if (selectedDevice == null) {
-      selectedDevice = devices.firstOrNull { it.id == lastId } ?: devices.firstOrNull()
+    if (selectedApp == null) {
+      selectedApp = apps.firstOrNull { it.id == lastId } ?: apps.firstOrNull()
     }
     initialSelectionDone = true
   }
@@ -141,7 +145,7 @@ fun main() = application {
 
   LaunchedEffect(state) {
     if (state == Connected) {
-      selectedDevice?.let { DevicePreferences.lastConnectedDeviceId = it.id }
+      selectedApp?.let { DevicePreferences.lastConnectedDeviceId = it.id }
     }
     if (state != Connected) {
       selectedPlugin = null
@@ -174,14 +178,14 @@ fun main() = application {
       var menuExpanded by remember { mutableStateOf(true) }
       HostScaffold(
         topBar = {
-          DeviceTopBar(
+          AppTopBar(
             hostConnectionState = state,
-            devices = devices,
+            apps = apps,
             devicesReady = devicesReady,
-            selectedDevice = selectedDevice,
-            onDeviceClick = { selectedDevice = it },
-            onConnectClick = { device ->
-              scope.launch { host.connection.connect(device) }
+            selectedApp = selectedApp,
+            onAppClick = { selectedApp = it },
+            onConnectClick = { app ->
+              scope.launch { host.connection.connect(app) }
             },
             onDisconnectClick = {
               scope.launch { host.connection.disconnect() }
@@ -233,13 +237,13 @@ fun main() = application {
 }
 
 @Composable
-private fun DeviceTopBar(
+private fun AppTopBar(
   hostConnectionState: HostConnectionState,
-  devices: List<HostDevice>,
+  apps: List<HostApp>,
   devicesReady: Boolean,
-  selectedDevice: HostDevice?,
-  onDeviceClick: (HostDevice) -> Unit,
-  onConnectClick: (HostDevice) -> Unit,
+  selectedApp: HostApp?,
+  onAppClick: (HostApp) -> Unit,
+  onConnectClick: (HostApp) -> Unit,
   onDisconnectClick: () -> Unit,
   onNavigationItemClick: () -> Unit,
   modifier: Modifier = Modifier,
@@ -305,15 +309,15 @@ private fun DeviceTopBar(
         )
       }
 
-      DeviceSelector(
-        devices = devices,
+      AppSelector(
+        apps = apps,
         devicesReady = devicesReady,
-        selectedDevice = selectedDevice,
+        selectedApp = selectedApp,
         dropdownExpanded = dropdownExpanded,
         onExpandClick = { dropdownExpanded = true },
         onDismiss = { dropdownExpanded = false },
-        onDeviceClick = { device ->
-          onDeviceClick(device)
+        onAppClick = { app ->
+          onAppClick(app)
           dropdownExpanded = false
         },
       )
@@ -323,11 +327,11 @@ private fun DeviceTopBar(
       Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         Button(
           onClick = {
-            selectedDevice?.let {
+            selectedApp?.let {
               onConnectClick(it)
             }
           },
-          enabled = selectedDevice != null && (hostConnectionState == Disconnected || hostConnectionState == Error),
+          enabled = selectedApp != null && (hostConnectionState == Disconnected || hostConnectionState == Error),
         ) {
           Text("Connect")
         }
@@ -360,20 +364,20 @@ private fun DeviceTopBar(
 }
 
 @Composable
-private fun DeviceSelector(
-  devices: List<HostDevice>,
+private fun AppSelector(
+  apps: List<HostApp>,
   devicesReady: Boolean,
-  selectedDevice: HostDevice?,
+  selectedApp: HostApp?,
   dropdownExpanded: Boolean,
   onExpandClick: () -> Unit,
   onDismiss: () -> Unit,
-  onDeviceClick: (HostDevice) -> Unit,
+  onAppClick: (HostApp) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   Box(modifier) {
     Surface(
       onClick = onExpandClick,
-      enabled = devicesReady && devices.isNotEmpty(),
+      enabled = devicesReady && apps.isNotEmpty(),
       shape = MaterialTheme.shapes.small,
       tonalElevation = 4.dp,
     ) {
@@ -391,15 +395,15 @@ private fun DeviceSelector(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
           )
-        } else if (selectedDevice != null) {
+        } else if (selectedApp != null) {
           Icon(
-            imageVector = selectedDevice.platformIcon,
+            imageVector = selectedApp.device.platformIcon,
             contentDescription = null,
             modifier = Modifier.size(18.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
           )
           Text(
-            text = selectedDevice.displayName,
+            text = selectedApp.displayName,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -424,69 +428,33 @@ private fun DeviceSelector(
       expanded = dropdownExpanded,
       onDismissRequest = onDismiss,
     ) {
-      val androidDevices = devices.filterIsInstance<AdbDevice>()
-      val iosDevices = devices.filterIsInstance<IosDevice>()
-      val desktopDevices = devices.filterIsInstance<DesktopDevice>()
-
-      if (desktopDevices.isNotEmpty()) {
-        DeviceSectionHeader(title = "Desktop")
-        desktopDevices.forEach { device ->
-          DeviceDropdownItem(
-            device = device,
-            selected = device.id == selectedDevice?.id,
-            primaryText = device.displayName,
-            secondaryText = "PID: ${device.processId}",
-            onClick = { onDeviceClick(device) },
-          )
+      val deviceComparator = compareBy<HostDevice> {
+        when (it) {
+          is AdbDevice -> 0
+          is IosDevice -> 1
+          is DesktopDevice -> 2
         }
       }
+        .thenBy { it.displayName }
 
-      if (desktopDevices.isNotEmpty() && (androidDevices.isNotEmpty() || iosDevices.isNotEmpty())) {
-        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-      }
+      val devices = apps
+        .groupBy { it.device }
+        .toSortedMap(deviceComparator)
 
-      if (androidDevices.isNotEmpty()) {
-        DeviceSectionHeader(title = "Android")
-        androidDevices.forEach { device ->
-          DeviceDropdownItem(
-            device = device,
-            selected = device.id == selectedDevice?.id,
-            primaryText = device.model.ifEmpty { device.serial },
-            secondaryText = if (device.model.isNotEmpty() && device.model != device.serial) device.serial else null,
-            onClick = { onDeviceClick(device) },
+      devices.entries.forEachIndexed { index, (device, apps) ->
+        if (index > 0) {
+          HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+        }
+
+        DeviceSectionHeader(device)
+
+        apps.forEach { app ->
+          AppDropdownItem(
+            app = app,
+            selected = app.id == selectedApp?.id,
+            onClick = { onAppClick(app) },
           )
         }
-      }
-
-      if (androidDevices.isNotEmpty() && iosDevices.isNotEmpty()) {
-        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-      }
-
-      if (iosDevices.isNotEmpty()) {
-        DeviceSectionHeader("iOS")
-        iosDevices.forEach { device ->
-          DeviceDropdownItem(
-            device = device,
-            selected = device.id == selectedDevice?.id,
-            primaryText = device.name,
-            secondaryText = "iOS ${device.osVersion}${if (device.deviceType == Simulator) " Simulator" else ""}",
-            onClick = { onDeviceClick(device) },
-          )
-        }
-      }
-
-      if (devices.isEmpty()) {
-        DropdownMenuItem(
-          text = {
-            Text(
-              text = "No devices found",
-              style = MaterialTheme.typography.bodyMedium,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          },
-          onClick = {},
-          enabled = false,
-        )
       }
     }
   }
@@ -494,53 +462,62 @@ private fun DeviceSelector(
 
 @Composable
 private fun DeviceSectionHeader(
-  title: String,
+  device: HostDevice,
   modifier: Modifier = Modifier,
 ) {
-  Text(
-    text = title,
-    modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-    style = MaterialTheme.typography.labelSmall,
-    color = MaterialTheme.colorScheme.onSurfaceVariant,
-  )
+  Row(
+    modifier = modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+    horizontalArrangement = Arrangement.spacedBy(8.dp),
+    verticalAlignment = Alignment.CenterVertically,
+  ) {
+    Icon(
+      imageVector = device.platformIcon,
+      contentDescription = null,
+      modifier = Modifier.size(18.dp),
+      tint = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+
+    Column {
+      Text(
+        text = device.displayName,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+
+      Text(
+        text = device.displayDetail,
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
+    }
+  }
 }
 
 @Composable
-private fun DeviceDropdownItem(
-  device: HostDevice,
+private fun AppDropdownItem(
+  app: HostApp,
   selected: Boolean,
-  primaryText: String,
-  secondaryText: String?,
   onClick: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   DropdownMenuItem(
     modifier = modifier,
     text = {
-      Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-      ) {
-        Icon(
-          imageVector = device.platformIcon,
-          contentDescription = null,
-          modifier = Modifier.size(18.dp),
-          tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+      Column {
+        Text(
+          text = app.displayName,
+          style = MaterialTheme.typography.bodyMedium,
+          color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
         )
-        Column {
-          Text(
-            text = primaryText,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-          )
-          if (secondaryText != null) {
-            Text(
-              text = secondaryText,
-              style = MaterialTheme.typography.bodySmall,
-              color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-          }
-        }
+        Text(
+          text = when (app) {
+            is AndroidApp -> app.packageName
+            is IosApp -> app.bundleId
+            is DesktopApp -> "PID: ${app.processId}"
+          },
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
       }
     },
     onClick = onClick,

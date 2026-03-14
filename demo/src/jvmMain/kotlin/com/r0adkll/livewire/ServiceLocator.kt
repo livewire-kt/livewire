@@ -10,7 +10,6 @@ import com.r0adkll.livewire.ui.theme.CustomLivewireTheme
 object ServiceLocator {
   val livewireClient by lazy {
     LivewireClient {
-      appName("Livewire Desktop Demo")
       theme(CustomLivewireTheme)
       install(DatabasePlugin())
       install(NetworkPlugin())

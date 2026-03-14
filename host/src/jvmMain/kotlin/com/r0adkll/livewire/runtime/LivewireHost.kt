@@ -11,7 +11,7 @@ import kotlin.coroutines.CoroutineContext
 
 @OptIn(ExperimentalSerializationApi::class)
 class LivewireHost private constructor(
-  val configuration: LivewireHostConfiguration,
+  configuration: LivewireHostConfiguration,
   context: CoroutineContext = Dispatchers.IO,
 ) : LivewireActionDispatcher {
 

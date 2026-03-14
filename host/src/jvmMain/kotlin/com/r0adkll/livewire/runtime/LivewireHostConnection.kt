@@ -4,10 +4,12 @@ import com.r0adkll.livewire.LivewireConstants
 import com.r0adkll.livewire.crypto.LivewireHandshake
 import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.runtime.HostConnectionState.Error
-import com.r0adkll.livewire.runtime.devicemanager.AdbDevice
-import com.r0adkll.livewire.runtime.devicemanager.DesktopDevice
-import com.r0adkll.livewire.runtime.devicemanager.HostDevice
-import com.r0adkll.livewire.runtime.devicemanager.IosDevice
+import com.r0adkll.livewire.runtime.discoverymanager.AdbDevice
+import com.r0adkll.livewire.runtime.discoverymanager.AndroidApp
+import com.r0adkll.livewire.runtime.discoverymanager.DesktopApp
+import com.r0adkll.livewire.runtime.discoverymanager.HostApp
+import com.r0adkll.livewire.runtime.discoverymanager.IosApp
+import com.r0adkll.livewire.runtime.discoverymanager.IosDevice
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RootNode
@@ -72,7 +74,7 @@ class LivewireHostConnection(
   private var activeConnection: ActiveConnection? = null
   private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
 
-  private var expectedDeviceId: String? = null
+  private var expectedAppId: String? = null
 
   var session: WebSocketSession? = null
     private set
@@ -81,29 +83,24 @@ class LivewireHostConnection(
     decoders = decoders.toSet()
   )
 
-  suspend fun connect(device: HostDevice) {
-    logDebug("connect to ${device.id}")
+  suspend fun connect(app: HostApp) {
+    logDebug("connect to ${app.id}")
     disconnect()
 
-    // device id filtering for ios simulators and desktop apps, since they share the host's network stack
-    expectedDeviceId = when (device) {
-      is IosDevice -> if (device.deviceType == Simulator) device.udid else null
-      is DesktopDevice -> device.instanceId
-      is AdbDevice -> null
-    }
+    expectedAppId = app.instanceId
 
-    when (device) {
-      is AdbDevice -> connectAndroid(device)
-      is IosDevice -> connectIos(device)
-      is DesktopDevice -> connectDesktop()
+    when (app) {
+      is AndroidApp -> connectAndroid(app)
+      is IosApp -> connectIos(app)
+      is DesktopApp -> connectDesktop()
     }
   }
 
-  private fun connectAndroid(device: AdbDevice) {
+  private fun connectAndroid(app: AndroidApp) {
     scope.launch {
       try {
         connectionState.value = Forwarding
-        val forwarder = AdbReverseForwarder(device, LivewireConstants.Port).also { it.start() }
+        val forwarder = AdbReverseForwarder(app.device, LivewireConstants.Port).also { it.start() }
         startServer()
         activeConnection = ActiveConnection.AndroidConnection(forwarder)
       } catch (e: Exception) {
@@ -113,10 +110,10 @@ class LivewireHostConnection(
     }
   }
 
-  private fun connectIos(device: IosDevice) {
-    when (device.deviceType) {
+  private fun connectIos(app: IosApp) {
+    when (app.device.deviceType) {
       Simulator -> connectIosSimulator()
-      Physical -> connectIosPhysical(device)
+      Physical -> connectIosPhysical(app.device)
     }
   }
 
@@ -176,8 +173,7 @@ class LivewireHostConnection(
         route(LivewireConstants.WsPath) {
           // prevent clients from entering the Connected state on a connection that will be immediately closed.
           intercept(ApplicationCallPipeline.Plugins) {
-            val deviceId = context.request.queryParameters["device_id"]
-            if (deviceId != expectedDeviceId) {
+            if (expectedAppId != context.request.queryParameters["connection_id"]) {
               context.respond(HttpStatusCode.Forbidden)
               finish()
             }
@@ -236,7 +232,7 @@ class LivewireHostConnection(
   }
 
   suspend fun disconnect() {
-    expectedDeviceId = null
+    expectedAppId = null
 
     session?.close()
     session = null

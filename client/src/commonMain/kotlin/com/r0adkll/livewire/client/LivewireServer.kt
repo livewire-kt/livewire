@@ -96,11 +96,7 @@ class LivewireServer(
           host = "127.0.0.1",
           port = LivewireConstants.Port,
           path = LivewireConstants.WsPath,
-          request = {
-            deviceIdFilter()?.let { id ->
-              url.parameters.append("device_id", id)
-            }
-          }
+          request = { url.parameters.append("connection_id", connectionId) }
         ) {
           activeSession = this
 
