@@ -4,7 +4,6 @@ plugins {
   alias(libs.plugins.kotlinMultiplatform)
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
-  alias(libs.plugins.composeHotReload)
   alias(libs.plugins.kotlinSerialization)
 }
 
@@ -53,6 +52,10 @@ kotlin {
       implementation(libs.dd.plist)
     }
   }
+}
+
+composeCompiler {
+  stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }
 
 compose.desktop {

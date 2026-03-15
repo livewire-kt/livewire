@@ -39,7 +39,6 @@ kotlin {
   }
 }
 
-
 android {
   namespace = "com.r0adkll.livewire"
   compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -62,4 +61,8 @@ android {
     sourceCompatibility = JavaVersion.VERSION_11
     targetCompatibility = JavaVersion.VERSION_11
   }
+}
+
+composeCompiler {
+  stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

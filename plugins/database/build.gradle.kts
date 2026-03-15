@@ -66,3 +66,7 @@ android {
     targetCompatibility = JavaVersion.VERSION_11
   }
 }
+
+composeCompiler {
+  stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
+}

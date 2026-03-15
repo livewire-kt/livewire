@@ -1,6 +1,7 @@
 package com.r0adkll.livewire.ui
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import kotlinx.serialization.Serializable
 
@@ -25,6 +26,7 @@ interface Plugin {
   fun Content()
 }
 
+@Immutable
 @Serializable
 data class PluginInfo(
   val pluginId: String,

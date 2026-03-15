@@ -4,7 +4,6 @@ import dadb.Dadb
 
 sealed interface HostDevice {
   val id: String
-  val displayName: String
   val displayDetail: String
 }
 
@@ -15,8 +14,7 @@ data class AdbDevice(
   val apiVersion: String,
 ) : HostDevice {
   override val id: String = "android:$serial"
-  override val displayName: String = model.ifEmpty { serial }
-  override val displayDetail: String = "API $apiVersion"
+  override val displayDetail: String = "${model.ifEmpty { serial }} • API $apiVersion"
 }
 
 data class IosDevice(
@@ -27,8 +25,7 @@ data class IosDevice(
   val osVersion: String,
 ) : HostDevice {
   override val id: String = "ios:$udid"
-  override val displayName: String = name
-  override val displayDetail: String = "iOS $osVersion"
+  override val displayDetail: String = "$name • iOS $osVersion"
 
   enum class DeviceType {
     Physical,
@@ -38,6 +35,5 @@ data class IosDevice(
 
 object DesktopDevice : HostDevice {
   override val id: String = "desktop:local"
-  override val displayName: String = "Desktop Apps"
   override val displayDetail: String = "Local Machine"
 }

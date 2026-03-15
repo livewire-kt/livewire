@@ -1,5 +1,6 @@
 package com.r0adkll.livewire.ui.data
 
+import androidx.compose.runtime.Immutable
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.LivewireAction
@@ -22,6 +23,7 @@ sealed interface UiProtocol {
  * to the user to browse and interact with
  */
 @Serializable
+@Immutable
 data class ClientManifest(
   val theme: LivewireTheme,
   val layoutNodeSerialization: LayoutNodeSerialization,

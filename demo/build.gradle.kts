@@ -6,7 +6,6 @@ plugins {
   alias(libs.plugins.androidApplication)
   alias(libs.plugins.composeMultiplatform)
   alias(libs.plugins.composeCompiler)
-  alias(libs.plugins.composeHotReload)
   alias(libs.plugins.kotlinSerialization)
   alias(libs.plugins.sqldelight)
 }
@@ -141,4 +140,8 @@ compose.desktop {
       packageVersion = "1.0.0"
     }
   }
+}
+
+composeCompiler {
+  stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }
