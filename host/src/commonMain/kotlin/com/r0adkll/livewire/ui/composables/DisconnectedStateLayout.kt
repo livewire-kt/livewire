@@ -13,14 +13,17 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -100,16 +103,23 @@ internal fun DisconnectedStateLayout(
       }
     }
 
-    AppSelector(
-      apps = apps,
-      devicesReady = devicesReady,
-      onConnectClick = onConnectClick,
-      onDisconnectClick = onDisconnectClick,
-      state = state,
-      modifier = Modifier
-        .weight(2f)
-        .fillMaxWidth(0.75f),
-    )
+    BoxWithConstraints(
+      modifier = Modifier.weight(2f),
+      contentAlignment = Alignment.TopCenter,
+    ) {
+      val selectorWidth = maxOf(maxWidth * 0.6f, 480.dp)
+
+      AppSelector(
+        apps = apps,
+        devicesReady = devicesReady,
+        onConnectClick = onConnectClick,
+        onDisconnectClick = onDisconnectClick,
+        state = state,
+        modifier = Modifier
+          .fillMaxHeight()
+          .width(selectorWidth),
+      )
+    }
   }
 }
 
