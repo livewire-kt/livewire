@@ -1,38 +1,23 @@
 package com.r0adkll.livewire.plugin.database
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.unit.dp
+import com.r0adkll.livewire.plugin.database.data.IosDatabaseInspector
+import com.r0adkll.livewire.plugin.database.ui.Icons
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
-import com.r0adkll.livewire.ui.layout.Column
-import com.r0adkll.livewire.ui.modifier.LivewireModifier
-import com.r0adkll.livewire.ui.modifier.padding
-import com.r0adkll.livewire.ui.widget.Text
-import com.r0adkll.livewire.ui.widget.TextStyle
 
 class DatabasePlugin : Plugin {
 
+  private val inspector = IosDatabaseInspector()
+
   override val info: PluginInfo = PluginInfo(
     pluginId = "database",
-    iconData = DatabaseIconSvgData,
+    iconData = Icons.Database,
     title = "Database",
   )
 
   @Composable
   override fun Content() {
-    Column(
-      modifier = LivewireModifier.padding(16.dp),
-    ) {
-      Text(
-        text = "Database inspector is not available on iOS yet.",
-        style = TextStyle.TitleMedium,
-      )
-      Text(
-        text = "The plugin is installed as a placeholder.",
-        modifier = LivewireModifier.padding(top = 8.dp),
-      )
-    }
+    DatabasePluginContent(inspector)
   }
 }
-
-private const val DatabaseIconSvgData = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"24px\" viewBox=\"0 -960 960 960\" width=\"24px\" fill=\"#e8eaed\"><path d=\"M735-567q105-47 105-113T735-793q-105-47-255-47t-255 47q-105 47-105 113t105 113q105 47 255 47t255-47ZM582.5-428.5Q644-437 701-456t98-49.5q41-30.5 41-74.5v100q0 44-41 74.5T701-356q-57 19-118.5 27.5T480-320q-41 0-102.5-8.5T259-356q-57-19-98-49.5T120-480v-100q0 44 41 74.5t98 49.5q57 19 118.5 27.5T480-420q41 0 102.5-8.5Zm0 200Q644-237 701-256t98-49.5q41-30.5 41-74.5v100q0 44-41 74.5T701-156q-57 19-118.5 27.5T480-120q-41 0-102.5-8.5T259-156q-57-19-98-49.5T120-280v-100q0 44 41 74.5t98 49.5q57 19 118.5 27.5T480-220q41 0 102.5-8.5Z\"/></svg>"

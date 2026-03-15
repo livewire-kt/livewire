@@ -6,11 +6,11 @@ import android.database.sqlite.SQLiteDatabase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class DatabaseInspector(
+class AndroidDatabaseInspector(
   private val context: Context,
-) {
+) : DatabaseInspector {
 
-  suspend fun discoverDatabases(): Result<List<DatabaseInfo>> = withContext(Dispatchers.IO) {
+  override suspend fun discoverDatabases(): Result<List<DatabaseInfo>> = withContext(Dispatchers.IO) {
     try {
       val databases = context.databaseList()
         .filter { it.endsWith(".db") }
@@ -28,7 +28,7 @@ class DatabaseInspector(
     }
   }
 
-  suspend fun getTables(databasePath: String): Result<List<TableInfo>> = withContext(Dispatchers.IO) {
+  override suspend fun getTables(databasePath: String): Result<List<TableInfo>> = withContext(Dispatchers.IO) {
     withDatabase(databasePath) { db ->
       val tables = mutableListOf<TableInfo>()
 
@@ -66,7 +66,7 @@ class DatabaseInspector(
     }
   }
 
-  suspend fun executeQuery(databasePath: String, sql: String): Result<QueryResult> = withContext(Dispatchers.IO) {
+  override suspend fun executeQuery(databasePath: String, sql: String): Result<QueryResult> = withContext(Dispatchers.IO) {
     val trimmed = sql.trim()
     val isSelect = trimmed.startsWith("SELECT", ignoreCase = true)
       || trimmed.startsWith("PRAGMA", ignoreCase = true)
@@ -94,10 +94,10 @@ class DatabaseInspector(
     }
   }
 
-  suspend fun getTableContents(
+  override suspend fun getTableContents(
     databasePath: String,
     tableName: String,
-    limit: Int = 500,
+    limit: Int,
   ): Result<QueryResult> = withContext(Dispatchers.IO) {
     withDatabase(databasePath) { db ->
       val startTime = System.currentTimeMillis()

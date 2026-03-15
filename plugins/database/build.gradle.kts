@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
   alias(libs.plugins.kotlinMultiplatform)
@@ -21,6 +22,14 @@ kotlin {
   jvm()
   iosArm64()
   iosSimulatorArm64()
+
+  targets.withType<KotlinNativeTarget>().configureEach {
+    compilations["main"].cinterops {
+      create("sqlite3") {
+        defFile(project.file("src/nativeInterop/cinterop/sqlite3.def"))
+      }
+    }
+  }
 
   sourceSets {
     androidMain.dependencies {

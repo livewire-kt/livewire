@@ -1,13 +1,12 @@
 package com.r0adkll.livewire.plugin.database
 
-import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import com.r0adkll.livewire.plugin.database.data.DatabaseInfo
 import com.r0adkll.livewire.plugin.database.data.DatabaseInspector
 import com.r0adkll.livewire.plugin.database.data.QueryResult
@@ -60,11 +59,7 @@ class DatabasePresenter(
 
         DatabaseUiEvent.AddQueryTab -> {
           val nextIndex = pages.filterIsInstance<QueryPage>().size
-          pages.addLast(
-            QueryPage(
-              name = "Query #$nextIndex",
-            )
-          )
+          pages.add(QueryPage(name = "Query #$nextIndex"))
         }
 
         is DatabaseUiEvent.RemoveQueryTab -> {
@@ -78,12 +73,11 @@ class DatabasePresenter(
         is DatabaseUiEvent.SelectTable -> scope.launch {
           selectTable(event.table)
         }
+
         is DatabaseUiEvent.UpdateQueryForTab -> {
           val page = pages.getOrNull(event.index) as? QueryPage
           if (page != null) {
-            pages[event.index] = page.copy(
-              query = event.query,
-            )
+            pages[event.index] = page.copy(query = event.query)
           }
         }
       }
@@ -93,31 +87,24 @@ class DatabasePresenter(
   private suspend fun selectTable(table: TableInfo) {
     selectedTable = table
 
-    // Query content
     val content = inspector.getTableContents(selectedDatabase!!.path, selectedTable!!.name)
       .getOrNull()
 
     updateTableContentPage(content)
   }
 
-  private fun updateTableContentPage(
-    content: QueryResult?,
-  ) {
+  private fun updateTableContentPage(content: QueryResult?) {
     if (pages.isEmpty() || pages.first() !is TableContentPage) {
-      pages.addFirst(
-        TableContentPage(
-          content = content,
-        )
+      pages.add(
+        index = 0,
+        element = TableContentPage(content = content)
       )
     } else if (pages.first() is TableContentPage) {
-      pages[0] = TableContentPage(
-        content = content,
-      )
+      pages[0] = TableContentPage(content = content)
     }
   }
 
   private suspend fun refreshDatabases() {
-    Log.d("DatabasePlugin", "Refreshing Databases")
     inspector.discoverDatabases()
       .onSuccess { databases ->
         availableDatabases.clear()
