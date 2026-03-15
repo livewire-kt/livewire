@@ -293,7 +293,7 @@ private fun AppTopBar(
 
       Spacer(Modifier.width(8.dp))
 
-      if (hostConnectionState == Connected || hostConnectionState == Forwarding || hostConnectionState == Listening) {
+      if (hostConnectionState == Connected) {
         Button(
           onClick = onDisconnectClick,
         ) {
