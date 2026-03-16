@@ -50,6 +50,7 @@ kotlin {
     }
     jvmMain.dependencies {
       api(libs.kotlinx.coroutinesSwing)
+      implementation(libs.sqlite.jdbc)
     }
   }
 }

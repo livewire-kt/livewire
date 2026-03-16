@@ -10,11 +10,8 @@ import platform.Foundation.NSProcessInfo
 import platform.UIKit.UIViewController
 
 fun MainViewController(): UIViewController = ComposeUIViewController {
-  val scope = rememberCoroutineScope()
   LaunchedEffect(Unit) {
-    scope.launch {
-      DemoDbConfigurator.populate(ServiceLocator.database)
-    }
+    DemoDbConfigurator.populate(ServiceLocator.database)
   }
 
   if (!isSimulator()) {

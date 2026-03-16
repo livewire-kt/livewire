@@ -20,6 +20,7 @@ coil = "3.4.0"
 molecule = "2.2.0"
 okhttp = "5.3.2"
 okio = "3.16.4"
+sqlite-jdbc = "3.49.1.0"
 sqldelight = "2.2.1"
 kotlinpoet = "2.2.0"
 ksp = "2.3.6"
@@ -66,6 +67,7 @@ coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
 molecule-runtime = { module = "app.cash.molecule:molecule-runtime", version.ref = "molecule" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
+sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqlite-jdbc" }
 sqldelight-android-driver = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }
 sqldelight-coroutines-extensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqldelight-native-driver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
