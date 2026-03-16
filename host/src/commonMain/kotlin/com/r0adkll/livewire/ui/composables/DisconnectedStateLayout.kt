@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,7 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.runtime.HostConnectionState
@@ -54,13 +52,9 @@ import com.r0adkll.livewire.runtime.discoverymanager.AndroidApp
 import com.r0adkll.livewire.runtime.discoverymanager.DesktopApp
 import com.r0adkll.livewire.runtime.discoverymanager.DesktopDevice
 import com.r0adkll.livewire.runtime.discoverymanager.HostApp
-import com.r0adkll.livewire.runtime.discoverymanager.HostDevice
 import com.r0adkll.livewire.runtime.discoverymanager.IosApp
 import com.r0adkll.livewire.runtime.discoverymanager.IosDevice
-import com.r0adkll.livewire.ui.icons.AndroidIcon
-import com.r0adkll.livewire.ui.icons.AppleIcon
 import com.r0adkll.livewire.ui.icons.CloseIcon
-import com.r0adkll.livewire.ui.icons.DesktopIcon
 import com.r0adkll.livewire.ui.icons.DisconnectedIcon
 import livewire.host.generated.resources.Res
 import livewire.host.generated.resources.logo
@@ -434,10 +428,3 @@ fun ConnectButton(
     }
   }
 }
-
-private val HostDevice.platformIcon: ImageVector
-  get() = when (this) {
-    is AdbDevice -> AndroidIcon
-    is IosDevice -> AppleIcon
-    is DesktopDevice -> DesktopIcon
-  }

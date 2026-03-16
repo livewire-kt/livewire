@@ -1,10 +1,15 @@
 package com.r0adkll.livewire.runtime.discoverymanager
 
+import androidx.compose.ui.graphics.vector.ImageVector
+import com.r0adkll.livewire.ui.icons.AndroidIcon
+import com.r0adkll.livewire.ui.icons.AppleIcon
+import com.r0adkll.livewire.ui.icons.DesktopIcon
 import dadb.Dadb
 
 sealed interface HostDevice {
   val id: String
   val displayDetail: String
+  val platformIcon: ImageVector
 }
 
 data class AdbDevice(
@@ -15,6 +20,7 @@ data class AdbDevice(
 ) : HostDevice {
   override val id: String = "android:$serial"
   override val displayDetail: String = "${model.ifEmpty { serial }} • API $apiVersion"
+  override val platformIcon: ImageVector = AndroidIcon
 }
 
 data class IosDevice(
@@ -26,6 +32,7 @@ data class IosDevice(
 ) : HostDevice {
   override val id: String = "ios:$udid"
   override val displayDetail: String = "$name • iOS $osVersion"
+  override val platformIcon: ImageVector = AppleIcon
 
   enum class DeviceType {
     Physical,
@@ -36,4 +43,5 @@ data class IosDevice(
 object DesktopDevice : HostDevice {
   override val id: String = "desktop:local"
   override val displayDetail: String = "Local Machine"
+  override val platformIcon: ImageVector = DesktopIcon
 }
