@@ -1,40 +1,33 @@
 package com.r0adkll.livewire.plugin.network.composables
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.plugin.network.data.NetworkEvent
+import com.r0adkll.livewire.plugin.network.ui.Icons
 import com.r0adkll.livewire.ui.actions.ClickAction
-import com.r0adkll.livewire.ui.actions.IntValueChangeAction
+import com.r0adkll.livewire.ui.actions.checkedChangeAction
+import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
 import com.r0adkll.livewire.ui.layout.Alignment
+import com.r0adkll.livewire.ui.layout.Arrangement
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
+import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.verticalScroll
-import com.r0adkll.livewire.plugin.network.ui.Icons
-import com.r0adkll.livewire.ui.actions.checkedChangeAction
-import com.r0adkll.livewire.ui.actions.intValueChangeAction
-import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
-import com.r0adkll.livewire.ui.layout.Arrangement
-import com.r0adkll.livewire.ui.modifier.background
-import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import com.r0adkll.livewire.ui.util.asReadableBytes
 import com.r0adkll.livewire.ui.widget.ButtonGroupDefaults
 import com.r0adkll.livewire.ui.widget.ButtonSize
-import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Surface
-import com.r0adkll.livewire.ui.widget.Tab
-import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Text
 import com.r0adkll.livewire.ui.widget.TextStyle
 import com.r0adkll.livewire.ui.widget.ToggleButton
@@ -52,7 +45,7 @@ internal fun RequestDetailPane(
   ) {
     // Header bar
     Surface(
-      shadowElevation = 4.dp
+      shadowElevation = 4.dp,
     ) {
       Column {
         Row(
@@ -74,7 +67,7 @@ internal fun RequestDetailPane(
         Row(
           horizontalArrangement = Arrangement.SpacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
           modifier = LivewireModifier
-            .padding(horizontal = 16.dp)
+            .padding(horizontal = 16.dp),
         ) {
           ToggleButton(
             checked = selectedTab == 0,
@@ -148,7 +141,7 @@ private fun OverviewTab(event: NetworkEvent) {
         modifier = LivewireModifier.padding(
           horizontal = 12.dp,
           vertical = 8.dp,
-        )
+        ),
       )
     }
 
@@ -197,7 +190,7 @@ private fun OverviewChip(
       modifier = LivewireModifier.padding(
         horizontal = 16.dp,
         vertical = 8.dp,
-      )
+      ),
     )
   }
 }

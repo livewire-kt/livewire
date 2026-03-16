@@ -2,8 +2,6 @@ package com.r0adkll.livewire
 
 import android.annotation.SuppressLint
 import android.content.Context
-import androidx.compose.material3.lightColorScheme
-import androidx.compose.ui.graphics.Color
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.r0adkll.livewire.app.LivewireDatabase

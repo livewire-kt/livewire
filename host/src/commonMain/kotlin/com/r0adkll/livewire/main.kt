@@ -92,13 +92,15 @@ import kotlinx.coroutines.runBlocking
 fun main() = application {
   val host = remember { LivewireHost() }
   LaunchedEffect(Unit) {
-    Runtime.getRuntime().addShutdownHook(Thread {
-      runBlocking {
-        host.connection.close()
-      }
+    Runtime.getRuntime().addShutdownHook(
+      Thread {
+        runBlocking {
+          host.connection.close()
+        }
 
-      CompositeDiscoveryManager.shutdown()
-    })
+        CompositeDiscoveryManager.shutdown()
+      },
+    )
   }
 
   val scope = rememberCoroutineScope()
@@ -144,7 +146,7 @@ fun main() = application {
     title = "Livewire Host",
     state = rememberWindowState(
       size = DpSize(1200.dp, 800.dp),
-    )
+    ),
   ) {
     AppUi(
       scope = scope,
@@ -160,7 +162,7 @@ fun main() = application {
           val msg: UiProtocol = PluginSelected(plugin)
           host.connection.send(msg)
         }
-      }
+      },
     )
   }
 }
@@ -179,7 +181,7 @@ private fun AppUi(
 ) {
   LivewireThemeContent(
     theme = clientManifest?.theme ?: LivewireTheme(),
-    host = host
+    host = host,
   ) {
     var menuExpanded by remember { mutableStateOf(true) }
     var selectedApp: HostApp? by remember { mutableStateOf(null) }
@@ -432,7 +434,7 @@ private fun DrawerContent(
       contentPadding = PaddingValues(
         horizontal = 8.dp,
       ),
-      verticalArrangement = Arrangement.spacedBy(8.dp)
+      verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
       items(
         items = availablePlugins,

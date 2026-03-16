@@ -9,7 +9,6 @@ import com.r0adkll.livewire.plugin.network.ui.Icons
 import com.r0adkll.livewire.ui.Plugin
 import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.clickAction
-import com.r0adkll.livewire.ui.actions.intValueChangeAction
 import com.r0adkll.livewire.ui.actions.valueChangeAction
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
@@ -20,13 +19,11 @@ import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.verticalScroll
-import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.ResizableSurface
 import com.r0adkll.livewire.ui.widget.ResizeAnchor
 import com.r0adkll.livewire.ui.widget.Spacer
-import com.r0adkll.livewire.ui.widget.Surface
 
 class NetworkPlugin : Plugin {
 

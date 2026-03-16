@@ -106,12 +106,12 @@ class ModifierSymbolProcessor(
           .beginControlFlow("%M", serializersModuleMember)
           .add(subclassBlock.build())
           .endControlFlow()
-          .build()
+          .build(),
       )
       .build()
 
     val layoutSerializerAnnotation = AnnotationSpec.builder(
-      LivewireModifierSerializer::class.asClassName()
+      LivewireModifierSerializer::class.asClassName(),
     ).build()
 
     val actualClass = TypeSpec.classBuilder(className)

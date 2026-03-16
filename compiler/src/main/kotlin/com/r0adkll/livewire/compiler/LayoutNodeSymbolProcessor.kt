@@ -105,12 +105,12 @@ class LayoutNodeSymbolProcessor internal constructor(
           .beginControlFlow("%M", serializersModuleMember)
           .add(subclassBlock.build())
           .endControlFlow()
-          .build()
+          .build(),
       )
       .build()
 
     val layoutSerializerAnnotation = AnnotationSpec.builder(
-      ClassName("com.r0adkll.livewire.annotations", "LivewireLayoutSerializer")
+      ClassName("com.r0adkll.livewire.annotations", "LivewireLayoutSerializer"),
     ).build()
 
     val actualClass = TypeSpec.classBuilder(className)

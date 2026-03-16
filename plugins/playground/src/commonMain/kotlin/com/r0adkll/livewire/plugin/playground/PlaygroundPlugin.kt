@@ -16,29 +16,30 @@ import com.r0adkll.livewire.ui.actions.valueChangeAction
 import com.r0adkll.livewire.ui.graphics.CircleShape
 import com.r0adkll.livewire.ui.graphics.RoundedCornerShape
 import com.r0adkll.livewire.ui.layout.Alignment
+import com.r0adkll.livewire.ui.layout.Box
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
+import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
 import com.r0adkll.livewire.ui.modifier.size
-import com.r0adkll.livewire.ui.modifier.width
-import com.r0adkll.livewire.ui.layout.Box
-import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.verticalScroll
+import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.Button
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.ButtonStyle
 import com.r0adkll.livewire.ui.widget.Checkbox
-import com.r0adkll.livewire.ui.widget.HorizontalDivider
-import com.r0adkll.livewire.ui.widget.VerticalDivider
+import com.r0adkll.livewire.ui.widget.Chip
+import com.r0adkll.livewire.ui.widget.ChipStyle
 import com.r0adkll.livewire.ui.widget.DropdownMenu
 import com.r0adkll.livewire.ui.widget.DropdownMenuItem
 import com.r0adkll.livewire.ui.widget.FabSize
 import com.r0adkll.livewire.ui.widget.FloatingActionButton
 import com.r0adkll.livewire.ui.widget.FloatingToolbar
+import com.r0adkll.livewire.ui.widget.HorizontalDivider
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.IconButtonStyle
@@ -48,16 +49,15 @@ import com.r0adkll.livewire.ui.widget.RadioButton
 import com.r0adkll.livewire.ui.widget.Slider
 import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Surface
-import com.r0adkll.livewire.ui.widget.Text
-import com.r0adkll.livewire.ui.widget.TextField
-import com.r0adkll.livewire.ui.widget.TextFieldStyle
-import com.r0adkll.livewire.ui.widget.Chip
-import com.r0adkll.livewire.ui.widget.ChipStyle
 import com.r0adkll.livewire.ui.widget.Switch
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Table
+import com.r0adkll.livewire.ui.widget.Text
+import com.r0adkll.livewire.ui.widget.TextField
+import com.r0adkll.livewire.ui.widget.TextFieldStyle
 import com.r0adkll.livewire.ui.widget.ToggleButton
+import com.r0adkll.livewire.ui.widget.VerticalDivider
 
 class PlaygroundPlugin : Plugin {
   override val info: PluginInfo = PluginInfo(
@@ -71,10 +71,9 @@ class PlaygroundPlugin : Plugin {
     Column(
       LivewireModifier
         .fillMaxSize()
-        .verticalScroll()
+        .verticalScroll(),
     ) {
 
-      // Buttons
       Row(
         LivewireModifier
           .fillMaxWidth(),
@@ -82,74 +81,56 @@ class PlaygroundPlugin : Plugin {
       ) {
 
         Button(
-          action = clickAction {
-
-          }
+          action = clickAction { },
         ) {
           Text("Filled")
         }
 
         Button(
-          action = clickAction {
-
-          },
+          action = clickAction { },
           style = ButtonStyle.Tonal,
         ) {
           Text("Tonal")
         }
 
         Button(
-          action = clickAction {
-
-          },
+          action = clickAction { },
           style = ButtonStyle.Outlined,
         ) {
           Text("Outlined")
         }
 
         Button(
-          action = clickAction {
-
-          },
+          action = clickAction { },
           style = ButtonStyle.Elevated,
         ) {
           Text("Elevated")
         }
 
         Button(
-          action = clickAction {
-
-          },
+          action = clickAction { },
           style = ButtonStyle.Text,
         ) {
           Text("Text")
         }
 
         IconButton(
-          action = clickAction {
-
-          },
+          action = clickAction { },
         ) { Icon(Icons.Sync) }
 
         IconButton(
-          action = clickAction {
-
-          },
-          style = IconButtonStyle.Filled
+          action = clickAction { },
+          style = IconButtonStyle.Filled,
         ) { Icon(Icons.Sync) }
 
         IconButton(
-          action = clickAction {
-
-          },
-          style = IconButtonStyle.Tonal
+          action = clickAction { },
+          style = IconButtonStyle.Tonal,
         ) { Icon(Icons.Sync) }
 
         IconButton(
-          action = clickAction {
-
-          },
-          style = IconButtonStyle.Outlined
+          action = clickAction { },
+          style = IconButtonStyle.Outlined,
         ) { Icon(Icons.Sync) }
 
         var checked by remember { mutableStateOf(false) }
@@ -157,7 +138,7 @@ class PlaygroundPlugin : Plugin {
           checked = checked,
           onCheckedChange = checkedChangeAction {
             checked = it
-          }
+          },
         ) {
           Icon(Icons.Sync)
           Text(
@@ -199,9 +180,7 @@ class PlaygroundPlugin : Plugin {
           Text("Small")
         }
         Button(
-          action = clickAction {
-
-          },
+          action = clickAction { },
           size = ButtonSize.ExtraSmall,
         ) {
           Icon(Icons.Sync)
@@ -258,14 +237,14 @@ class PlaygroundPlugin : Plugin {
           checked = checked,
           onCheckedChange = checkedChangeAction {
             checked = it
-          }
+          },
         )
 
         RadioButton(
           selected = checked,
           onClick = clickAction {
             checked = !checked
-          }
+          },
         )
 
         var switchChecked by remember { mutableStateOf(true) }
@@ -325,21 +304,20 @@ class PlaygroundPlugin : Plugin {
 
         TextField(
           initialValue = "",
-          onValueChange = valueChangeAction {  },
+          onValueChange = valueChangeAction { },
           modifier = LivewireModifier
             .weight(1f)
-            .padding(16.dp)
+            .padding(16.dp),
         )
 
         TextField(
           initialValue = "",
-          onValueChange = valueChangeAction {  },
+          onValueChange = valueChangeAction { },
           style = TextFieldStyle.Outlined,
           modifier = LivewireModifier
             .weight(1f)
-            .padding(16.dp)
+            .padding(16.dp),
         )
-
       }
 
       Row(
@@ -527,7 +505,6 @@ class PlaygroundPlugin : Plugin {
         Text("Right")
       }
 
-      // Dividers
       HorizontalDivider(
         modifier = LivewireModifier
           .fillMaxWidth()
@@ -566,7 +543,6 @@ class PlaygroundPlugin : Plugin {
         }
       }
 
-      // Chips
       Row(
         LivewireModifier
           .fillMaxWidth()
@@ -611,7 +587,6 @@ class PlaygroundPlugin : Plugin {
         )
       }
 
-      // TabRow
       var selectedTab by remember { mutableStateOf(0) }
       TabRow(
         selectedTabIndex = selectedTab,
@@ -625,7 +600,6 @@ class PlaygroundPlugin : Plugin {
         Tab(text = "Settings")
       }
 
-      // AnimatedVisibility
       Row(
         LivewireModifier
           .fillMaxWidth()
@@ -646,7 +620,6 @@ class PlaygroundPlugin : Plugin {
         }
       }
 
-      // Table
       Table(
         columns = listOf("Name", "Role", "Status"),
         rows = listOf(
@@ -672,7 +645,6 @@ class PlaygroundPlugin : Plugin {
           .height(300.dp)
           .padding(16.dp),
       )
-
     }
   }
 }

@@ -54,7 +54,7 @@ class DiscoveryBroadcaster {
               Datagram(
                 packet = buildPacket { writeText(json) },
                 address = target,
-              )
+              ),
             )
           } catch (e: CancellationException) {
             throw e

@@ -31,13 +31,13 @@ import com.r0adkll.livewire.ui.data.ProtobufLayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.data.UiDecoders
 import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.theme.LivewireTheme
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlin.coroutines.CoroutineContext
 
 @OptIn(ExperimentalSerializationApi::class)
 class LivewireClient private constructor(
@@ -46,7 +46,7 @@ class LivewireClient private constructor(
 ) {
 
   constructor(configure: LivewireClientBuilder.() -> Unit) : this(
-    LivewireClientBuilder().apply(configure).build()
+    LivewireClientBuilder().apply(configure).build(),
   )
 
   private val scope = CoroutineScope(context + SupervisorJob())
@@ -68,7 +68,7 @@ class LivewireClient private constructor(
         layoutNodeSerialization = configuration.layoutNodeSerialization,
         availablePlugins = configuration.plugins
           .map { it.info }
-          .toSet()
+          .toSet(),
       )
 
       send(manifest)

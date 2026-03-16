@@ -2,11 +2,11 @@ package com.r0adkll.livewire.plugin.database
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.getValue
 import com.r0adkll.livewire.plugin.database.data.DatabaseInfo
 import com.r0adkll.livewire.plugin.database.data.DatabaseInspector
 import com.r0adkll.livewire.plugin.database.data.QueryResult
@@ -23,7 +23,7 @@ class DatabasePresenter(
   private var selectedTable by mutableStateOf<TableInfo?>(null)
 
   private val pages = mutableStateListOf<DatabaseUiPage>(
-    TableContentPage()
+    TableContentPage(),
   )
 
   @Composable
@@ -97,7 +97,7 @@ class DatabasePresenter(
     if (pages.isEmpty() || pages.first() !is TableContentPage) {
       pages.add(
         index = 0,
-        element = TableContentPage(content = content)
+        element = TableContentPage(content = content),
       )
     } else if (pages.first() is TableContentPage) {
       pages[0] = TableContentPage(content = content)

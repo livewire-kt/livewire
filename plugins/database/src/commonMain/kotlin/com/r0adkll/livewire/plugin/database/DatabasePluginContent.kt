@@ -92,18 +92,18 @@ internal fun DatabasePluginContent(inspector: DatabaseInspector) {
             shapes = ButtonShapes(
               shape = RoundedCornerShape(8.dp),
               pressedShape = CircleShape,
-            )
+            ),
           ) {
             Icon(Icons.DatabaseSearch)
             Text("New Query")
           }
-        }
+        },
       )
 
       Column(
         modifier = LivewireModifier
           .weight(1f)
-          .fillMaxWidth()
+          .fillMaxWidth(),
       ) {
         state.pages.getOrNull(selectedTabIndex)?.let { page ->
           when (page) {
@@ -138,7 +138,7 @@ internal fun DatabasePluginContent(inspector: DatabaseInspector) {
         maxSize = 600.dp,
         shadowElevation = 2.dp,
         modifier = LivewireModifier
-          .fillMaxHeight()
+          .fillMaxHeight(),
       ) {
         TableList(
           tables = state.selectedDatabaseTables,
@@ -147,7 +147,7 @@ internal fun DatabasePluginContent(inspector: DatabaseInspector) {
           },
           modifier = LivewireModifier
             .weight(2f)
-            .fillMaxHeight()
+            .fillMaxHeight(),
         )
       }
     }
@@ -223,7 +223,7 @@ private fun QueryContentPage(
           columns = result.columns,
           rows = result.rows.map { rows -> rows.map { it ?: "null" } },
           pageSize = 25,
-          modifier = LivewireModifier.fillMaxSize()
+          modifier = LivewireModifier.fillMaxSize(),
         )
       }
     }

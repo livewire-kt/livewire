@@ -15,6 +15,8 @@ import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.readBytes
+import kotlin.coroutines.CoroutineContext
+import kotlin.time.measureTimedValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,8 +29,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
-import kotlin.time.measureTimedValue
 
 enum class ConnectionState {
   Stopped,
@@ -76,7 +76,7 @@ class LivewireServer(
     serializationStrategy = serializationStrategy,
     outgoingSizeReporter = { bytes ->
       outgoingLayoutSize.value = bytes
-    }
+    },
   )
 
   fun start() {
@@ -96,7 +96,7 @@ class LivewireServer(
           host = "127.0.0.1",
           port = LivewireConstants.Port,
           path = LivewireConstants.WsPath,
-          request = { url.parameters.append("connection_id", connectionId) }
+          request = { url.parameters.append("connection_id", connectionId) },
         ) {
           activeSession = this
 

@@ -1,6 +1,5 @@
 package com.r0adkll.livewire.transport
 
-import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.modules.SerializersModule
 
@@ -10,6 +9,5 @@ interface PayloadDecoder<T : Any> {
   suspend fun Json.decodePayload(rawPayload: String): T?
 }
 
-val DefaultDecoders: Set<PayloadDecoder<*>> get() = setOf(
-
-)
+val DefaultDecoders: Set<PayloadDecoder<*>>
+  get() = setOf()

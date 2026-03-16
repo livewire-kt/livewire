@@ -85,10 +85,10 @@ fun LivewireApp(
           scrollBehavior = scrollBehavior,
           navigationIcon = {
             Box(
-              modifier = Modifier.padding(8.dp)
+              modifier = Modifier.padding(8.dp),
             ) {
               val tint by animateColorAsState(
-                if (connectionState == ConnectionState.Connected) Color(0xff118F00) else MaterialTheme.colorScheme.error
+                if (connectionState == ConnectionState.Connected) Color(0xff118F00) else MaterialTheme.colorScheme.error,
               )
 
               Icon(
@@ -109,7 +109,7 @@ fun LivewireApp(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
               )
             }
-          }
+          },
         )
       },
       bottomBar = {
@@ -139,7 +139,7 @@ fun LivewireApp(
         }
       },
       modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-      contentWindowInsets = WindowInsets.systemBars
+      contentWindowInsets = WindowInsets.systemBars,
     ) { padding ->
       HorizontalPager(
         state = pagerState,
@@ -151,6 +151,7 @@ fun LivewireApp(
             contentPadding = padding,
             modifier = Modifier.padding(16.dp),
           )
+
           1 -> CharactersScreen(
             contentPadding = padding,
           )
@@ -175,7 +176,7 @@ private fun MessagePage(
       Text(
         text = "Messages",
         style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+        modifier = Modifier.background(MaterialTheme.colorScheme.surface),
       )
     }
     items(messages) { msg ->

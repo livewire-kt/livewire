@@ -1,10 +1,10 @@
 package com.r0adkll.livewire.plugin.database.data
 
+import java.io.File
+import java.sql.Connection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.sqlite.SQLiteConfig
-import java.io.File
-import java.sql.Connection
 
 class JvmDatabaseInspector(private val searchDirectories: List<File>) : DatabaseInspector {
   override suspend fun discoverDatabases(): Result<List<DatabaseInfo>> = withContext(Dispatchers.IO) {

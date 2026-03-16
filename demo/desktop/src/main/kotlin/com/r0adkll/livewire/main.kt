@@ -8,7 +8,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import kotlinx.coroutines.launch
 
 fun main() = application {
   val livewireClient = remember { ServiceLocator.livewireClient }
@@ -25,7 +24,7 @@ fun main() = application {
     title = "Livewire Client",
     state = rememberWindowState(
       size = DpSize(400.dp, 800.dp),
-    )
+    ),
   ) {
     MaterialTheme {
       LivewireApp(

@@ -46,19 +46,23 @@ class NetworkPresenter {
           selectedEvent = event.event
           selectedDetailTab = 0
         }
+
         NetworkUiEvent.ClearSelection -> {
           selectedEvent = null
           selectedDetailTab = 0
         }
+
         is NetworkUiEvent.UpdateFilter -> {
           filterText = event.text
         }
+
         NetworkUiEvent.ClearAll -> {
           NetworkEventCollector.clear()
           selectedEvent = null
           filterText = ""
           selectedDetailTab = 0
         }
+
         is NetworkUiEvent.SelectDetailTab -> {
           selectedDetailTab = event.index
         }
