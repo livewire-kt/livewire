@@ -47,7 +47,12 @@ data class DarkModeChange(
 @Serializable
 data class PluginSelected(
   val info: PluginInfo,
-) : UiProtocol
+) : UiProtocol {
+
+  override fun toString(): String {
+    return "PluginSelected[${info.title}]"
+  }
+}
 
 /**
  * Sent by the Host to clear any plugins actively rendering their content for the server

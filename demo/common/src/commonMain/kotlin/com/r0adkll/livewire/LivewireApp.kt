@@ -2,17 +2,12 @@ package com.r0adkll.livewire
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,12 +27,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.client.ConnectionState
 import com.r0adkll.livewire.client.LivewireClient
+import com.r0adkll.livewire.overview.OverviewScreen
 import com.r0adkll.livewire.rickandmorty.CharactersScreen
 import com.r0adkll.livewire.ui.icons.ChatBubbleFilled
 import com.r0adkll.livewire.ui.icons.ChatBubbleOutline
@@ -73,6 +70,20 @@ fun LivewireApp(
     LaunchedEffect(Unit) {
       livewireClient.server.incomingMessages.collect { envelope ->
         messages.add("$envelope")
+        if (messages.size > MAX_MESSAGE_HISTORY) {
+          messages.removeAt(0)
+        }
+      }
+    }
+
+    val sizeHistory = remember { mutableStateListOf<Long>() }
+
+    LaunchedEffect(Unit) {
+      livewireClient.server.outgoingLayoutSize.collect { size ->
+        sizeHistory.add(size)
+        if (sizeHistory.size > MAX_DATA_POINTS) {
+          sizeHistory.removeAt(0)
+        }
       }
     }
 
@@ -146,10 +157,11 @@ fun LivewireApp(
         modifier = Modifier.fillMaxSize(),
       ) { page ->
         when (page) {
-          0 -> MessagePage(
+          0 -> OverviewScreen(
+            currentSize = outgoingNodeSize,
+            sizeHistory = sizeHistory,
             messages = messages,
-            contentPadding = padding,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(padding),
           )
 
           1 -> CharactersScreen(
@@ -161,26 +173,5 @@ fun LivewireApp(
   }
 }
 
-@Composable
-private fun MessagePage(
-  messages: List<String>,
-  contentPadding: PaddingValues,
-  modifier: Modifier = Modifier,
-) {
-  LazyColumn(
-    modifier = modifier.fillMaxSize(),
-    contentPadding = contentPadding,
-    verticalArrangement = Arrangement.spacedBy(4.dp),
-  ) {
-    stickyHeader {
-      Text(
-        text = "Messages",
-        style = MaterialTheme.typography.titleMedium,
-        modifier = Modifier.background(MaterialTheme.colorScheme.surface),
-      )
-    }
-    items(messages) { msg ->
-      Text(msg, style = MaterialTheme.typography.bodyMedium)
-    }
-  }
-}
+private const val MAX_DATA_POINTS = 50
+private const val MAX_MESSAGE_HISTORY = 100
