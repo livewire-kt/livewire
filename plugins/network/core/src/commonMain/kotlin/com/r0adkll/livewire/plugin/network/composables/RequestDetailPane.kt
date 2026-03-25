@@ -14,6 +14,7 @@ import com.r0adkll.livewire.ui.layout.Arrangement
 import com.r0adkll.livewire.ui.layout.Column
 import com.r0adkll.livewire.ui.layout.Row
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import com.r0adkll.livewire.ui.modifier.copyClickable
 import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
@@ -277,6 +278,7 @@ private fun BodyTab(event: NetworkEvent) {
 private fun DetailRow(label: String, value: String) {
   Row(
     modifier = LivewireModifier
+      .copyClickable(value)
       .fillMaxWidth()
       .padding(vertical = 2.dp),
   ) {

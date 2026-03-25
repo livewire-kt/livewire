@@ -1,15 +1,14 @@
 package com.r0adkll.livewire.ui.layout
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -23,24 +22,33 @@ internal val DrawerWidth = 256.dp
 fun HostScaffold(
   topBar: @Composable () -> Unit,
   drawer: @Composable ColumnScope.() -> Unit,
+  snackbarHost: @Composable BoxScope.() -> Unit,
   modifier: Modifier = Modifier,
   content: @Composable () -> Unit,
 ) {
-  Column(modifier = modifier.fillMaxSize()) {
-    Box(
-      modifier = Modifier
-        .fillMaxWidth()
-        .zIndex(1f),
-    ) {
-      topBar()
+  Box(
+    modifier = modifier
+      .background(MaterialTheme.colorScheme.background)
+      .fillMaxSize()
+  ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+      Box(
+        modifier = Modifier
+          .fillMaxWidth()
+          .zIndex(1f),
+      ) {
+        topBar()
+      }
+      PermanentNavigationDrawer(
+        drawerContent = {
+          drawer()
+        },
+      ) {
+        content()
+      }
     }
-    PermanentNavigationDrawer(
-      drawerContent = {
-        drawer()
-      },
-    ) {
-      content()
-    }
+
+    snackbarHost()
   }
 }
 
@@ -51,7 +59,7 @@ internal fun HostDrawerSheet(
 ) {
   Surface(
     modifier = modifier.widthIn(max = DrawerWidth),
-    color = MaterialTheme.colorScheme.surface,
+    color = MaterialTheme.colorScheme.surfaceContainer,
     shadowElevation = 2.dp
   ) {
     content()

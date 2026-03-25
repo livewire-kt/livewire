@@ -93,6 +93,7 @@ internal fun DisconnectedStateLayout(
           text = "Connect to a Livewire application",
           style = MaterialTheme.typography.titleLarge,
           fontWeight = FontWeight.Medium,
+          color = MaterialTheme.colorScheme.onSurface
         )
       }
     }

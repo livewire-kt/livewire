@@ -44,7 +44,7 @@ internal fun PluginDrawerItem(
   }
 
   val containerColor by animateColorAsState(
-    if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+    if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
   )
   val contentColor by animateColorAsState(
     if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,

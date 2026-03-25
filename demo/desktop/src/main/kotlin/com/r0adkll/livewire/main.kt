@@ -26,10 +26,8 @@ fun main() = application {
       size = DpSize(400.dp, 800.dp),
     ),
   ) {
-    MaterialTheme {
-      LivewireApp(
-        livewireClient = livewireClient,
-      )
-    }
+    LivewireApp(
+      livewireClient = livewireClient,
+    )
   }
 }

@@ -33,6 +33,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -70,10 +73,13 @@ import com.r0adkll.livewire.ui.PluginInfo
 import com.r0adkll.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.r0adkll.livewire.ui.composables.DisconnectedStateLayout
 import com.r0adkll.livewire.ui.data.ClientManifest
+import com.r0adkll.livewire.ui.data.DarkModeChange
 import com.r0adkll.livewire.ui.data.PluginSelected
 import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.host.DebugNodes
 import com.r0adkll.livewire.ui.host.LayoutNodeContent
+import com.r0adkll.livewire.ui.host.snackbar.LocalSnackDispatcher
+import com.r0adkll.livewire.ui.host.snackbar.rememberSnackbarDispatcher
 import com.r0adkll.livewire.ui.icons.BugReport
 import com.r0adkll.livewire.ui.icons.CloseIcon
 import com.r0adkll.livewire.ui.icons.ConnectedIcon
@@ -82,6 +88,7 @@ import com.r0adkll.livewire.ui.icons.MenuOpen
 import com.r0adkll.livewire.ui.layout.HostDrawerSheet
 import com.r0adkll.livewire.ui.layout.HostScaffold
 import com.r0adkll.livewire.ui.theme.LivewireTheme
+import com.r0adkll.livewire.ui.theme.currentDarkMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
@@ -179,13 +186,26 @@ private fun AppUi(
   onPluginClick: (PluginInfo) -> Unit,
   modifier: Modifier = Modifier,
 ) {
+  var isDarkMode by remember { mutableStateOf(false) }
+  LaunchedEffect(host.connection) {
+    host.connection.incomingMessages
+      .filterIsInstance<DarkModeChange>()
+      .collect {
+        isDarkMode = it.darkMode
+      }
+  }
+
   LivewireThemeContent(
     theme = clientManifest?.theme ?: LivewireTheme(),
+    // TODO: Should have a host setting that defaults back to host choice
+    darkMode = clientManifest != null && isDarkMode,
     host = host,
   ) {
     var menuExpanded by remember { mutableStateOf(true) }
     var selectedApp: HostApp? by remember { mutableStateOf(null) }
 
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarDispatcher = rememberSnackbarDispatcher(snackbarHostState)
     HostScaffold(
       topBar = {
         AppTopBar(
@@ -211,11 +231,25 @@ private fun AppUi(
           }
         }
       },
+      snackbarHost = {
+        SnackbarHost(
+          hostState = snackbarHostState,
+          snackbar = {
+            Snackbar(
+              snackbarData = it,
+              shape = MaterialTheme.shapes.medium,
+            )
+          },
+          modifier = Modifier
+            .align(Alignment.BottomEnd)
+        )
+      },
       modifier = modifier,
     ) {
       val layoutNode by host.connection.incomingLayoutNodes.collectAsState()
       CompositionLocalProvider(
         LocalLivewireActionDispatcher provides host,
+        LocalSnackDispatcher provides snackbarDispatcher,
       ) {
         LayoutNodeContent(
           node = layoutNode,
