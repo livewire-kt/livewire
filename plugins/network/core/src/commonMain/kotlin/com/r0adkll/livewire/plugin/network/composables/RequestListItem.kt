@@ -45,6 +45,14 @@ internal fun RequestListItem(
         .fillMaxWidth()
         .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
+      // Timestamp
+      Text(
+        text = formatTimestamp(event.request.timestamp),
+        style = TextStyle.LabelSmall,
+        color = LivewireTheme.colorScheme.onSurfaceVariant,
+        modifier = LivewireModifier.padding(right = 8.dp),
+      )
+
       Box(
         contentAlignment = Alignment.Center,
         modifier = LivewireModifier
@@ -97,6 +105,7 @@ internal fun RequestListItem(
           modifier = LivewireModifier.padding(left = 8.dp),
         )
       }
+
     }
   }
 }
@@ -107,6 +116,18 @@ private fun statusColor(code: Int): Color = when {
   code in 400..499 -> Color(0xFFFF5722)
   code >= 500 -> Color(0xFFF44336)
   else -> Color.Gray
+}
+
+private fun formatTimestamp(epochMillis: Long): String {
+  val totalSeconds = epochMillis / 1000
+  val millis = epochMillis % 1000
+  val seconds = totalSeconds % 60
+  val minutes = (totalSeconds / 60) % 60
+  val hours = (totalSeconds / 3600) % 24
+  return "${hours.toString().padStart(2, '0')}:" +
+    "${minutes.toString().padStart(2, '0')}:" +
+    "${seconds.toString().padStart(2, '0')}." +
+    millis.toString().padStart(3, '0')
 }
 
 private fun extractPath(url: String): String {

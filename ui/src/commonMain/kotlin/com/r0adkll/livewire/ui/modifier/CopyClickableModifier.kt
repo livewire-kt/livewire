@@ -24,7 +24,7 @@ internal class CopyClickableModifier(
     return then.clickable(enabled = enabled) {
       clipboardManager.setText(AnnotatedString(value))
       snackbarDispatcher.showSnackbar(
-        message = "\"${value}\" copied to the clipboard",
+        message = "\"${value.take(50)}${if (value.length > 50) "…" else ""}\" copied to the clipboard",
       )
     }
   }

@@ -19,6 +19,7 @@ import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
+import com.r0adkll.livewire.ui.modifier.thenIf
 import com.r0adkll.livewire.ui.modifier.verticalScroll
 import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.theme.LivewireTheme
@@ -135,7 +136,9 @@ private fun OverviewTab(event: NetworkEvent) {
     Surface(
       shape = RoundedCornerShape(8.dp),
       color = LivewireTheme.colorScheme.secondaryContainer,
-      modifier = LivewireModifier.fillMaxWidth(),
+      modifier = LivewireModifier
+        .fillMaxWidth()
+        .copyClickable(event.request.url),
     ) {
       Text(
         text = event.request.url,
@@ -179,11 +182,13 @@ private fun OverviewChip(
   text: String,
   color: Color = LivewireTheme.colorScheme.primaryContainer,
   modifier: LivewireModifier = LivewireModifier,
+  onClickAction: ClickAction? = null
 ) {
   Surface(
     shape = RoundedCornerShape(8.dp),
     color = color,
     modifier = modifier,
+    onClick = onClickAction,
   ) {
     Text(
       text = text,
@@ -278,6 +283,14 @@ private fun BodyTab(event: NetworkEvent) {
         } else {
           LivewireTheme.colorScheme.onSurfaceVariant
         },
+        modifier = LivewireModifier
+          .thenIf(
+            response.body != null &&
+              (response.contentType?.startsWith("text") == true ||
+                response.contentType?.contains("json") == true)
+          ) {
+            copyClickable(response.body!!)
+          }
       )
     }
   }
