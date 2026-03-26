@@ -41,11 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.r0adkll.livewire.runtime.HostConnectionState
 import com.r0adkll.livewire.runtime.HostConnectionState.Connected
 import com.r0adkll.livewire.runtime.LivewireHost
+import com.r0adkll.livewire.settings.LivewireSettings
+import com.r0adkll.livewire.settings.observe
 import com.r0adkll.livewire.runtime.discoverymanager.CompositeDiscoveryManager
 import com.r0adkll.livewire.runtime.discoverymanager.HostApp
 import com.r0adkll.livewire.theme.LivewireThemeContent
@@ -75,6 +78,7 @@ import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 fun main() = application {
+  val settings = remember { LivewireSettings() }
   val host = remember { LivewireHost() }
   LaunchedEffect(Unit) {
     Runtime.getRuntime().addShutdownHook(
@@ -126,15 +130,32 @@ fun main() = application {
       }
   }
 
+  val windowState = rememberWindowState(
+    size = DpSize(settings.windowWidth.dp, settings.windowHeight.dp),
+    position = if (settings.hasWindowPosition) {
+      WindowPosition.Absolute(settings.windowX.dp, settings.windowY.dp)
+    } else {
+      WindowPosition.PlatformDefault
+    },
+  )
+
   Window(
-    onCloseRequest = { exitApplication() },
+    onCloseRequest = {
+      settings.windowWidth = windowState.size.width.value.toInt()
+      settings.windowHeight = windowState.size.height.value.toInt()
+      val position = windowState.position
+      if (position is WindowPosition.Absolute) {
+        settings.windowX = position.x.value.toInt()
+        settings.windowY = position.y.value.toInt()
+      }
+      exitApplication()
+    },
     title = "Livewire Host",
-    state = rememberWindowState(
-      size = DpSize(1200.dp, 800.dp),
-    ),
+    state = windowState,
   ) {
     AppUi(
       scope = scope,
+      settings = settings,
       devicesReady = devicesReady,
       host = host,
       state = state,
@@ -155,6 +176,7 @@ fun main() = application {
 @Composable
 private fun AppUi(
   scope: CoroutineScope,
+  settings: LivewireSettings,
   devicesReady: Boolean,
   host: LivewireHost,
   state: HostConnectionState,
@@ -179,7 +201,10 @@ private fun AppUi(
     darkMode = clientManifest != null && isDarkMode,
     host = host,
   ) {
-    var menuExpanded by remember { mutableStateOf(true) }
+    val menuExpanded by remember {
+      settings::menuExpanded.observe()
+    }.collectAsState(true)
+
     var selectedApp: HostApp? by remember { mutableStateOf(null) }
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -190,7 +215,9 @@ private fun AppUi(
           hostConnectionState = state,
           selectedApp = selectedApp,
           onDisconnectClick = { scope.launch { host.connection.disconnect() } },
-          onNavigationItemClick = { menuExpanded = !menuExpanded },
+          onNavigationItemClick = {
+            settings.menuExpanded = !menuExpanded
+          },
         )
       },
       drawer = {
@@ -219,7 +246,7 @@ private fun AppUi(
             )
           },
           modifier = Modifier
-            .align(Alignment.BottomEnd)
+            .align(Alignment.BottomEnd),
         )
       },
       modifier = modifier,
