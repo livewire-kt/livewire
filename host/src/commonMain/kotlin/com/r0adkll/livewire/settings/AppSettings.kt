@@ -12,11 +12,15 @@ import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KMutableProperty0
 import kotlin.reflect.KProperty
 import kotlin.reflect.jvm.isAccessible
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 
 @OptIn(ExperimentalSettingsApi::class)
 abstract class AppSettings {
+  abstract val scope: CoroutineScope
   abstract val settings: ObservableSettings
 
   fun booleanSetting(key: String, defaultValue: Boolean = false) = object : SettingsProperty<AppSettings, Boolean> {
@@ -28,8 +32,9 @@ abstract class AppSettings {
       settings.putBoolean(key, value)
     }
 
-    override fun observe(): Flow<Boolean> {
+    override fun observe(): StateFlow<Boolean> {
       return settings.getBooleanFlow(key, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, defaultValue)
     }
   }
 
@@ -42,8 +47,9 @@ abstract class AppSettings {
       settings.putInt(key, value)
     }
 
-    override fun observe(): Flow<Int> {
+    override fun observe(): StateFlow<Int> {
       return settings.getIntFlow(key, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, defaultValue)
     }
   }
 
@@ -56,8 +62,9 @@ abstract class AppSettings {
       settings.putLong(key, value)
     }
 
-    override fun observe(): Flow<Long> {
+    override fun observe(): StateFlow<Long> {
       return settings.getLongFlow(key, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, defaultValue)
     }
   }
 
@@ -70,8 +77,9 @@ abstract class AppSettings {
       settings.putFloat(key, value)
     }
 
-    override fun observe(): Flow<Float> {
+    override fun observe(): StateFlow<Float> {
       return settings.getFloatFlow(key, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, defaultValue)
     }
   }
 
@@ -84,8 +92,9 @@ abstract class AppSettings {
       settings.putString(key, value)
     }
 
-    override fun observe(): Flow<String> {
+    override fun observe(): StateFlow<String> {
       return settings.getStringFlow(key, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, defaultValue)
     }
   }
 
@@ -102,8 +111,9 @@ abstract class AppSettings {
       }
     }
 
-    override fun observe(): Flow<String?> {
+    override fun observe(): StateFlow<String?> {
       return settings.getStringOrNullFlow(key)
+        .stateIn(scope, SharingStarted.Lazily, null)
     }
   }
 
@@ -121,20 +131,20 @@ abstract class AppSettings {
       settings.putString(key, value.name)
     }
 
-    override fun observe(): Flow<T> {
+    override fun observe(): StateFlow<T> {
       return settings.getStringOrNullFlow(key).map { raw ->
         raw?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: defaultValue
-      }
+      }.stateIn(scope, SharingStarted.Lazily, defaultValue)
     }
   }
 
   interface SettingsProperty<in T : AppSettings, V> : ReadWriteProperty<T, V> {
-    fun observe(): Flow<V>
+    fun observe(): StateFlow<V>
   }
 }
 
 @Suppress("UNCHECKED_CAST")
-fun <T> KMutableProperty0<T>.observe(): Flow<T> {
+fun <T> KMutableProperty0<T>.observe(): StateFlow<T> {
   isAccessible = true
   return (getDelegate() as AppSettings.SettingsProperty<AppSettings, T>).observe()
 }

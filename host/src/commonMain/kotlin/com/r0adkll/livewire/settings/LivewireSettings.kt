@@ -1,10 +1,15 @@
 package com.r0adkll.livewire.settings
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import com.russhwolf.settings.ObservableSettings
 import com.russhwolf.settings.PreferencesSettings
 import java.util.prefs.Preferences
+import kotlinx.coroutines.CoroutineScope
 
 class LivewireSettings(
+  override val scope: CoroutineScope,
   override val settings: ObservableSettings = PreferencesSettings(
     Preferences.userRoot().node("com.r0adkll.livewire.host"),
   ),
@@ -33,5 +38,13 @@ class LivewireSettings(
     const val KEY_WINDOW_HEIGHT = "pref_window_height"
     const val KEY_WINDOW_X = "pref_window_x"
     const val KEY_WINDOW_Y = "pref_window_y"
+  }
+}
+
+@Composable
+internal fun rememberLivewireSettings(): LivewireSettings {
+  val scope = rememberCoroutineScope()
+  return remember {
+    LivewireSettings(scope)
   }
 }

@@ -27,6 +27,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -51,6 +52,7 @@ import com.r0adkll.livewire.settings.LivewireSettings
 import com.r0adkll.livewire.settings.observe
 import com.r0adkll.livewire.runtime.discoverymanager.CompositeDiscoveryManager
 import com.r0adkll.livewire.runtime.discoverymanager.HostApp
+import com.r0adkll.livewire.settings.rememberLivewireSettings
 import com.r0adkll.livewire.theme.LivewireThemeContent
 import com.r0adkll.livewire.ui.PluginDrawerItem
 import com.r0adkll.livewire.ui.PluginInfo
@@ -70,6 +72,7 @@ import com.r0adkll.livewire.ui.icons.MenuOpen
 import com.r0adkll.livewire.ui.layout.HostDrawerSheet
 import com.r0adkll.livewire.ui.layout.HostScaffold
 import com.r0adkll.livewire.ui.theme.LivewireTheme
+import com.r0adkll.livewire.ui.theme.LocalDarkMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
@@ -78,7 +81,17 @@ import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 fun main() = application {
-  val settings = remember { LivewireSettings() }
+  val settings = rememberLivewireSettings()
+
+  val windowState = rememberWindowState(
+    size = DpSize(settings.windowWidth.dp, settings.windowHeight.dp),
+    position = if (settings.hasWindowPosition) {
+      WindowPosition.Absolute(settings.windowX.dp, settings.windowY.dp)
+    } else {
+      WindowPosition.PlatformDefault
+    },
+  )
+
   val host = remember { LivewireHost() }
   LaunchedEffect(Unit) {
     Runtime.getRuntime().addShutdownHook(
@@ -88,6 +101,14 @@ fun main() = application {
         }
 
         CompositeDiscoveryManager.shutdown()
+
+        settings.windowWidth = windowState.size.width.value.toInt()
+        settings.windowHeight = windowState.size.height.value.toInt()
+        val position = windowState.position
+        if (position is WindowPosition.Absolute) {
+          settings.windowX = position.x.value.toInt()
+          settings.windowY = position.y.value.toInt()
+        }
       },
     )
   }
@@ -129,15 +150,6 @@ fun main() = application {
         clientManifest = it
       }
   }
-
-  val windowState = rememberWindowState(
-    size = DpSize(settings.windowWidth.dp, settings.windowHeight.dp),
-    position = if (settings.hasWindowPosition) {
-      WindowPosition.Absolute(settings.windowX.dp, settings.windowY.dp)
-    } else {
-      WindowPosition.PlatformDefault
-    },
-  )
 
   Window(
     onCloseRequest = {
@@ -203,7 +215,7 @@ private fun AppUi(
   ) {
     val menuExpanded by remember {
       settings::menuExpanded.observe()
-    }.collectAsState(true)
+    }.collectAsState()
 
     var selectedApp: HostApp? by remember { mutableStateOf(null) }
 
@@ -326,6 +338,7 @@ private fun AppTopBar(
           Icon(
             BugReport,
             contentDescription = null,
+            modifier = Modifier.size(SwitchDefaults.IconSize),
           )
         },
       )
