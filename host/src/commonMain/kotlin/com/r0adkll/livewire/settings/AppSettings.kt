@@ -34,7 +34,7 @@ abstract class AppSettings {
 
     override fun observe(): StateFlow<Boolean> {
       return settings.getBooleanFlow(key, defaultValue)
-        .stateIn(scope, SharingStarted.Lazily, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, settings.getBoolean(key, defaultValue))
     }
   }
 
@@ -49,7 +49,7 @@ abstract class AppSettings {
 
     override fun observe(): StateFlow<Int> {
       return settings.getIntFlow(key, defaultValue)
-        .stateIn(scope, SharingStarted.Lazily, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, settings.getInt(key, defaultValue))
     }
   }
 
@@ -64,7 +64,7 @@ abstract class AppSettings {
 
     override fun observe(): StateFlow<Long> {
       return settings.getLongFlow(key, defaultValue)
-        .stateIn(scope, SharingStarted.Lazily, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, settings.getLong(key, defaultValue))
     }
   }
 
@@ -79,7 +79,7 @@ abstract class AppSettings {
 
     override fun observe(): StateFlow<Float> {
       return settings.getFloatFlow(key, defaultValue)
-        .stateIn(scope, SharingStarted.Lazily, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, settings.getFloat(key, defaultValue))
     }
   }
 
@@ -94,7 +94,7 @@ abstract class AppSettings {
 
     override fun observe(): StateFlow<String> {
       return settings.getStringFlow(key, defaultValue)
-        .stateIn(scope, SharingStarted.Lazily, defaultValue)
+        .stateIn(scope, SharingStarted.Lazily, settings.getString(key, defaultValue))
     }
   }
 
@@ -113,7 +113,7 @@ abstract class AppSettings {
 
     override fun observe(): StateFlow<String?> {
       return settings.getStringOrNullFlow(key)
-        .stateIn(scope, SharingStarted.Lazily, null)
+        .stateIn(scope, SharingStarted.Lazily, settings.getStringOrNull(key))
     }
   }
 
@@ -132,9 +132,12 @@ abstract class AppSettings {
     }
 
     override fun observe(): StateFlow<T> {
+      val currentValue = settings.getStringOrNull(key)
+        ?.let { runCatching { enumValueOf<T>(it) }.getOrNull() }
+        ?: defaultValue
       return settings.getStringOrNullFlow(key).map { raw ->
         raw?.let { runCatching { enumValueOf<T>(it) }.getOrNull() } ?: defaultValue
-      }.stateIn(scope, SharingStarted.Lazily, defaultValue)
+      }.stateIn(scope, SharingStarted.Lazily, currentValue)
     }
   }
 
