@@ -50,6 +50,9 @@ kotlin {
       implementation(libs.coil.network.ktor3)
       implementation(libs.coil.svg)
       implementation(libs.dd.plist)
+      implementation(libs.multiplatformSettings)
+      implementation(libs.multiplatformSettings.noArg)
+      implementation(libs.multiplatformSettings.coroutines)
     }
   }
 }
