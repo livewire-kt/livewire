@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import com.r0adkll.livewire.ui.modifier.fillMaxSize
 import com.r0adkll.livewire.ui.modifier.fillMaxWidth
 import com.r0adkll.livewire.ui.modifier.height
 import com.r0adkll.livewire.ui.modifier.padding
+import com.r0adkll.livewire.ui.modifier.width
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import com.r0adkll.livewire.ui.widget.AnimatedVisibility
 import com.r0adkll.livewire.ui.widget.Button
@@ -40,6 +42,7 @@ import com.r0adkll.livewire.ui.widget.IconButton
 import com.r0adkll.livewire.ui.widget.IconButtonStyle
 import com.r0adkll.livewire.ui.widget.ResizableSurface
 import com.r0adkll.livewire.ui.widget.ResizeAnchor
+import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Tab
 import com.r0adkll.livewire.ui.widget.TabRow
 import com.r0adkll.livewire.ui.widget.Table
@@ -52,6 +55,7 @@ internal fun DatabasePluginContent(inspector: DatabaseInspector) {
   val state = presenter.present()
 
   var selectedTabIndex by remember { mutableIntStateOf(0) }
+  var showSchema by remember { mutableStateOf(true) }
 
   Row(
     modifier = LivewireModifier
@@ -97,6 +101,16 @@ internal fun DatabasePluginContent(inspector: DatabaseInspector) {
             Icon(Icons.DatabaseSearch)
             Text("New Query")
           }
+
+          Spacer(LivewireModifier.width(8.dp))
+
+          IconButton(
+            action = clickAction {
+              showSchema = !showSchema
+            },
+          ) {
+            Icon(Icons.Schema)
+          }
         },
       )
 
@@ -128,8 +142,9 @@ internal fun DatabasePluginContent(inspector: DatabaseInspector) {
       }
     }
 
+
     AnimatedVisibility(
-      visible = state.selectedDatabase != null,
+      visible = state.selectedDatabase != null && showSchema,
       modifier = LivewireModifier.fillMaxHeight(),
     ) {
       ResizableSurface(
