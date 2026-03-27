@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ClickAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -21,7 +22,7 @@ fun DropdownMenu(
   modifier: LivewireModifier = LivewireModifier,
   content: @Composable @LivewireComposable ColumnScope.() -> Unit,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<DropdownMenuNode, Applier<LayoutNode>>(
     factory = { DropdownMenuNode(expanded, onDismissRequest) },
     update = {
@@ -57,7 +58,7 @@ fun DropdownMenuItem(
   trailingIconData: String? = null,
   enabled: Boolean = true,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<DropdownMenuItemNode, Applier<LayoutNode>>(
     factory = { DropdownMenuItemNode(text, onClick) },
     update = {

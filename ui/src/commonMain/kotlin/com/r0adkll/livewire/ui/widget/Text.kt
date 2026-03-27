@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import androidx.compose.ui.graphics.Color
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -21,7 +22,7 @@ fun Text(
   style: TextStyle? = null,
   fontWeight: Int? = null,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<TextNode, Applier<LayoutNode>>(
     factory = { TextNode(text) },
     update = {

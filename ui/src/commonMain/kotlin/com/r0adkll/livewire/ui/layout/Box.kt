@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.modifier.AlignModifier
@@ -18,7 +19,7 @@ inline fun Box(
   contentAlignment: Alignment = Alignment.TopStart,
   content: @Composable @LivewireComposable BoxScope.() -> Unit,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<BoxNode, Applier<LayoutNode>>(
     factory = { BoxNode() },
     update = {

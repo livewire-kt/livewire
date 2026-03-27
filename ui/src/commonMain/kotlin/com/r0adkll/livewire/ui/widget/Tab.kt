@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.IntValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -20,7 +21,7 @@ fun TabRow(
   style: TabStyle = TabStyle.Primary,
   content: @Composable @LivewireComposable () -> Unit,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<TabRowNode, Applier<LayoutNode>>(
     factory = { TabRowNode(selectedTabIndex, onTabSelected) },
     update = {
@@ -57,7 +58,7 @@ fun Tab(
   iconData: String? = null,
   enabled: Boolean = true,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<TabNode, Applier<LayoutNode>>(
     factory = { TabNode(text, iconData, enabled) },
     update = {

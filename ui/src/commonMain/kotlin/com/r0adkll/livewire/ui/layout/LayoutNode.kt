@@ -14,14 +14,14 @@ abstract class LayoutNode(
 
   companion object {
     val SetModifier: LayoutNode.(LivewireModifier) -> Unit = { modifier = it }
-    val SetCompositeKeyHash: LayoutNode.(Int) -> Unit = { compositeKeyHash = it }
+    val SetCompositeKeyHash: LayoutNode.(Long) -> Unit = { compositeKeyHash = it }
   }
 
   val nodeId: Long = nextNodeId()
 
   var modifier: LivewireModifier = LivewireModifier
 
-  var compositeKeyHash: Int = 0
+  var compositeKeyHash: Long = 0
 
   fun insertAt(index: Int, instance: LayoutNode) {
     children.add(index, instance)

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,7 +36,7 @@ fun ResizableSurface(
   shadowElevation: Dp = 0.dp,
   content: @Composable @LivewireComposable () -> Unit,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<ResizableSurfaceNode, Applier<LayoutNode>>(
     factory = { ResizableSurfaceNode(anchor, initialSize, minSize, maxSize) },
     update = {

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.annotations.LivewireSerializer
@@ -19,7 +20,7 @@ fun HorizontalDivider(
   modifier: LivewireModifier = LivewireModifier,
   thickness: Dp = 1.dp,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<DividerNode, Applier<LayoutNode>>(
     factory = { DividerNode(DividerStyle.Horizontal, thickness) },
     update = {
@@ -36,7 +37,7 @@ fun VerticalDivider(
   modifier: LivewireModifier = LivewireModifier,
   thickness: Dp = 1.dp,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<DividerNode, Applier<LayoutNode>>(
     factory = { DividerNode(DividerStyle.Vertical, thickness) },
     update = {

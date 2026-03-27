@@ -14,7 +14,7 @@ This file contains both the client-side `@Composable` function and the serializa
 - Annotated with `@LivewireComposable` and `@Composable`
 - Uses `ReusableComposeNode<{Name}Node, Applier<LayoutNode>>` to create node instances
 - Always accepts `modifier: LivewireModifier = LivewireModifier` parameter
-- Before the `ReusableComposeNode` call, capture the composite key hash: `val compositeKeyHash = currentCompositeKeyHashCode.hashCode()` (import `androidx.compose.runtime.currentCompositeKeyHashCode`)
+- Before the `ReusableComposeNode` call, capture the composite key hash: `val compositeKeyHash = currentCompositeKeyHashCode.toLong()` (import `androidx.compose.runtime.currentCompositeKeyHashCode`)
 - `factory` block creates the initial node
 - `update` block sets all properties using companion setter references
 - Always set modifier: `set(modifier, LayoutNode.SetModifier)`
@@ -61,7 +61,7 @@ fun Text(
   style: TextStyle? = null,
   fontWeight: Int? = null,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<TextNode, Applier<LayoutNode>>(
     factory = { TextNode(text) },
     update = {
@@ -120,7 +120,7 @@ fun Checkbox(
   modifier: LivewireModifier = LivewireModifier,
   enabled: Boolean = true,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<CheckboxNode, Applier<LayoutNode>>(
     factory = { CheckboxNode(checked, onCheckedChange, enabled) },
     update = {

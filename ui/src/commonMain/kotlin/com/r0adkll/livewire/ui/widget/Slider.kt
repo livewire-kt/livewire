@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.FloatValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -22,7 +23,7 @@ fun Slider(
   valueRangeEnd: Float = 1f,
   steps: Int = 0,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<SliderNode, Applier<LayoutNode>>(
     factory = { SliderNode(value, onValueChange, enabled, valueRangeStart, valueRangeEnd, steps) },
     update = {

@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
@@ -19,7 +20,7 @@ fun AnimatedVisibility(
   exit: ExitTransition = ExitTransition.FadeOut,
   content: @Composable @LivewireComposable () -> Unit,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<AnimatedVisibilityNode, Applier<LayoutNode>>(
     factory = { AnimatedVisibilityNode(visible) },
     update = {

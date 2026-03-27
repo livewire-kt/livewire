@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.CheckedChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -19,7 +20,7 @@ fun Switch(
   modifier: LivewireModifier = LivewireModifier,
   enabled: Boolean = true,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<SwitchNode, Applier<LayoutNode>>(
     factory = { SwitchNode(checked, onCheckedChange, enabled) },
     update = {

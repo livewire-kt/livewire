@@ -4,6 +4,7 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
@@ -25,7 +26,7 @@ fun TextField(
   maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
   style: TextFieldStyle = TextFieldStyle.Filled,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<TextFieldNode, Applier<LayoutNode>>(
     factory = { TextFieldNode(initialValue, onValueChange) },
     update = {

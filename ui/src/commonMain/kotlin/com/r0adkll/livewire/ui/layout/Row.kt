@@ -7,6 +7,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.modifier.AlignModifier
@@ -23,7 +24,7 @@ inline fun Row(
   verticalAlignment: Alignment.Vertical = Alignment.Top,
   content: @Composable @LivewireComposable RowScope.() -> Unit,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<RowNode, Applier<LayoutNode>>(
     factory = { RowNode() },
     update = {

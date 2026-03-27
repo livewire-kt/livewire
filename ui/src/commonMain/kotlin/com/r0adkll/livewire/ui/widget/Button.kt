@@ -19,6 +19,8 @@ import com.r0adkll.livewire.ui.layout.RowScope
 import com.r0adkll.livewire.ui.layout.RowScopeInstance
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
+import androidx.compose.material3.ButtonShapes as ComposeButtonShapes
+import androidx.compose.runtime.toLong
 
 @LivewireComposable
 @Composable
@@ -30,7 +32,7 @@ fun Button(
   shapes: ButtonShapes = ButtonShapes(),
   content: @Composable @LivewireComposable RowScope.() -> Unit,
 ) {
-  val compositeKeyHash = currentCompositeKeyHashCode.hashCode()
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<ButtonNode, Applier<LayoutNode>>(
     factory = { ButtonNode(action) },
     update = {
