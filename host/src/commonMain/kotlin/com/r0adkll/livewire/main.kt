@@ -33,6 +33,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -268,10 +269,12 @@ private fun AppUi(
         LocalLivewireActionDispatcher provides host,
         LocalSnackDispatcher provides snackbarDispatcher,
       ) {
-        LayoutNodeContent(
-          node = layoutNode,
-          modifier = Modifier.fillMaxSize(),
-        )
+        key(selectedPlugin?.pluginId) {
+          LayoutNodeContent(
+            node = layoutNode,
+            modifier = Modifier.fillMaxSize(),
+          )
+        }
       }
 
       if (state != Connected) {
