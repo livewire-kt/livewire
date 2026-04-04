@@ -73,7 +73,7 @@ class NetworkPlugin : Plugin {
             RequestListItem(
               event = event,
               isSelected = state.selectedEvent?.id == event.id,
-              onClick = clickAction(event.id) {
+              onClick = clickAction {
                 state.eventSink(NetworkUiEvent.SelectEvent(event))
               },
             )
