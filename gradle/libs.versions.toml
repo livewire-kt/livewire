@@ -1,29 +1,28 @@
 [versions]
-agp = "9.1.0"
-android-compileSdk = "36"
+agp = "9.2.1"
+android-compileSdk = "37"
 android-minSdk = "31"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
-androidx-lifecycle = "2.9.6"
+androidx-lifecycle = "2.10.0"
 androidx-startup = "1.2.0"
 androidx-sqlite = "2.6.2"
-autoserviceIr = "0.1.4"
-composeMultiplatform = "1.10.2"
-cryptography = "0.5.0"
-kotlin = "2.3.10"
-kotlinx-coroutines = "1.10.2"
-kotlinx-serialization = "1.10.0"
+composeMultiplatform = "1.11.1"
+cryptography = "0.6.0"
+kotlin = "2.4.0"
+kotlinx-coroutines = "1.11.0"
+kotlinx-serialization = "1.11.0"
 dadb = "1.2.10"
-ktor = "3.4.1"
+ktor = "3.5.0"
 material3 = "1.10.0-alpha05"
 coil = "3.4.0"
 molecule = "2.2.0"
 okhttp = "5.3.2"
-okio = "3.16.4"
-sqlite-jdbc = "3.49.1.0"
-sqldelight = "2.2.1"
-kotlinpoet = "2.2.0"
-ksp = "2.3.6"
+okio = "3.17.0"
+sqlite-jdbc = "3.53.2.0"
+sqldelight = "2.3.2"
+kotlinpoet = "2.3.0"
+ksp = "2.3.9"
 dd-plist = "1.29"
 multiplatformSettings = "1.3.0"
 
@@ -84,7 +83,6 @@ multiplatformSettings-coroutines = { module = "com.russhwolf:multiplatform-setti
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
-autoservice-ir = { id = "com.fueledbycaffeine.autoservice", version.ref = "autoserviceIr" }
 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlinJvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

@@ -11,8 +11,6 @@ plugins {
 kotlin {
   compilerOptions {
     freeCompilerArgs.addAll(
-      "-Xcontext-parameters",
-      "-Xexplicit-backing-fields",
       "-Xcontext-sensitive-resolution",
     )
   }

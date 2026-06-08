@@ -1,6 +1,5 @@
 package com.r0adkll.livewire.compiler
 
-import com.fueledbycaffeine.autoservice.AutoService
 import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
@@ -24,12 +23,12 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
+import kotlinx.serialization.modules.SerializersModule
 
 class ModifierSymbolProcessor(
   private val environment: SymbolProcessorEnvironment,
 ) : SymbolProcessor {
 
-  @AutoService
   class Provider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
       return ModifierSymbolProcessor(environment)
@@ -85,7 +84,7 @@ class ModifierSymbolProcessor(
     val packageName = serializerInterface.packageName.asString()
     val className = serializerInterface.simpleName.asString()
 
-    val serializersModuleType = ClassName("kotlinx.serialization.modules", "SerializersModule")
+    val serializersModuleType = SerializersModule::class.asClassName()
 
     val polymorphicMember = MemberName("kotlinx.serialization.modules", "polymorphic")
     val subclassMember = MemberName("kotlinx.serialization.modules", "subclass")
@@ -110,9 +109,7 @@ class ModifierSymbolProcessor(
       )
       .build()
 
-    val layoutSerializerAnnotation = AnnotationSpec.builder(
-      LivewireModifierSerializer::class.asClassName(),
-    ).build()
+    val layoutSerializerAnnotation = AnnotationSpec.builder(LivewireModifierSerializer::class.asClassName()).build()
 
     val actualClass = TypeSpec.classBuilder(className)
       .addModifiers(KModifier.ACTUAL)

@@ -1,6 +1,5 @@
 package com.r0adkll.livewire.compiler
 
-import com.fueledbycaffeine.autoservice.AutoService
 import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.Dependencies
@@ -28,7 +27,6 @@ class LayoutNodeSymbolProcessor internal constructor(
   private val environment: SymbolProcessorEnvironment,
 ) : SymbolProcessor {
 
-  @AutoService
   class Provider : SymbolProcessorProvider {
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
       return LayoutNodeSymbolProcessor(environment)
