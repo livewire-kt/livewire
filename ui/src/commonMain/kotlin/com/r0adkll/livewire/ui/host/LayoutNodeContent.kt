@@ -15,6 +15,7 @@ import com.r0adkll.livewire.ui.host.nodes.FloatingActionButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.FloatingToolbarNodeContent
 import com.r0adkll.livewire.ui.host.nodes.IconButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.IconNodeContent
+import com.r0adkll.livewire.ui.host.nodes.ImageNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ProgressIndicatorNodeContent
 import com.r0adkll.livewire.ui.host.nodes.RadioButtonNodeContent
 import com.r0adkll.livewire.ui.host.nodes.ResizableSurfaceNodeContent
@@ -42,6 +43,7 @@ import com.r0adkll.livewire.ui.widget.FloatingActionButtonNode
 import com.r0adkll.livewire.ui.widget.FloatingToolbarNode
 import com.r0adkll.livewire.ui.widget.IconButtonNode
 import com.r0adkll.livewire.ui.widget.IconNode
+import com.r0adkll.livewire.ui.widget.ImageNode
 import com.r0adkll.livewire.ui.widget.ProgressIndicatorNode
 import com.r0adkll.livewire.ui.widget.RadioButtonNode
 import com.r0adkll.livewire.ui.widget.ResizableSurfaceNode
@@ -69,6 +71,7 @@ fun LayoutNodeContent(
     is ButtonNode -> ButtonNodeContent(node, modifier)
     is IconButtonNode -> IconButtonNodeContent(node, modifier)
     is IconNode -> IconNodeContent(node, modifier)
+    is ImageNode -> ImageNodeContent(node, modifier)
     is CheckboxNode -> CheckboxNodeContent(node, modifier)
     is ChipNode -> ChipNodeContent(node, modifier)
     is DividerNode -> DividerNodeContent(node, modifier)

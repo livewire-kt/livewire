@@ -27,6 +27,7 @@ import com.r0adkll.livewire.ui.widget.ButtonGroupDefaults
 import com.r0adkll.livewire.ui.widget.ButtonSize
 import com.r0adkll.livewire.ui.widget.Icon
 import com.r0adkll.livewire.ui.widget.IconButton
+import com.r0adkll.livewire.ui.widget.Image
 import com.r0adkll.livewire.ui.widget.Spacer
 import com.r0adkll.livewire.ui.widget.Surface
 import com.r0adkll.livewire.ui.widget.Text
@@ -262,15 +263,23 @@ private fun BodyTab(event: NetworkEvent) {
       style = TextStyle.TitleSmall,
       modifier = LivewireModifier.padding(bottom = 8.dp),
     )
-    Text(
-      text = response.body ?: "(empty)",
-      style = TextStyle.BodySmall,
-      color = if (response.body != null) {
-        LivewireTheme.colorScheme.onSurface
-      } else {
-        LivewireTheme.colorScheme.onSurfaceVariant
-      },
-    )
+    val isImageResponse = response.contentType?.startsWith("image/") == true
+    if (isImageResponse && response.bodyBytes != null) {
+      Image(
+        imageData = response.bodyBytes,
+        modifier = LivewireModifier.fillMaxWidth(),
+      )
+    } else {
+      Text(
+        text = response.body ?: "(empty)",
+        style = TextStyle.BodySmall,
+        color = if (response.body != null) {
+          LivewireTheme.colorScheme.onSurface
+        } else {
+          LivewireTheme.colorScheme.onSurfaceVariant
+        },
+      )
+    }
   }
 }
 

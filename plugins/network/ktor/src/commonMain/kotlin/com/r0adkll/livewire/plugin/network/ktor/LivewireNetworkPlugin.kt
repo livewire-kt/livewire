@@ -3,6 +3,7 @@ package com.r0adkll.livewire.plugin.network.ktor
 import com.r0adkll.livewire.plugin.network.data.NetworkEventCollector
 import com.r0adkll.livewire.plugin.network.data.NetworkRequest
 import com.r0adkll.livewire.plugin.network.data.NetworkResponse
+import io.ktor.client.call.body
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
@@ -50,11 +51,27 @@ val LivewireNetworkPlugin = createClientPlugin(
     val startTime = response.call.request.attributes.getOrNull(StartTimeKey) ?: return@onResponse
     val durationMs = currentTimeMillis() - startTime
 
-    val responseBody = try {
-      val text = response.bodyAsText()
-      if (text.length <= maxBodySize) text else text.take(maxBodySize.toInt())
-    } catch (_: Exception) {
-      null
+    val contentType = response.contentType()?.toString()
+    // TODO: probably need better heuristics than this.
+    // TODO: can handle more types this way too. videos? gifs?
+    val isImage = contentType?.startsWith("image/") == true
+
+    var responseBody: String? = null
+    var responseBodyBytes: ByteArray? = null
+    if (isImage) {
+      responseBodyBytes = try {
+        val bytes = response.body<ByteArray>()
+        if (bytes.size <= maxBodySize) bytes else null
+      } catch (_: Exception) {
+        null
+      }
+    } else {
+      responseBody = try {
+        val text = response.bodyAsText()
+        if (text.length <= maxBodySize) text else text.take(maxBodySize.toInt())
+      } catch (_: Exception) {
+        null
+      }
     }
 
     val responseHeaders = mutableMapOf<String, String>()
@@ -66,7 +83,8 @@ val LivewireNetworkPlugin = createClientPlugin(
       statusCode = response.status.value,
       headers = responseHeaders,
       body = responseBody,
-      contentType = response.contentType()?.toString(),
+      bodyBytes = responseBodyBytes,
+      contentType = contentType,
       contentLength = response.headers[HttpHeaders.ContentLength]?.toLongOrNull(),
       timestamp = currentTimeMillis(),
     )

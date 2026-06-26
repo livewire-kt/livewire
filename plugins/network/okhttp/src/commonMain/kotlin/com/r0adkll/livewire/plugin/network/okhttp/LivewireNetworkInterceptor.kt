@@ -50,19 +50,31 @@ class LivewireNetworkInterceptor(
 
     val durationMs = System.currentTimeMillis() - startTime
 
-    // Capture response (non-consuming read)
-    val responseBody = response.body?.let { body ->
-      val source = body.source()
-      source.request(maxBodySize)
-      source.buffer.clone().readUtf8()
+    val body = response.body
+    val contentType = body.contentType()?.toString()
+    val isImage = contentType?.startsWith("image/") == true
+
+    val responseBody: String?
+    val responseBodyBytes: ByteArray?
+    val source = body.source()
+    source.request(maxBodySize)
+    val snapshot = source.buffer.clone()
+    if (isImage) {
+      val bytes = snapshot.readByteArray()
+      responseBodyBytes = if (bytes.size <= maxBodySize) bytes else null
+      responseBody = null
+    } else {
+      responseBody = snapshot.readUtf8()
+      responseBodyBytes = null
     }
 
     val networkResponse = NetworkResponse(
       statusCode = response.code,
       headers = response.headers.toMap(),
       body = responseBody,
-      contentType = response.body?.contentType()?.toString(),
-      contentLength = response.body?.contentLength(),
+      bodyBytes = responseBodyBytes,
+      contentType = contentType,
+      contentLength = body.contentLength(),
       timestamp = System.currentTimeMillis(),
     )
 
