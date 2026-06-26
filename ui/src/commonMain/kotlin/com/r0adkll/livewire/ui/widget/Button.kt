@@ -4,6 +4,7 @@ import androidx.compose.material3.ButtonShapes as ComposeButtonShapes
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,7 @@ class ButtonNode(
   }
 }
 
+@Immutable
 @Serializable
 data class ButtonShapes(
   val shape: Shape = CircleShape,

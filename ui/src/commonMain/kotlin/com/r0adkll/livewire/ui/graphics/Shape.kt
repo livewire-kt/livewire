@@ -7,13 +7,16 @@ import androidx.compose.ui.graphics.RectangleShape as ComposeRectangleShape
 import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
 import androidx.compose.foundation.shape.CornerSize as ComposeCornerSize
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Shape as ComposeShape
 
+@Immutable
 @Serializable
 sealed interface Shape {
   fun toComposeUi(): ComposeShape
 }
 
+@Immutable
 @Serializable
 data object RectangleShape : Shape {
   override fun toComposeUi(): ComposeShape {
@@ -21,11 +24,13 @@ data object RectangleShape : Shape {
   }
 }
 
+@Immutable
 @Serializable
 data object CircleShape : Shape {
   override fun toComposeUi(): ComposeShape = ComposeCircleShape
 }
 
+@Immutable
 @Serializable
 data class RoundedCornerShape(
   val topStart: CornerSize,
@@ -60,6 +65,7 @@ fun RoundedCornerShape(
 fun RoundedCornerShape(pixels: Float) = RoundedCornerShape(CornerSize(pixels))
 fun RoundedCornerShape(percentage: Int) = RoundedCornerShape(CornerSize(percentage))
 
+@Immutable
 @Serializable
 data class CornerSize(
   val value: Float,

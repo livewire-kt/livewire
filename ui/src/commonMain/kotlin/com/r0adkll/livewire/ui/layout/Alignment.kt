@@ -1,27 +1,76 @@
 package com.r0adkll.livewire.ui.layout
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 
+@Immutable
 @Serializable
 sealed interface Alignment {
-  @Serializable sealed interface Horizontal : Alignment
-  @Serializable sealed interface Vertical : Alignment
+  @Immutable
+  @Serializable
+  sealed interface Horizontal : Alignment
 
-  @Serializable data object TopStart: Alignment
-  @Serializable data object TopCenter: Alignment
-  @Serializable data object TopEnd: Alignment
-  @Serializable data object CenterStart: Alignment
-  @Serializable data object Center: Alignment
-  @Serializable data object CenterEnd: Alignment
-  @Serializable data object BottomStart: Alignment
-  @Serializable data object BottomCenter: Alignment
-  @Serializable data object BottomEnd: Alignment
+  @Immutable
+  @Serializable
+  sealed interface Vertical : Alignment
 
-  @Serializable data object Top: Vertical
-  @Serializable data object CenterVertically: Vertical
-  @Serializable data object Bottom: Vertical
+  @Immutable
+  @Serializable
+  data object TopStart : Alignment
 
-  @Serializable data object Start: Horizontal
-  @Serializable data object CenterHorizontally: Horizontal
-  @Serializable data object End: Horizontal
+  @Immutable
+  @Serializable
+  data object TopCenter : Alignment
+
+  @Immutable
+  @Serializable
+  data object TopEnd : Alignment
+
+  @Immutable
+  @Serializable
+  data object CenterStart : Alignment
+
+  @Immutable
+  @Serializable
+  data object Center : Alignment
+
+  @Immutable
+  @Serializable
+  data object CenterEnd : Alignment
+
+  @Immutable
+  @Serializable
+  data object BottomStart : Alignment
+
+  @Immutable
+  @Serializable
+  data object BottomCenter : Alignment
+
+  @Immutable
+  @Serializable
+  data object BottomEnd : Alignment
+
+  @Immutable
+  @Serializable
+  data object Top : Vertical
+
+  @Immutable
+  @Serializable
+  data object CenterVertically : Vertical
+
+  @Immutable
+  @Serializable
+  data object Bottom : Vertical
+
+  @Immutable
+  @Serializable
+  data object Start : Horizontal
+
+  @Immutable
+  @Serializable
+  data object CenterHorizontally : Horizontal
+
+  @Immutable
+  @Serializable
+  data object End : Horizontal
 }
