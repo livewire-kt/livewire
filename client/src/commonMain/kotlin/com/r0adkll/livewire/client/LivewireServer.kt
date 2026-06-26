@@ -144,9 +144,7 @@ class LivewireServer(
   }
 
   suspend fun sendLayoutNode(node: LayoutNode) {
-    val (snapshot, duration) = measureTimedValue { node.deepCopy() }
-    logDebug("Livewire", "LayoutNode DeepCopy took $duration")
-    activeSession?.send(codec.encodeLayout(snapshot))
+    activeSession?.send(codec.encodeLayout(node))
   }
 
   fun stop() {

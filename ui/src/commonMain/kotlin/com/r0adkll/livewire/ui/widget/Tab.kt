@@ -8,9 +8,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.IntValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
-import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.serialization.Serializable
 
 @LivewireComposable
@@ -44,12 +42,10 @@ class TabRowNode(
   var style: TabStyle = TabStyle.Primary,
 ) : LayoutNode() {
 
-  override fun shallowCopy(): TabRowNode = TabRowNode(selectedTabIndex, onTabSelected, style)
-
   companion object {
-    val SetSelectedTabIndex: TabRowNode.(Int) -> Unit = applier { selectedTabIndex = it }
-    val SetOnTabSelected: TabRowNode.(IntValueChangeAction) -> Unit = applier { onTabSelected = it }
-    val SetStyle: TabRowNode.(TabStyle) -> Unit = applier { style = it }
+    val SetSelectedTabIndex: TabRowNode.(Int) -> Unit = { selectedTabIndex = it }
+    val SetOnTabSelected: TabRowNode.(IntValueChangeAction) -> Unit = { onTabSelected = it }
+    val SetStyle: TabRowNode.(TabStyle) -> Unit = { style = it }
   }
 }
 
@@ -82,12 +78,10 @@ class TabNode(
   var enabled: Boolean = true,
 ) : LayoutNode() {
 
-  override fun shallowCopy(): TabNode = TabNode(text, iconData, enabled)
-
   companion object {
-    val SetText: TabNode.(String?) -> Unit = applier { text = it }
-    val SetIconData: TabNode.(String?) -> Unit = applier { iconData = it }
-    val SetEnabled: TabNode.(Boolean) -> Unit = applier { enabled = it }
+    val SetText: TabNode.(String?) -> Unit = { text = it }
+    val SetIconData: TabNode.(String?) -> Unit = { iconData = it }
+    val SetEnabled: TabNode.(Boolean) -> Unit = { enabled = it }
   }
 }
 

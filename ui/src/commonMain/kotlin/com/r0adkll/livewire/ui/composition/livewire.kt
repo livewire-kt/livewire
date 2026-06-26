@@ -107,13 +107,8 @@ internal fun CoroutineScope.launchLivewire(
   }
   val finalContext = coroutineContext + context + clockContext
 
-  var dataInvalidation by mutableStateOf(Unit, neverEqualPolicy())
-  val rootNode = RootNode().apply {
-    invalidateListener = {
-      dataInvalidation = Unit
-    }
-  }
-  val livewireApplier = LivewireApplier(rootNode)
+  val rootNode = RootNode()
+  val livewireApplier = LivewireApplier(rootNode, onApplied = emitter)
 
   val recomposer = Recomposer(finalContext)
   val composition = Composition(livewireApplier, recomposer)
@@ -144,10 +139,5 @@ internal fun CoroutineScope.launchLivewire(
     }
   }
 
-  composition.setContent {
-    body()
-
-    dataInvalidation
-    emitter(rootNode)
-  }
+  composition.setContent(body)
 }

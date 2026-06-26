@@ -48,9 +48,7 @@ class BoxNode(
   var contentAlignment: Alignment = Alignment.TopStart,
 ) : LayoutNode() {
 
-  override fun shallowCopy(): BoxNode = BoxNode(contentAlignment)
-
   companion object {
-    val SetContentAlignment: BoxNode.(Alignment) -> Unit = applier { contentAlignment = it }
+    val SetContentAlignment: BoxNode.(Alignment) -> Unit = { contentAlignment = it }
   }
 }

@@ -16,7 +16,6 @@ import com.r0adkll.livewire.ui.graphics.Shape
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RowScope
 import com.r0adkll.livewire.ui.layout.RowScopeInstance
-import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -60,15 +59,13 @@ class ToggleButtonNode(
   var shapes: ToggleButtonShapes = ToggleButtonShapes(),
 ) : LayoutNode() {
 
-  override fun shallowCopy(): ToggleButtonNode = ToggleButtonNode(checked, onCheckedChange, enabled, size, style, shapes)
-
   companion object {
-    val SetChecked: ToggleButtonNode.(Boolean) -> Unit = applier { checked = it }
-    val SetOnCheckedChange: ToggleButtonNode.(CheckedChangeAction) -> Unit = applier { onCheckedChange = it }
-    val SetEnabled: ToggleButtonNode.(Boolean) -> Unit = applier { enabled = it }
-    val SetSize: ToggleButtonNode.(ButtonSize) -> Unit = applier { size = it }
-    val SetStyle: ToggleButtonNode.(ToggleButtonStyle) -> Unit = applier { style = it }
-    val SetShapes: ToggleButtonNode.(ToggleButtonShapes) -> Unit = applier { shapes = it }
+    val SetChecked: ToggleButtonNode.(Boolean) -> Unit = { checked = it }
+    val SetOnCheckedChange: ToggleButtonNode.(CheckedChangeAction) -> Unit = { onCheckedChange = it }
+    val SetEnabled: ToggleButtonNode.(Boolean) -> Unit = { enabled = it }
+    val SetSize: ToggleButtonNode.(ButtonSize) -> Unit = { size = it }
+    val SetStyle: ToggleButtonNode.(ToggleButtonStyle) -> Unit = { style = it }
+    val SetShapes: ToggleButtonNode.(ToggleButtonShapes) -> Unit = { shapes = it }
   }
 }
 

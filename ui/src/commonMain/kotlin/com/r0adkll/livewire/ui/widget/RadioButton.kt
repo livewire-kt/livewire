@@ -8,7 +8,6 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ClickAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -41,11 +40,9 @@ class RadioButtonNode(
   var enabled: Boolean = true,
 ) : LayoutNode() {
 
-  override fun shallowCopy(): RadioButtonNode = RadioButtonNode(selected, onClick, enabled)
-
   companion object {
-    val SetSelected: RadioButtonNode.(Boolean) -> Unit = applier { selected = it }
-    val SetOnClick: RadioButtonNode.(ClickAction) -> Unit = applier { onClick = it }
-    val SetEnabled: RadioButtonNode.(Boolean) -> Unit = applier { enabled = it }
+    val SetSelected: RadioButtonNode.(Boolean) -> Unit = { selected = it }
+    val SetOnClick: RadioButtonNode.(ClickAction) -> Unit = { onClick = it }
+    val SetEnabled: RadioButtonNode.(Boolean) -> Unit = { enabled = it }
   }
 }

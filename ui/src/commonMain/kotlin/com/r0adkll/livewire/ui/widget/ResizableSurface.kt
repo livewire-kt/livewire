@@ -1,6 +1,5 @@
 package com.r0adkll.livewire.ui.widget
 
-import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
@@ -14,7 +13,6 @@ import com.r0adkll.livewire.ui.graphics.ColorSerializer
 import com.r0adkll.livewire.ui.graphics.RectangleShape
 import com.r0adkll.livewire.ui.graphics.Shape
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.unit.DpSerializer
 import kotlinx.serialization.Serializable
@@ -71,20 +69,16 @@ class ResizableSurfaceNode(
   @Serializable(with = DpSerializer::class) var shadowElevation: Dp = 0.dp,
 ) : LayoutNode() {
 
-  override fun shallowCopy(): ResizableSurfaceNode = ResizableSurfaceNode(
-    anchor, initialSize, minSize, maxSize, shape, color, contentColor, tonalElevation, shadowElevation,
-  )
-
   companion object {
-    val SetAnchor: ResizableSurfaceNode.(ResizeAnchor) -> Unit = applier { anchor = it }
-    val SetInitialSize: ResizableSurfaceNode.(Dp) -> Unit = applier { initialSize = it }
-    val SetMinSize: ResizableSurfaceNode.(Dp) -> Unit = applier { minSize = it }
-    val SetMaxSize: ResizableSurfaceNode.(Dp) -> Unit = applier { maxSize = it }
-    val SetShape: ResizableSurfaceNode.(Shape) -> Unit = applier { shape = it }
-    val SetColor: ResizableSurfaceNode.(Color?) -> Unit = applier { color = it }
-    val SetContentColor: ResizableSurfaceNode.(Color?) -> Unit = applier { contentColor = it }
-    val SetTonalElevation: ResizableSurfaceNode.(Dp) -> Unit = applier { tonalElevation = it }
-    val SetShadowElevation: ResizableSurfaceNode.(Dp) -> Unit = applier { shadowElevation = it }
+    val SetAnchor: ResizableSurfaceNode.(ResizeAnchor) -> Unit = { anchor = it }
+    val SetInitialSize: ResizableSurfaceNode.(Dp) -> Unit = { initialSize = it }
+    val SetMinSize: ResizableSurfaceNode.(Dp) -> Unit = { minSize = it }
+    val SetMaxSize: ResizableSurfaceNode.(Dp) -> Unit = { maxSize = it }
+    val SetShape: ResizableSurfaceNode.(Shape) -> Unit = { shape = it }
+    val SetColor: ResizableSurfaceNode.(Color?) -> Unit = { color = it }
+    val SetContentColor: ResizableSurfaceNode.(Color?) -> Unit = { contentColor = it }
+    val SetTonalElevation: ResizableSurfaceNode.(Dp) -> Unit = { tonalElevation = it }
+    val SetShadowElevation: ResizableSurfaceNode.(Dp) -> Unit = { shadowElevation = it }
   }
 }
 

@@ -5,6 +5,7 @@ import com.r0adkll.livewire.ui.layout.LayoutNode
 
 class LivewireApplier(
   root: LayoutNode,
+  private val onApplied: (LayoutNode) -> Unit,
 ) : AbstractApplier<LayoutNode>(root) {
 
   override fun insertTopDown(index: Int, instance: LayoutNode) {
@@ -25,5 +26,9 @@ class LivewireApplier(
 
   override fun onClear() {
     root.removeAll()
+  }
+
+  override fun onEndChanges() {
+    onApplied(root)
   }
 }

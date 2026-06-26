@@ -10,7 +10,6 @@ import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RowScope
 import com.r0adkll.livewire.ui.layout.RowScopeInstance
-import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -48,13 +47,11 @@ class FloatingActionButtonNode(
   var expanded: Boolean = true,
 ) : LayoutNode() {
 
-  override fun shallowCopy(): FloatingActionButtonNode = FloatingActionButtonNode(action, size, style, expanded)
-
   companion object {
-    val SetAction: FloatingActionButtonNode.(ClickAction) -> Unit = applier { action = it }
-    val SetSize: FloatingActionButtonNode.(FabSize) -> Unit = applier { size = it }
-    val SetStyle: FloatingActionButtonNode.(FabStyle) -> Unit = applier { style = it }
-    val SetExpanded: FloatingActionButtonNode.(Boolean) -> Unit = applier { expanded = it }
+    val SetAction: FloatingActionButtonNode.(ClickAction) -> Unit = { action = it }
+    val SetSize: FloatingActionButtonNode.(FabSize) -> Unit = { size = it }
+    val SetStyle: FloatingActionButtonNode.(FabStyle) -> Unit = { style = it }
+    val SetExpanded: FloatingActionButtonNode.(Boolean) -> Unit = { expanded = it }
   }
 }
 

@@ -1,6 +1,5 @@
 package com.r0adkll.livewire.ui.widget
 
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
@@ -10,7 +9,6 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.graphics.ColorSerializer
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -41,10 +39,8 @@ class IconNode(
   @Serializable(with = ColorSerializer::class)
   var tint: Color = Color.Unspecified
 
-  override fun shallowCopy(): IconNode = IconNode(svgData).also { it.tint = tint }
-
   companion object {
     val SetSvgData: IconNode.(String) -> Unit = { svgData = it }
-    val SetTint: IconNode.(Color) -> Unit = applier { tint = it }
+    val SetTint: IconNode.(Color) -> Unit = { tint = it }
   }
 }

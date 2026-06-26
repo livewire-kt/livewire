@@ -9,7 +9,6 @@ import androidx.compose.ui.unit.dp
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.unit.DpSerializer
 import kotlinx.serialization.Serializable
@@ -55,11 +54,9 @@ class DividerNode(
   @Serializable(with = DpSerializer::class) var thickness: Dp = 1.dp,
 ) : LayoutNode() {
 
-  override fun shallowCopy(): DividerNode = DividerNode(style, thickness)
-
   companion object {
-    val SetStyle: DividerNode.(DividerStyle) -> Unit = applier { style = it }
-    val SetThickness: DividerNode.(Dp) -> Unit = applier { thickness = it }
+    val SetStyle: DividerNode.(DividerStyle) -> Unit = { style = it }
+    val SetThickness: DividerNode.(Dp) -> Unit = { thickness = it }
   }
 }
 

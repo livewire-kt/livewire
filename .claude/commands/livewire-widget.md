@@ -82,8 +82,6 @@ class TextNode(
   var fontWeight: Int? = null,
 ) : LayoutNode() {
 
-  override fun shallowCopy(): TextNode = TextNode(text, style, fontWeight)
-
   companion object {
     val SetText: TextNode.(String) -> Unit = applier { text = it }
     val SetStyle: TextNode.(TextStyle?) -> Unit = applier { style = it }
@@ -142,8 +140,6 @@ class CheckboxNode(
   var onCheckedChange: CheckedChangeAction,
   var enabled: Boolean,
 ) : LayoutNode() {
-
-  override fun shallowCopy(): CheckboxNode = CheckboxNode(checked, onCheckedChange, enabled)
 
   companion object {
     val SetChecked: CheckboxNode.(Boolean) -> Unit = applier { checked = it }

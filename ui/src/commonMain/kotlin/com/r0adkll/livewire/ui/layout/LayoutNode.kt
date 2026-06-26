@@ -15,8 +15,8 @@ abstract class LayoutNode(
 ) {
 
   companion object {
-    val SetModifier: LayoutNode.(LivewireModifier) -> Unit = applier { modifier = it }
-    val SetCompositeKeyHash: LayoutNode.(Int) -> Unit = applier { compositeKeyHash = it}
+    val SetModifier: LayoutNode.(LivewireModifier) -> Unit = { modifier = it }
+    val SetCompositeKeyHash: LayoutNode.(Int) -> Unit = { compositeKeyHash = it}
 
   }
 
@@ -24,41 +24,8 @@ abstract class LayoutNode(
 
   var compositeKeyHash: Int = 0
 
-  /**
-   * Callback invoked whenever the node in the vector tree is modified in a way that would change
-   * the output of the Vector
-   */
-  @Transient
-  internal open var invalidateListener: ((LayoutNode) -> Unit)? = null
-
-  /**
-   * Create a shallow copy of this node with the same property values but no children.
-   * Used by [deepCopy] to perform fast structural copies.
-   */
-  abstract fun shallowCopy(): LayoutNode
-
-  /**
-   * Create a deep copy of this node and all its children.
-   * This is a fast structural copy that avoids serialization overhead.
-   */
-  fun deepCopy(): LayoutNode {
-    val copy = shallowCopy()
-    copy.modifier = modifier
-    copy.compositeKeyHash = compositeKeyHash
-    for (child in children) {
-      copy.children.add(child.deepCopy())
-    }
-    return copy
-  }
-
-  fun invalidate() {
-    invalidateListener?.invoke(this)
-  }
-
   fun insertAt(index: Int, instance: LayoutNode) {
-    instance.invalidateListener = { invalidate() }
     children.add(index, instance)
-    invalidate()
   }
 
   fun move(from: Int, to: Int, count: Int) {
@@ -76,7 +43,6 @@ abstract class LayoutNode(
 
       children.add(toIndex, child)
     }
-    invalidate()
   }
 
   fun removeAt(index: Int, count: Int) {
@@ -85,30 +51,18 @@ abstract class LayoutNode(
       // visible to parents traversing downwards, such as when clearing focus.
 //      onChildRemoved(_foldedChildren[i])
       val child = children.removeAt(i)
-      child.invalidateListener = null
       if (DebugChanges) {
         println("$child removed from $this at index $i")
       }
     }
-    invalidate()
   }
 
   fun removeAll() {
     children.clear()
-    invalidate()
   }
 
-}
-
-fun <T : LayoutNode, C> applier(block: T.(C) -> Unit): T.(C) -> Unit {
-  return {
-    block(it)
-    invalidate()
-  }
 }
 
 @LivewireSerializer
 @Serializable
-class RootNode : LayoutNode() {
-  override fun shallowCopy(): RootNode = RootNode()
-}
+class RootNode : LayoutNode()
