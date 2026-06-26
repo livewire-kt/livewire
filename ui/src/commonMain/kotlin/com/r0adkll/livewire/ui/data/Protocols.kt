@@ -12,7 +12,7 @@ import kotlinx.serialization.json.JsonElement
 @Serializable
 sealed interface UiProtocol {
   companion object : PayloadDecoder<UiProtocol> {
-    override suspend fun Json.decodePayload(element: JsonElement): UiProtocol = decodeFromJsonElement(serializer(), element)
+    override fun Json.decodePayload(element: JsonElement): UiProtocol = decodeFromJsonElement(serializer(), element)
   }
 }
 

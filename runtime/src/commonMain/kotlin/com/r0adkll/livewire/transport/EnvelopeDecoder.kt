@@ -12,7 +12,7 @@ class EnvelopeDecoder(
 
   private val decoders: List<PayloadDecoder<*>> = payloadDecoders.toList()
 
-  suspend fun decode(message: String): Any? {
+  fun decode(message: String): Any? {
     val element = try {
       EnvelopeJson.parseToJsonElement(message)
     } catch (_: Exception) {

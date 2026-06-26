@@ -6,7 +6,7 @@ import kotlinx.serialization.modules.SerializersModule
 
 interface PayloadDecoder<T : Any> {
   val serializersModule: SerializersModule? get() = null
-  suspend fun Json.decodePayload(element: JsonElement): T?
+  fun Json.decodePayload(element: JsonElement): T?
 }
 
 val DefaultDecoders: Set<PayloadDecoder<*>>

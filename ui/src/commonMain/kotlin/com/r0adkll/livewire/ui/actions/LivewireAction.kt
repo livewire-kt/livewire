@@ -18,7 +18,7 @@ import kotlinx.serialization.json.JsonElement
 sealed interface LivewireAction {
 
   companion object : PayloadDecoder<LivewireAction> {
-    override suspend fun Json.decodePayload(element: JsonElement): LivewireAction = decodeFromJsonElement(serializer(), element)
+    override fun Json.decodePayload(element: JsonElement): LivewireAction = decodeFromJsonElement(serializer(), element)
   }
 }
 
