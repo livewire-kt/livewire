@@ -21,29 +21,36 @@ class LivewireWebSocketCodec(
 
   var secureSession: SecureSession? = null
 
-  suspend fun decode(frame: Frame): LivewireIncoming? {
-    val plaintextFrame = if (secureSession != null && frame is Frame.Binary) {
-      val (tag, plaintext) = secureSession!!.decrypt(frame.readBytes())
-      when (tag) {
-        SecureSession.TagText -> Frame.Text(true, plaintext)
-        SecureSession.TagBinary -> Frame.Binary(true, plaintext)
-        else -> frame
+  fun decryptFrame(frame: Frame): Frame? {
+    if (secureSession == null) {
+      return when (frame) {
+        is Frame.Text, is Frame.Binary -> frame
+        else -> null
       }
-    } else {
-      frame
     }
 
+    if (frame !is Frame.Binary) return null
+    val (tag, plaintext) = secureSession!!.decrypt(frame.readBytes())
+    return when (tag) {
+      SecureSession.TagText -> Frame.Text(true, plaintext)
+      SecureSession.TagBinary -> Frame.Binary(true, plaintext)
+      else -> null
+    }
+  }
+
+  fun decodeTextPayload(frame: Frame.Text): LivewireIncoming.Payload? {
+    return envelopeDecoder.decode(frame.readText())?.let { LivewireIncoming.Payload(it) }
+  }
+
+  fun decodeLayoutBytes(bytes: ByteArray): LivewireIncoming.Layout {
+    return LivewireIncoming.Layout(serializationStrategy.decodeFromByteArray(bytes))
+  }
+
+  fun decode(frame: Frame): LivewireIncoming? {
+    val plaintextFrame = decryptFrame(frame) ?: return null
     return when (plaintextFrame) {
-      is Frame.Text -> {
-        envelopeDecoder.decode(plaintextFrame.readText())?.let { LivewireIncoming.Payload(it) }
-      }
-
-      is Frame.Binary -> {
-        val bytes = plaintextFrame.readBytes()
-        val layoutNode = serializationStrategy.decodeFromByteArray(bytes)
-        LivewireIncoming.Layout(layoutNode)
-      }
-
+      is Frame.Text -> decodeTextPayload(plaintextFrame)
+      is Frame.Binary -> decodeLayoutBytes(plaintextFrame.readBytes())
       else -> null
     }
   }

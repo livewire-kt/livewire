@@ -13,7 +13,6 @@ import com.r0adkll.livewire.runtime.discoverymanager.IosDevice
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RootNode
-import com.r0adkll.livewire.ui.transport.LivewireIncoming
 import com.r0adkll.livewire.ui.transport.LivewireWebSocketCodec
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCallPipeline
@@ -35,6 +34,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -192,20 +192,37 @@ class LivewireHostConnection(
 
             connectionState.value = Connected
             logDebug("client connected (session=${this.hashCode()})")
+
+            val pendingLayout = Channel<ByteArray>(Channel.CONFLATED)
             try {
+              launch(Dispatchers.Default) {
+                for (bytes in pendingLayout) {
+                  try {
+                    incomingLayoutNodes.value = codec.decodeLayoutBytes(bytes).node
+                  } catch (e: Exception) {
+                    logDebug("failed to decode layout: ${e.message}")
+                  }
+                }
+              }
+
               for (frame in incoming) {
                 try {
-                  when (val incomingMessage = codec.decode(frame)) {
-                    is LivewireIncoming.Payload -> incomingMessages.tryEmit(incomingMessage.payload)
-                    is LivewireIncoming.Layout -> incomingLayoutNodes.emit(incomingMessage.node)
-                    null -> Unit
+                  val plaintextFrame = codec.decryptFrame(frame) ?: continue
+                  when (plaintextFrame) {
+                    is Frame.Text -> {
+                      val message = codec.decodeTextPayload(plaintextFrame)
+                      if (message != null) incomingMessages.emit(message.payload)
+                    }
+                    is Frame.Binary -> pendingLayout.trySend(plaintextFrame.readBytes())
+                    else -> Unit
                   }
                 } catch (e: Exception) {
-                  logDebug("failed to decode frame: ${e.message}")
+                  logDebug("failed to process frame: ${e.message}")
                   e.printStackTrace()
                 }
               }
             } finally {
+              pendingLayout.close()
               codec.secureSession = null
               if (session == this@webSocket) {
                 session = null
