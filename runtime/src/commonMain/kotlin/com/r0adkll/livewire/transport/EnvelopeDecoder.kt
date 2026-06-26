@@ -4,19 +4,24 @@ import com.r0adkll.livewire.protocol.EnvelopeJson
 import kotlinx.serialization.json.Json
 
 class EnvelopeDecoder(
-  private val payloadDecoders: Set<PayloadDecoder<*>>,
+  payloadDecoders: Set<PayloadDecoder<*>>,
 ) {
+  private val decoderJsons: Map<PayloadDecoder<*>, Json> = payloadDecoders.associateWith { decoder ->
+    decoder.serializersModule?.let { Json(EnvelopeJson) { serializersModule = it } } ?: EnvelopeJson
+  }
+
+  private val decoders: List<PayloadDecoder<*>> = payloadDecoders.toList()
 
   suspend fun decode(message: String): Any? {
-    return payloadDecoders.firstNotNullOfOrNull { decoder ->
-      val json = decoder.serializersModule?.let {
-        Json(EnvelopeJson) {
-          serializersModule = it
-        }
-      } ?: EnvelopeJson
+    val element = try {
+      EnvelopeJson.parseToJsonElement(message)
+    } catch (_: Exception) {
+      return null
+    }
 
+    return decoders.firstNotNullOfOrNull { decoder ->
       try {
-        with(decoder) { json.decodePayload(message) }
+        with(decoder) { decoderJsons.getValue(decoder).decodePayload(element) }
       } catch (_: Exception) {
         null
       }

@@ -7,14 +7,12 @@ import com.r0adkll.livewire.ui.actions.LivewireAction
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 sealed interface UiProtocol {
   companion object : PayloadDecoder<UiProtocol> {
-    override suspend fun Json.decodePayload(rawPayload: String): UiProtocol {
-      return decodeFromString(serializer(), rawPayload)
-    }
-
+    override suspend fun Json.decodePayload(element: JsonElement): UiProtocol = decodeFromJsonElement(serializer(), element)
   }
 }
 

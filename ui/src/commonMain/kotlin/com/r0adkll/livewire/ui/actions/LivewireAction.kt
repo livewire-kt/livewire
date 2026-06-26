@@ -4,7 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
-import androidx.compose.ui.Modifier
 import com.r0adkll.livewire.transport.PayloadDecoder
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -12,15 +11,14 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
 @Immutable
 @Serializable
 sealed interface LivewireAction {
 
   companion object : PayloadDecoder<LivewireAction> {
-    override suspend fun Json.decodePayload(rawPayload: String): LivewireAction {
-      return decodeFromString(serializer(), rawPayload)
-    }
+    override suspend fun Json.decodePayload(element: JsonElement): LivewireAction = decodeFromJsonElement(serializer(), element)
   }
 }
 
