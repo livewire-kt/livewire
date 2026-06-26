@@ -2,11 +2,12 @@ package com.r0adkll.livewire.ui.composition
 
 import androidx.compose.runtime.BroadcastFrameClock
 import androidx.compose.runtime.MonotonicFrameClock
+import kotlin.concurrent.Volatile
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 
 /**
  * A [MonotonicFrameClock] that is either running, or not.
@@ -26,6 +27,7 @@ internal class GatedFrameClock(
     }
   }
 
+  @Volatile
   var isRunning: Boolean = true
     set(value) {
       val started = value && !field
@@ -35,7 +37,9 @@ internal class GatedFrameClock(
       }
     }
 
+  @Volatile
   private var lastNanos = 0L
+  @Volatile
   private var lastOffset = 0
 
   private fun sendFrame() {
