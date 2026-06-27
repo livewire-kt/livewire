@@ -11,8 +11,11 @@ import com.r0adkll.livewire.runtime.discoverymanager.HostApp
 import com.r0adkll.livewire.runtime.discoverymanager.IosApp
 import com.r0adkll.livewire.runtime.discoverymanager.IosDevice
 import com.r0adkll.livewire.transport.PayloadDecoder
+import com.r0adkll.livewire.ui.data.RequestFullTree
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.LayoutNodePatch
 import com.r0adkll.livewire.ui.layout.RootNode
+import com.r0adkll.livewire.ui.transport.LivewireIncoming
 import com.r0adkll.livewire.ui.transport.LivewireWebSocketCodec
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.ApplicationCallPipeline
@@ -33,6 +36,8 @@ import io.ktor.websocket.readBytes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import androidx.compose.runtime.snapshots.Snapshot
+import androidx.compose.runtime.toMutableStateList
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -70,6 +75,11 @@ class LivewireHostConnection(
 
   val incomingLayoutNodes: StateFlow<LayoutNode>
     field = MutableStateFlow<LayoutNode>(RootNode())
+
+  private val nodeMap = mutableMapOf<Long, LayoutNode>()
+  private val parentMap = mutableMapOf<Long, LayoutNode>()
+  private var currentRoot: LayoutNode = RootNode()
+  private var awaitingResync = false
 
   private var activeConnection: ActiveConnection? = null
   private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
@@ -193,12 +203,16 @@ class LivewireHostConnection(
             connectionState.value = Connected
             logDebug("client connected (session=${this.hashCode()})")
 
-            val pendingLayout = Channel<ByteArray>(Channel.CONFLATED)
+            val pendingLayout = Channel<ByteArray>(Channel.UNLIMITED)
             try {
               launch(Dispatchers.Default) {
                 for (bytes in pendingLayout) {
                   try {
-                    incomingLayoutNodes.value = codec.decodeLayoutBytes(bytes).node
+                    when (val incoming = codec.decodeLayoutBytes(bytes)) {
+                      is LivewireIncoming.Layout -> receiveFullTree(incoming.node)
+                      is LivewireIncoming.Patches -> if (!receivePatches(incoming.patches)) requestResync()
+                      else -> Unit
+                    }
                   } catch (e: Exception) {
                     logDebug("failed to decode layout: ${e.message}")
                   }
@@ -239,6 +253,84 @@ class LivewireHostConnection(
     }
   }
 
+  private fun receiveFullTree(root: LayoutNode) {
+    root.makeObservable()
+    currentRoot = root
+    rebuildNodeMaps(root)
+    awaitingResync = false
+    incomingLayoutNodes.value = root
+  }
+
+  private fun receivePatches(patches: List<LayoutNodePatch>): Boolean {
+    if (patches.isEmpty()) return true
+    var desynced = false
+    Snapshot.withMutableSnapshot {
+      patches.forEach { patch ->
+        if (!applyPatch(patch)) {
+          desynced = true
+          logDebug("couldn't apply patch - host is desynced: $patch")
+        }
+      }
+    }
+    return !desynced
+  }
+
+  private suspend fun requestResync() {
+    if (awaitingResync) return
+    awaitingResync = true
+    logDebug("requesting resync from client")
+    runCatching { send(RequestFullTree) }
+  }
+
+  private fun rebuildNodeMaps(root: LayoutNode) {
+    nodeMap.clear()
+    parentMap.clear()
+    nodeMap[root.nodeId] = root
+    root.children.forEach { it.registerAll(nodeMap, parentMap, root) }
+  }
+
+  private fun applyPatch(patch: LayoutNodePatch): Boolean {
+    when (patch) {
+      is LayoutNodePatch.InsertAt -> {
+        val parent = nodeMap[patch.parentNodeId] ?: return false
+        patch.node.makeObservable()
+        parent.insertAt(patch.index, patch.node)
+        patch.node.registerAll(nodeMap, parentMap, parent)
+      }
+      is LayoutNodePatch.RemoveAt -> {
+        val parent = nodeMap[patch.parentNodeId] ?: return false
+        for (i in patch.index until patch.index + patch.count) {
+          parent.children[i].deregisterAll(nodeMap, parentMap)
+        }
+        parent.removeAt(patch.index, patch.count)
+      }
+      is LayoutNodePatch.Move -> {
+        val parent = nodeMap[patch.parentNodeId] ?: return false
+        parent.move(patch.from, patch.to, patch.count)
+      }
+      is LayoutNodePatch.Clear -> {
+        val node = nodeMap[patch.nodeId] ?: return false
+        node.children.forEach { it.deregisterAll(nodeMap, parentMap) }
+        node.removeAll()
+      }
+      is LayoutNodePatch.UpdateNode -> {
+        val existingNode = nodeMap[patch.node.nodeId] ?: return false
+        val parent = parentMap[patch.node.nodeId] ?: return false
+        val index = parent.children.indexOf(existingNode)
+        if (index == -1) return false
+
+        patch.node.makeObservable()
+        patch.node.children.addAll(existingNode.children)
+        parent.children[index] = patch.node
+        nodeMap[patch.node.nodeId] = patch.node
+        for (child in patch.node.children) {
+          parentMap[child.nodeId] = patch.node
+        }
+      }
+    }
+    return true
+  }
+
   private fun stopServer() {
     server?.stop(1000, 2000)
     server = null
@@ -258,7 +350,11 @@ class LivewireHostConnection(
     activeConnection = null
 
     connectionState.value = Disconnected
-    incomingLayoutNodes.value = RootNode()
+    val emptyRoot = RootNode()
+    currentRoot = emptyRoot
+    nodeMap.clear()
+    parentMap.clear()
+    incomingLayoutNodes.value = emptyRoot
   }
 
   suspend fun close() {
@@ -271,6 +367,25 @@ class LivewireHostConnection(
   private fun logDebug(message: String) {
     logDebug("host-connection", message)
   }
+}
+
+private fun LayoutNode.registerAll(
+  nodeMap: MutableMap<Long, LayoutNode>,
+  parentMap: MutableMap<Long, LayoutNode>,
+  parent: LayoutNode,
+) {
+  nodeMap[nodeId] = this
+  parentMap[nodeId] = parent
+  children.forEach { it.registerAll(nodeMap, parentMap, this) }
+}
+
+private fun LayoutNode.deregisterAll(
+  nodeMap: MutableMap<Long, LayoutNode>,
+  parentMap: MutableMap<Long, LayoutNode>,
+) {
+  nodeMap.remove(nodeId)
+  parentMap.remove(nodeId)
+  children.forEach { it.deregisterAll(nodeMap, parentMap) }
 }
 
 sealed interface ActiveConnection {

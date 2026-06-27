@@ -1,7 +1,8 @@
 package com.r0adkll.livewire.ui.data
 
-import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.LayoutNodePatch
+import com.r0adkll.livewire.ui.layout.LayoutNodePatchList
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromByteArray
@@ -24,6 +25,8 @@ enum class LayoutNodeSerialization {
 sealed interface LayoutNodeSerializationStrategy {
   fun encodeToByteArray(layoutNode: LayoutNode): ByteArray
   fun decodeFromByteArray(bytes: ByteArray): LayoutNode
+  fun encodePatchList(patches: List<LayoutNodePatch>): ByteArray
+  fun decodePatchList(bytes: ByteArray): List<LayoutNodePatch>
 
   companion object {
     @OptIn(ExperimentalSerializationApi::class)
@@ -54,6 +57,14 @@ class JsonLayoutNodeSerializationStrategy(
 //    )
     return layoutNode
   }
+
+  override fun encodePatchList(patches: List<LayoutNodePatch>): ByteArray {
+    return json.encodeToString(LayoutNodePatchList(patches)).encodeToByteArray()
+  }
+
+  override fun decodePatchList(bytes: ByteArray): List<LayoutNodePatch> {
+    return json.decodeFromString<LayoutNodePatchList>(bytes.decodeToString()).patches
+  }
 }
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -67,5 +78,13 @@ class ProtobufLayoutNodeSerializationStrategy(
 
   override fun decodeFromByteArray(bytes: ByteArray): LayoutNode {
     return protoBuf.decodeFromByteArray(bytes)
+  }
+
+  override fun encodePatchList(patches: List<LayoutNodePatch>): ByteArray {
+    return protoBuf.encodeToByteArray(LayoutNodePatchList(patches))
+  }
+
+  override fun decodePatchList(bytes: ByteArray): List<LayoutNodePatch> {
+    return protoBuf.decodeFromByteArray<LayoutNodePatchList>(bytes).patches
   }
 }

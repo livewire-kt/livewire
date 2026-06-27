@@ -2,18 +2,15 @@ package com.r0adkll.livewire.ui.composition
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Composition
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Recomposer
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.neverEqualPolicy
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.ObserverHandle
 import androidx.compose.runtime.snapshots.Snapshot
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.SnapshotNotifier
 import app.cash.molecule.moleculeFlow
+import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.LayoutNodePatch
 import com.r0adkll.livewire.ui.layout.RootNode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart.UNDISPATCHED
@@ -28,16 +25,23 @@ import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
+sealed class LivewireOutput {
+  data class FullTree(val root: LayoutNode) : LivewireOutput()
+  data class Patches(val patches: List<LayoutNodePatch>) : LivewireOutput()
+}
+
 fun livewireFlow(
+  serializationStrategy: LayoutNodeSerializationStrategy,
   body: @Composable () -> Unit,
-): Flow<LayoutNode> = flow {
+): Flow<LivewireOutput> = flow {
   coroutineScope {
     val clock = GatedFrameClock(this, EmptyCoroutineContext)
-    val outputBuffer = Channel<LayoutNode>(1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val outputBuffer = Channel<LivewireOutput>(1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     launch(clock, start = UNDISPATCHED) {
       launchLivewire(
         mode = RecompositionMode.ContextClock,
+        strategy = serializationStrategy,
         emitter = {
           clock.isRunning = false
           outputBuffer.trySend(it).getOrThrow()
@@ -70,12 +74,15 @@ fun CoroutineScope.launchLivewire(
   launchLivewire(
     context = context,
     mode = mode,
+    strategy = null,
     emitter = { value ->
-      val outputFlow = flow
-      if (outputFlow != null) {
-        outputFlow.value = value
-      } else {
-        flow = MutableStateFlow(value)
+      if (value is LivewireOutput.FullTree) {
+        val outputFlow = flow
+        if (outputFlow != null) {
+          outputFlow.value = value.root
+        } else {
+          flow = MutableStateFlow(value.root)
+        }
       }
     },
     body = body,
@@ -96,7 +103,8 @@ fun CoroutineScope.launchLivewire(
  */
 internal fun CoroutineScope.launchLivewire(
   mode: RecompositionMode,
-  emitter: (root: LayoutNode) -> Unit,
+  emitter: (output: LivewireOutput) -> Unit,
+  strategy: LayoutNodeSerializationStrategy?,
   context: CoroutineContext = EmptyCoroutineContext,
   snapshotNotifier: SnapshotNotifier = SnapshotNotifier.WhileActive,
   body: @Composable () -> Unit,
@@ -108,7 +116,7 @@ internal fun CoroutineScope.launchLivewire(
   val finalContext = coroutineContext + context + clockContext
 
   val rootNode = RootNode()
-  val livewireApplier = LivewireApplier(rootNode, onApplied = emitter)
+  val livewireApplier = LivewireApplier(rootNode, onOutput = emitter, serializationStrategy = strategy)
 
   val recomposer = Recomposer(finalContext)
   val composition = Composition(livewireApplier, recomposer)

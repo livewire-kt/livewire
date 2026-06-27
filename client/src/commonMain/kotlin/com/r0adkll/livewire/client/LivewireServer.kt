@@ -5,6 +5,7 @@ import com.r0adkll.livewire.crypto.LivewireHandshake
 import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.logError
 import com.r0adkll.livewire.transport.PayloadDecoder
+import com.r0adkll.livewire.ui.composition.LivewireOutput
 import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.transport.LivewireIncoming
@@ -115,6 +116,7 @@ class LivewireServer(
               when (val incomingMessage = codec.decode(frame)) {
                 is LivewireIncoming.Payload -> incomingMessages.tryEmit(incomingMessage.payload)
                 is LivewireIncoming.Layout -> Unit
+                is LivewireIncoming.Patches -> Unit
                 null -> Unit
               }
             }
@@ -145,6 +147,13 @@ class LivewireServer(
 
   suspend fun sendLayoutNode(node: LayoutNode) {
     activeSession?.send(codec.encodeLayout(node))
+  }
+
+  suspend fun sendLayout(output: LivewireOutput) {
+    when (output) {
+      is LivewireOutput.FullTree -> activeSession?.send(codec.encodeLayout(output.root))
+      is LivewireOutput.Patches -> activeSession?.send(codec.encodePatches(output.patches))
+    }
   }
 
   fun stop() {

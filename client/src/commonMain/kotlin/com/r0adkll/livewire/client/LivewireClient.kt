@@ -27,6 +27,7 @@ import com.r0adkll.livewire.ui.data.LayoutNodeSerialization
 import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Json
 import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Protobuf
 import com.r0adkll.livewire.ui.data.PluginSelected
+import com.r0adkll.livewire.ui.data.RequestFullTree
 import com.r0adkll.livewire.ui.data.ProtobufLayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.data.UiDecoders
 import com.r0adkll.livewire.ui.data.UiProtocol
@@ -87,6 +88,7 @@ class LivewireClient private constructor(
       val actionController = rememberLivewireActionController()
 
       var isDarkMode by remember { mutableStateOf(false) }
+      var resyncToken by remember { mutableStateOf(0) }
 
       LaunchedEffect(Unit) {
         server.incomingMessages.collect { message ->
@@ -103,6 +105,10 @@ class LivewireClient private constructor(
               activePluginInfo = null
             }
 
+            is RequestFullTree -> {
+              resyncToken++
+            }
+
             is LivewireAction -> {
               actionController.dispatch(message)
             }
@@ -110,14 +116,14 @@ class LivewireClient private constructor(
         }
       }
 
-      LaunchedEffect(activePluginInfo, connectionState) {
+      LaunchedEffect(activePluginInfo, connectionState, resyncToken) {
         if (activePluginInfo != null && connectionState == ConnectionState.Connected) {
           val plugin = configuration.plugins.find { plugin ->
             plugin.info.pluginId == activePluginInfo?.pluginId
           }
 
           if (plugin != null) {
-            livewireFlow {
+            livewireFlow(server.codec.serializationStrategy) {
               DisposableEffect(Unit) {
                 logDebug("LivewireCompose", "Plugin Entered Composition: ${plugin.info.pluginId}")
                 onDispose {
@@ -135,8 +141,8 @@ class LivewireClient private constructor(
                   plugin.Content()
                 }
               }
-            }.collect { layoutNode ->
-              server.sendLayoutNode(layoutNode)
+            }.collect { output ->
+              server.sendLayout(output)
             }
           }
         } else if (activePluginInfo != null) {

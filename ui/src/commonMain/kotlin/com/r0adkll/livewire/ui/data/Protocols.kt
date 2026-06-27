@@ -58,6 +58,13 @@ data class PluginSelected(
 @Serializable
 data object ClearPlugin : UiProtocol
 
+/**
+ * Sent by the host when it detects that its diff'd layout tree has desynced from the client. The client will respond by restarting
+ * the active plugin's composition and emitting a fresh full tree.
+ */
+@Serializable
+data object RequestFullTree : UiProtocol
+
 
 val UiDecoders: List<PayloadDecoder<*>> get() = listOf(
   UiProtocol,

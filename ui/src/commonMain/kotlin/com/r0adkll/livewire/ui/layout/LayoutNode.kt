@@ -1,24 +1,23 @@
 package com.r0adkll.livewire.ui.layout
 
+import androidx.compose.runtime.toMutableStateList
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.Transient
-
-private const val DebugChanges = false
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 abstract class LayoutNode(
-  val children: MutableList<LayoutNode> = mutableListOf(),
+  var children: MutableList<LayoutNode> = mutableListOf(),
 ) {
 
   companion object {
     val SetModifier: LayoutNode.(LivewireModifier) -> Unit = { modifier = it }
-    val SetCompositeKeyHash: LayoutNode.(Int) -> Unit = { compositeKeyHash = it}
-
+    val SetCompositeKeyHash: LayoutNode.(Int) -> Unit = { compositeKeyHash = it }
   }
+
+  val nodeId: Long = nextNodeId()
 
   var modifier: LivewireModifier = LivewireModifier
 
@@ -34,7 +33,7 @@ abstract class LayoutNode(
     for (i in 0 until count) {
       // if "from" is after "to," the from index moves because we're inserting before it
       val fromIndex = if (from > to) from + i else from
-      val toIndex = if (from > to) to + i else to + count - 2
+      val toIndex = if (from > to) to + i else to - 1
       val child = children.removeAt(fromIndex)
 
       if (DebugChanges) {
@@ -61,8 +60,18 @@ abstract class LayoutNode(
     children.clear()
   }
 
+  // TODO: not sure where to put this - really only needed in hosts plus tests
+  fun makeObservable() {
+    children = children.toMutableStateList()
+    children.forEach { it.makeObservable() }
+  }
 }
 
 @LivewireSerializer
 @Serializable
 class RootNode : LayoutNode()
+
+private const val DebugChanges = false
+
+private var nodeIdCounter = 0L
+internal fun nextNodeId() = ++nodeIdCounter

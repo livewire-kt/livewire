@@ -1,7 +1,5 @@
 package com.r0adkll.livewire.ui.transport
 
-import com.r0adkll.livewire.logDebug
-import com.r0adkll.livewire.logError
 import com.r0adkll.livewire.crypto.SecureSession
 import com.r0adkll.livewire.protocol.EnvelopeJson
 import com.r0adkll.livewire.transport.EnvelopeDecoder
@@ -10,7 +8,10 @@ import com.r0adkll.livewire.ui.actions.LivewireAction
 import com.r0adkll.livewire.ui.data.LayoutNodeSerializationStrategy
 import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.layout.LayoutNode
-import io.ktor.websocket.*
+import com.r0adkll.livewire.ui.layout.LayoutNodePatch
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readBytes
+import io.ktor.websocket.readText
 
 class LivewireWebSocketCodec(
   decoders: Collection<PayloadDecoder<*>>,
@@ -42,8 +43,13 @@ class LivewireWebSocketCodec(
     return envelopeDecoder.decode(frame.readText())?.let { LivewireIncoming.Payload(it) }
   }
 
-  fun decodeLayoutBytes(bytes: ByteArray): LivewireIncoming.Layout {
-    return LivewireIncoming.Layout(serializationStrategy.decodeFromByteArray(bytes))
+  fun decodeLayoutBytes(bytes: ByteArray): LivewireIncoming? {
+    if (bytes.isEmpty()) return null
+    return when (bytes[0]) {
+      FrameTypeFullTree -> LivewireIncoming.Layout(serializationStrategy.decodeFromByteArray(bytes.copyOfRange(1, bytes.size)))
+      FrameTypePatches -> LivewireIncoming.Patches(serializationStrategy.decodePatchList(bytes.copyOfRange(1, bytes.size)))
+      else -> null
+    }
   }
 
   fun decode(frame: Frame): LivewireIncoming? {
@@ -65,9 +71,23 @@ class LivewireWebSocketCodec(
   }
 
   fun encodeLayout(node: LayoutNode): Frame {
-    val nodeBinary = serializationStrategy.encodeToByteArray(node)
-    outgoingSizeReporter(nodeBinary.size.toLong())
-    return tryEncryptFrame(Frame.Binary(true, nodeBinary))
+    val nodeBytes = serializationStrategy.encodeToByteArray(node)
+    val nodeWithFrameType = ByteArray(nodeBytes.size + 1).also { buf ->
+      buf[0] = FrameTypeFullTree
+      nodeBytes.copyInto(buf, destinationOffset = 1)
+    }
+    outgoingSizeReporter(nodeWithFrameType.size.toLong())
+    return tryEncryptFrame(Frame.Binary(true, nodeWithFrameType))
+  }
+
+  fun encodePatches(patches: List<LayoutNodePatch>): Frame {
+    val patchBytes = serializationStrategy.encodePatchList(patches)
+    val patchesWithFrame = ByteArray(patchBytes.size + 1).also { buf ->
+      buf[0] = FrameTypePatches
+      patchBytes.copyInto(buf, destinationOffset = 1)
+    }
+    outgoingSizeReporter(patchesWithFrame.size.toLong())
+    return tryEncryptFrame(Frame.Binary(true, patchesWithFrame))
   }
 
   private fun tryEncryptFrame(frame: Frame): Frame {
@@ -85,4 +105,8 @@ class LivewireWebSocketCodec(
 sealed interface LivewireIncoming {
   data class Payload(val payload: Any) : LivewireIncoming
   data class Layout(val node: LayoutNode) : LivewireIncoming
+  data class Patches(val patches: List<LayoutNodePatch>) : LivewireIncoming
 }
+
+private const val FrameTypeFullTree: Byte = 0x00
+private const val FrameTypePatches: Byte = 0x01
