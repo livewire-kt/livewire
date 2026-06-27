@@ -1,21 +1,24 @@
 package com.r0adkll.livewire.plugin.network.data
 
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+@OptIn(ExperimentalAtomicApi::class)
 object NetworkEventCollector {
 
   private const val MAX_EVENTS = 500
 
-  private var idCounter = 0L
+  private val idCounter = AtomicLong(0L)
 
   private val _events = MutableStateFlow<List<NetworkEvent>>(emptyList())
   val events: StateFlow<List<NetworkEvent>> = _events.asStateFlow()
 
   fun recordRequest(request: NetworkRequest): String {
-    val id = "net-${idCounter++}"
+    val id = "net-${idCounter.fetchAndAdd(1)}"
     val event = NetworkEvent(
       id = id,
       request = request,
