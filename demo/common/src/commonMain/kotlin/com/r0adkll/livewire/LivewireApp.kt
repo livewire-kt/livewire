@@ -41,7 +41,6 @@ import com.r0adkll.livewire.client.ConnectionState
 import com.r0adkll.livewire.client.LivewireClient
 import com.r0adkll.livewire.overview.OverviewScreen
 import com.r0adkll.livewire.rickandmorty.CharactersScreen
-import com.r0adkll.livewire.ui.data.DarkModeChange
 import com.r0adkll.livewire.ui.icons.ChatBubbleFilled
 import com.r0adkll.livewire.ui.icons.ChatBubbleOutline
 import com.r0adkll.livewire.ui.icons.Connected
@@ -71,10 +70,8 @@ fun LivewireApp(
   val connectionState by livewireClient.server.connectionState.collectAsState()
   var isDarkMode by remember { mutableStateOf(isSystemDarkMode) }
 
-  LaunchedEffect(isDarkMode, connectionState) {
-    if (connectionState == ConnectionState.Connected) {
-      livewireClient.server.send(DarkModeChange(isDarkMode))
-    }
+  LaunchedEffect(isDarkMode) {
+    livewireClient.setDarkMode(isDarkMode)
   }
 
   CustomLivewireTheme(

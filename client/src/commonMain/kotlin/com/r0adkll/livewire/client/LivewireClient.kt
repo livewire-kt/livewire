@@ -38,6 +38,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.ExperimentalSerializationApi
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -51,8 +52,12 @@ class LivewireClient private constructor(
   )
 
   private val scope = CoroutineScope(context + SupervisorJob())
-
+  private val darkMode = MutableStateFlow(false)
   private val discoveryBroadcaster = DiscoveryBroadcaster()
+
+  fun setDarkMode(darkMode: Boolean) {
+    this.darkMode.value = darkMode
+  }
 
   val server = LivewireServer(
     decoders = configuration.decoders + DefaultDecoders + UiDecoders,
@@ -87,16 +92,18 @@ class LivewireClient private constructor(
 
       val actionController = rememberLivewireActionController()
 
-      var isDarkMode by remember { mutableStateOf(false) }
+      val isDarkMode by darkMode.collectAsState()
       var resyncToken by remember { mutableStateOf(0) }
+
+      LaunchedEffect(isDarkMode, connectionState) {
+        if (connectionState == ConnectionState.Connected) {
+          server.send(DarkModeChange(isDarkMode))
+        }
+      }
 
       LaunchedEffect(Unit) {
         server.incomingMessages.collect { message ->
           when (message) {
-            is DarkModeChange -> {
-              isDarkMode = message.darkMode
-            }
-
             is PluginSelected -> {
               activePluginInfo = message.info
             }
