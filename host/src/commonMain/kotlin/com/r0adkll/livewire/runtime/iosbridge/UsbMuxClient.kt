@@ -79,8 +79,6 @@ internal class UsbMuxClient private constructor(
       throw IllegalStateException("usbmux connect failed: ${code.intValue()}")
     }
 
-    println("returning $stream for port $port")
-
     return stream
   }
 

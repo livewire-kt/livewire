@@ -127,7 +127,7 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
 
       is UsbMuxEvent.Detach -> {
         logDebug("device detached: deviceId=${event.deviceId} udid=${event.udid}")
-        val udid = event.udid ?: run {
+        val udid = event.udid?.let { Udid(it) } ?: run {
           stateLock.withLock {
             deviceIdMap.entries.firstOrNull { it.value == event.deviceId }?.key
           }
