@@ -226,8 +226,8 @@ class LivewireHostConnection(
               }
             } finally {
               pendingLayout.close()
-              codec.secureSession = null
               if (session == this@webSocket) {
+                codec.secureSession = null
                 session = null
                 connectionState.value = Listening
                 incomingLayoutNodes.value = RootNode()
