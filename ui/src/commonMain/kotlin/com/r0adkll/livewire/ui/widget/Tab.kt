@@ -9,6 +9,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.IntValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -44,9 +45,9 @@ class TabRowNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetSelectedTabIndex: TabRowNode.(Int) -> Unit = { selectedTabIndex = it }
-    val SetOnTabSelected: TabRowNode.(IntValueChangeAction) -> Unit = { onTabSelected = it }
-    val SetStyle: TabRowNode.(TabStyle) -> Unit = { style = it }
+    val SetSelectedTabIndex: TabRowNode.(Int) -> Unit = applier { selectedTabIndex = it }
+    val SetOnTabSelected: TabRowNode.(IntValueChangeAction) -> Unit = applier { onTabSelected = it }
+    val SetStyle: TabRowNode.(TabStyle) -> Unit = applier { style = it }
   }
 }
 
@@ -80,9 +81,9 @@ class TabNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetText: TabNode.(String?) -> Unit = { text = it }
-    val SetIconData: TabNode.(String?) -> Unit = { iconData = it }
-    val SetEnabled: TabNode.(Boolean) -> Unit = { enabled = it }
+    val SetText: TabNode.(String?) -> Unit = applier { text = it }
+    val SetIconData: TabNode.(String?) -> Unit = applier { iconData = it }
+    val SetEnabled: TabNode.(Boolean) -> Unit = applier { enabled = it }
   }
 }
 

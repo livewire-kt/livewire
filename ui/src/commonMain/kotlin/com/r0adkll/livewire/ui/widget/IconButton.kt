@@ -9,6 +9,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ClickAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -47,10 +48,10 @@ class IconButtonNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetAction: IconButtonNode.(ClickAction) -> Unit = { action = it }
-    val SetEnabled: IconButtonNode.(Boolean) -> Unit = { enabled = it }
-    val SetSize: IconButtonNode.(ButtonSize) -> Unit = { size = it }
-    val SetStyle: IconButtonNode.(IconButtonStyle) -> Unit = { style = it }
+    val SetAction: IconButtonNode.(ClickAction) -> Unit = applier { action = it }
+    val SetEnabled: IconButtonNode.(Boolean) -> Unit = applier { enabled = it }
+    val SetSize: IconButtonNode.(ButtonSize) -> Unit = applier { size = it }
+    val SetStyle: IconButtonNode.(IconButtonStyle) -> Unit = applier { style = it }
   }
 }
 

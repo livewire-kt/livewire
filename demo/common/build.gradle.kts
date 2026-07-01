@@ -78,15 +78,21 @@ kotlin {
       implementation(libs.kotlin.test)
     }
     androidMain.dependencies {
+      implementation(projects.plugins.recomposition)
+
       implementation(libs.ktor.clientOkhttp)
       implementation(libs.sqldelight.android.driver)
     }
     jvmMain.dependencies {
+      implementation(projects.plugins.recomposition)
+
       implementation(libs.ktor.clientCio)
       implementation(libs.kotlinx.coroutinesSwing)
       implementation(libs.sqldelight.sqlite.driver)
     }
     iosMain.dependencies {
+      implementation(projects.plugins.recomposition)
+
       implementation(libs.compose.ui)
       implementation(libs.ktor.clientDarwin)
       implementation(libs.sqldelight.native.driver)
@@ -95,5 +101,6 @@ kotlin {
 }
 
 composeCompiler {
+  includeSourceInformation = true
   stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

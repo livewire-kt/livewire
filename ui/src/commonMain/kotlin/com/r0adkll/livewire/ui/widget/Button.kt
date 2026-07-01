@@ -17,6 +17,7 @@ import com.r0adkll.livewire.ui.graphics.Shape
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RowScope
 import com.r0adkll.livewire.ui.layout.RowScopeInstance
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 import androidx.compose.runtime.toLong
@@ -56,10 +57,10 @@ class ButtonNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetAction: ButtonNode.(ClickAction) -> Unit = { action = it }
-    val SetSize: ButtonNode.(ButtonSize) -> Unit = { size = it }
-    val SetStyle: ButtonNode.(ButtonStyle) -> Unit = { style = it }
-    val SetShapes: ButtonNode.(ButtonShapes) -> Unit = { shapes = it }
+    val SetAction: ButtonNode.(ClickAction) -> Unit = applier { action = it }
+    val SetSize: ButtonNode.(ButtonSize) -> Unit = applier { size = it }
+    val SetStyle: ButtonNode.(ButtonStyle) -> Unit = applier { style = it }
+    val SetShapes: ButtonNode.(ButtonShapes) -> Unit = applier { shapes = it }
   }
 }
 

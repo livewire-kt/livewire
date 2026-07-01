@@ -8,6 +8,7 @@ import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -41,8 +42,8 @@ class TableNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetColumns: TableNode.(List<String>) -> Unit = { columns = it }
-    val SetRows: TableNode.(List<List<String>>) -> Unit = { rows = it }
-    val SetPageSize: TableNode.(Int) -> Unit = { pageSize = it }
+    val SetColumns: TableNode.(List<String>) -> Unit = applier { columns = it }
+    val SetRows: TableNode.(List<List<String>>) -> Unit = applier { rows = it }
+    val SetPageSize: TableNode.(Int) -> Unit = applier { pageSize = it }
   }
 }

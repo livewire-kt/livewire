@@ -5,6 +5,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
@@ -13,8 +14,8 @@ abstract class LayoutNode(
 ) {
 
   companion object {
-    val SetModifier: LayoutNode.(LivewireModifier) -> Unit = { modifier = it }
-    val SetCompositeKeyHash: LayoutNode.(Long) -> Unit = { compositeKeyHash = it }
+    val SetModifier: LayoutNode.(LivewireModifier) -> Unit = applier { modifier = it }
+    val SetCompositeKeyHash: LayoutNode.(Long) -> Unit = applier { compositeKeyHash = it }
   }
 
   val nodeId: Long = nextNodeId()
@@ -22,6 +23,13 @@ abstract class LayoutNode(
   var modifier: LivewireModifier = LivewireModifier
 
   var compositeKeyHash: Long = 0
+
+  @Transient
+  internal var propertiesDirty: Boolean = true
+
+  internal fun markDirty() {
+    propertiesDirty = true
+  }
 
   fun insertAt(index: Int, instance: LayoutNode) {
     children.add(index, instance)
@@ -64,6 +72,13 @@ abstract class LayoutNode(
   fun makeObservable() {
     children = children.toMutableStateList()
     children.forEach { it.makeObservable() }
+  }
+}
+
+fun <T : LayoutNode, C> applier(block: T.(C) -> Unit): T.(C) -> Unit {
+  return {
+    block(it)
+    markDirty()
   }
 }
 

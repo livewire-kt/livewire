@@ -17,7 +17,7 @@ import kotlinx.serialization.Serializable
 inline fun Box(
   modifier: LivewireModifier = LivewireModifier,
   contentAlignment: Alignment = Alignment.TopStart,
-  content: @Composable @LivewireComposable BoxScope.() -> Unit,
+  content: @Composable @LivewireComposable BoxScope.() -> Unit = { },
 ) {
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<BoxNode, Applier<LayoutNode>>(
@@ -50,6 +50,6 @@ class BoxNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetContentAlignment: BoxNode.(Alignment) -> Unit = { contentAlignment = it }
+    val SetContentAlignment: BoxNode.(Alignment) -> Unit = applier { contentAlignment = it }
   }
 }

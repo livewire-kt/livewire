@@ -45,7 +45,6 @@ kotlin {
     androidMain.dependencies {
       implementation(libs.kotlin.reflect)
       implementation(libs.ktor.clientOkhttp)
-      implementation(libs.androidx.startup)
     }
     iosMain.dependencies {
       implementation(libs.ktor.clientDarwin)
@@ -58,7 +57,7 @@ kotlin {
   }
 }
 
-
 composeCompiler {
+  includeSourceInformation = true
   stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

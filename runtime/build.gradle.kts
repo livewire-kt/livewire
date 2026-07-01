@@ -25,6 +25,7 @@ kotlin {
   sourceSets {
     androidMain.dependencies {
       api(libs.kotlinx.coroutines.android)
+      implementation(libs.androidx.startup)
     }
     commonMain.dependencies {
       api(libs.compose.runtime)
@@ -43,5 +44,6 @@ kotlin {
 }
 
 composeCompiler {
+  includeSourceInformation = true
   stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

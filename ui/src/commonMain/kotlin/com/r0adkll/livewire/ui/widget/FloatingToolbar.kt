@@ -10,6 +10,7 @@ import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
 import com.r0adkll.livewire.ui.layout.RowScope
 import com.r0adkll.livewire.ui.layout.RowScopeInstance
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -39,6 +40,6 @@ class FloatingToolbarNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetExpanded: FloatingToolbarNode.(Boolean) -> Unit = { expanded = it }
+    val SetExpanded: FloatingToolbarNode.(Boolean) -> Unit = applier { expanded = it }
   }
 }

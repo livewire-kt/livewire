@@ -10,7 +10,7 @@
       tools:node="merge">
 
       <meta-data
-        android:name="com.r0adkll.livewire.client.ContextHolder"
+        android:name="com.r0adkll.livewire.plugin.recomposition.PluginInitializer"
         android:value="androidx.startup" />
     </provider>
   </application>

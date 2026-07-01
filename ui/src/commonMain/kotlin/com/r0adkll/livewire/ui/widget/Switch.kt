@@ -9,6 +9,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.CheckedChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -42,8 +43,8 @@ class SwitchNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetChecked: SwitchNode.(Boolean) -> Unit = { checked = it }
-    val SetCheckedChange: SwitchNode.(CheckedChangeAction) -> Unit = { onCheckedChange = it }
-    val SetEnabled: SwitchNode.(Boolean) -> Unit = { enabled = it }
+    val SetChecked: SwitchNode.(Boolean) -> Unit = applier { checked = it }
+    val SetCheckedChange: SwitchNode.(CheckedChangeAction) -> Unit = applier { onCheckedChange = it }
+    val SetEnabled: SwitchNode.(Boolean) -> Unit = applier { enabled = it }
   }
 }

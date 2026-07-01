@@ -1,4 +1,4 @@
-package com.r0adkll.livewire.client
+package com.r0adkll.livewire
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -14,6 +14,6 @@ class ContextHolder : Initializer<ContextHolder> {
 
   companion object {
     @SuppressLint("StaticFieldLeak")
-    internal lateinit var appContext: Context
+    lateinit var appContext: Context
   }
 }

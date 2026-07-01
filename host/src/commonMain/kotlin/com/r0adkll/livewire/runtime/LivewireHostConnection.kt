@@ -9,7 +9,6 @@ import com.r0adkll.livewire.runtime.discoverymanager.AndroidApp
 import com.r0adkll.livewire.runtime.discoverymanager.DesktopApp
 import com.r0adkll.livewire.runtime.discoverymanager.HostApp
 import com.r0adkll.livewire.runtime.discoverymanager.IosApp
-import com.r0adkll.livewire.runtime.discoverymanager.IosDevice
 import com.r0adkll.livewire.transport.PayloadDecoder
 import com.r0adkll.livewire.ui.data.RequestFullTree
 import com.r0adkll.livewire.ui.layout.LayoutNode
@@ -33,14 +32,19 @@ import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.close
 import io.ktor.websocket.readBytes
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.toMutableStateList
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -86,6 +90,9 @@ class LivewireHostConnection(
 
   private var expectedAppId: String? = null
 
+  private val connectMutex = Mutex()
+  private var connectJob: Job? = null
+
   var session: WebSocketSession? = null
     private set
 
@@ -93,84 +100,65 @@ class LivewireHostConnection(
     decoders = decoders.toSet()
   )
 
-  suspend fun connect(app: HostApp) {
+  suspend fun connect(app: HostApp): Unit = connectMutex.withLock {
+    if (app.instanceId == expectedAppId && connectionState.value.isLive()) {
+      logDebug("already targeting ${app.id} (${connectionState.value}); ignoring connect")
+      return@withLock
+    }
+
     logDebug("connect to ${app.id}")
-    disconnect()
+
+    connectJob?.cancelAndJoin()
+    teardown()
 
     expectedAppId = app.instanceId
-
-    when (app) {
-      is AndroidApp -> connectAndroid(app)
-      is IosApp -> connectIos(app)
-      is DesktopApp -> connectDesktop()
-    }
+    connectJob = scope.launch { runConnect(app) }
   }
 
-  private fun connectAndroid(app: AndroidApp) {
-    scope.launch {
-      try {
-        connectionState.value = Forwarding
-        val forwarder = AdbReverseForwarder(app.device, LivewireConstants.Port).also { it.start() }
-        startServer()
-        activeConnection = ActiveConnection.AndroidConnection(forwarder)
-      } catch (e: Exception) {
-        e.printStackTrace()
-        connectionState.value = Error
-      }
-    }
-  }
-
-  private fun connectIos(app: IosApp) {
-    when (app.device.deviceType) {
-      Simulator -> connectIosSimulator()
-      Physical -> connectIosPhysical(app.device)
-    }
-  }
-
-  private fun connectIosSimulator() {
-    scope.launch {
-      try {
-        startServer()
-        activeConnection = ActiveConnection.IosSimulatorConnection
-      } catch (e: Exception) {
-        e.printStackTrace()
-        connectionState.value = Error
-      }
-    }
-  }
-
-  private fun connectIosPhysical(device: IosDevice) {
-    scope.launch {
-      try {
-        connectionState.value = Forwarding
-        val ok = device.connection.activate()
-        if (!ok) {
-          connectionState.value = Error
-          return@launch
+  private suspend fun runConnect(app: HostApp) {
+    try {
+      when (app) {
+        is AndroidApp -> {
+          connectionState.value = Forwarding
+          val forwarder = AdbReverseForwarder(app.device, LivewireConstants.Port)
+          forwarder.start()
+          activeConnection = ActiveConnection.AndroidConnection(forwarder)
+          startServer()
         }
-        startServer()
-        activeConnection = ActiveConnection.IosPhysicalConnection(device.connection)
-      } catch (e: Exception) {
-        e.printStackTrace()
-        connectionState.value = Error
+        is IosApp -> when (app.device.deviceType) {
+          Simulator -> {
+            activeConnection = ActiveConnection.IosSimulatorConnection
+            startServer()
+          }
+          Physical -> {
+            connectionState.value = Forwarding
+            val ok = app.device.connection.activate()
+            if (!ok) {
+              connectionState.value = Error
+              return
+            }
+            activeConnection = ActiveConnection.IosPhysicalConnection(app.device.connection)
+            startServer()
+          }
+        }
+        is DesktopApp -> {
+          activeConnection = ActiveConnection.DesktopConnection
+          startServer()
+          connectionState.value = Listening
+        }
       }
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      e.printStackTrace()
+      connectionState.value = Error
     }
   }
 
-  private fun connectDesktop() {
-    scope.launch {
-      try {
-        startServer()
-        connectionState.value = Listening
-        activeConnection = ActiveConnection.DesktopConnection
-      } catch (e: Exception) {
-        e.printStackTrace()
-        connectionState.value = Error
-      }
-    }
-  }
+  private fun HostConnectionState.isLive(): Boolean =
+    this == Forwarding || this == Listening || this == Connected
 
-  private fun startServer() {
+  private suspend fun startServer() {
     if (server != null) {
       connectionState.value = Listening
       return
@@ -215,6 +203,7 @@ class LivewireHostConnection(
                     }
                   } catch (e: Exception) {
                     logDebug("failed to decode layout: ${e.message}")
+                    requestResync()
                   }
                 }
               }
@@ -240,8 +229,9 @@ class LivewireHostConnection(
               codec.secureSession = null
               if (session == this@webSocket) {
                 session = null
-                connectionState.value = if (server != null) Listening else Disconnected
-                logDebug("client disconnected")
+                connectionState.value = Listening
+                incomingLayoutNodes.value = RootNode()
+                logDebug("client disconnected, waiting for reconnection…")
               }
             }
           }
@@ -249,6 +239,8 @@ class LivewireHostConnection(
       }
     }.also {
       it.start(wait = false)
+      it.engine.resolvedConnectors()
+      logDebug("server bound on port ${LivewireConstants.Port}")
       connectionState.value = Listening
     }
   }
@@ -279,7 +271,10 @@ class LivewireHostConnection(
     if (awaitingResync) return
     awaitingResync = true
     logDebug("requesting resync from client")
-    runCatching { send(RequestFullTree) }
+    runCatching { send(RequestFullTree) }.onFailure {
+      awaitingResync = false
+      logDebug("failed to request resync: ${it.message}")
+    }
   }
 
   private fun rebuildNodeMaps(root: LayoutNode) {
@@ -340,7 +335,13 @@ class LivewireHostConnection(
     session?.send(codec.encodePayload(payload))
   }
 
-  suspend fun disconnect() {
+  suspend fun disconnect(): Unit = connectMutex.withLock {
+    connectJob?.cancelAndJoin()
+    connectJob = null
+    teardown()
+  }
+
+  private suspend fun teardown() {
     expectedAppId = null
 
     session?.close()

@@ -32,7 +32,7 @@ data class DesktopApp(
   val appName: String,
   val processId: Long,
 ) : HostApp {
-  override val id: String = "desktop:$instanceId"
+  override val id: String = "desktop:$appName"
   override val displayName: String = appName
   override val device: HostDevice = DesktopDevice
 }

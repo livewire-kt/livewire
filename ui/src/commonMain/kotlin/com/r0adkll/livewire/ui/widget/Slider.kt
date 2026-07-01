@@ -9,6 +9,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.FloatValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -51,11 +52,11 @@ class SliderNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetValue: SliderNode.(Float) -> Unit = { value = it }
-    val SetOnValueChange: SliderNode.(FloatValueChangeAction) -> Unit = { onValueChange = it }
-    val SetEnabled: SliderNode.(Boolean) -> Unit = { enabled = it }
-    val SetValueRangeStart: SliderNode.(Float) -> Unit = { valueRangeStart = it }
-    val SetValueRangeEnd: SliderNode.(Float) -> Unit = { valueRangeEnd = it }
-    val SetSteps: SliderNode.(Int) -> Unit = { steps = it }
+    val SetValue: SliderNode.(Float) -> Unit = applier { value = it }
+    val SetOnValueChange: SliderNode.(FloatValueChangeAction) -> Unit = applier { onValueChange = it }
+    val SetEnabled: SliderNode.(Boolean) -> Unit = applier { enabled = it }
+    val SetValueRangeStart: SliderNode.(Float) -> Unit = applier { valueRangeStart = it }
+    val SetValueRangeEnd: SliderNode.(Float) -> Unit = applier { valueRangeEnd = it }
+    val SetSteps: SliderNode.(Int) -> Unit = applier { steps = it }
   }
 }

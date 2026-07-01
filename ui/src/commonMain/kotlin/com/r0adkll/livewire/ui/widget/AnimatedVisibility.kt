@@ -8,6 +8,7 @@ import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -43,9 +44,9 @@ class AnimatedVisibilityNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetVisible: AnimatedVisibilityNode.(Boolean) -> Unit = { visible = it }
-    val SetEnter: AnimatedVisibilityNode.(EnterTransition) -> Unit = { enter = it }
-    val SetExit: AnimatedVisibilityNode.(ExitTransition) -> Unit = { exit = it }
+    val SetVisible: AnimatedVisibilityNode.(Boolean) -> Unit = applier { visible = it }
+    val SetEnter: AnimatedVisibilityNode.(EnterTransition) -> Unit = applier { enter = it }
+    val SetExit: AnimatedVisibilityNode.(ExitTransition) -> Unit = applier { exit = it }
   }
 }
 

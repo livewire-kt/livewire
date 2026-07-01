@@ -10,6 +10,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.graphics.ColorSerializer
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -28,7 +29,7 @@ fun Icon(
       init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(svgData, IconNode.SetSvgData)
       set(tint, IconNode.SetTint)
-    }
+    },
   )
 }
 
@@ -41,7 +42,7 @@ class IconNode(
   var tint: Color = Color.Unspecified
 
   companion object {
-    val SetSvgData: IconNode.(String) -> Unit = { svgData = it }
-    val SetTint: IconNode.(Color) -> Unit = { tint = it }
+    val SetSvgData: IconNode.(String) -> Unit = applier { svgData = it }
+    val SetTint: IconNode.(Color) -> Unit = applier { tint = it }
   }
 }

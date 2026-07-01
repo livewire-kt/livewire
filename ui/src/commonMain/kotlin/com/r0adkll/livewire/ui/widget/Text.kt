@@ -10,6 +10,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.graphics.ColorSerializer
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -47,10 +48,10 @@ class TextNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetText: TextNode.(String) -> Unit = { text = it }
-    val SetColor: TextNode.(Color) -> Unit = { color = it }
-    val SetStyle: TextNode.(TextStyle?) -> Unit = { style = it }
-    val SetFontWeight: TextNode.(Int?) -> Unit = { fontWeight = it }
+    val SetText: TextNode.(String) -> Unit = applier { text = it }
+    val SetColor: TextNode.(Color) -> Unit = applier { color = it }
+    val SetStyle: TextNode.(TextStyle?) -> Unit = applier { style = it }
+    val SetFontWeight: TextNode.(Int?) -> Unit = applier { fontWeight = it }
   }
 }
 

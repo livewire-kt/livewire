@@ -57,5 +57,6 @@ kotlin {
 
 
 composeCompiler {
+  includeSourceInformation = true
   stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

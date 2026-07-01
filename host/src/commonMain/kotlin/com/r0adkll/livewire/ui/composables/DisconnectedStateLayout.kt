@@ -36,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -215,6 +216,13 @@ private fun DeviceList(
   modifier: Modifier = Modifier,
 ) {
   var selectedApp by remember { mutableStateOf<HostApp?>(null) }
+  LaunchedEffect(apps) {
+    if (apps.isEmpty()) {
+      selectedApp = null
+    } else if (selectedApp == null) {
+      selectedApp = apps.first()
+    }
+  }
 
   val sortedApps = apps.sortedWith(
     compareBy<HostApp> {

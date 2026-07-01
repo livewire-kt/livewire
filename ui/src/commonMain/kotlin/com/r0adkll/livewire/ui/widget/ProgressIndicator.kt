@@ -8,6 +8,7 @@ import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -38,8 +39,8 @@ class ProgressIndicatorNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetProgress: ProgressIndicatorNode.(Float?) -> Unit = { progress = it }
-    val SetStyle: ProgressIndicatorNode.(ProgressIndicatorStyle) -> Unit = { style = it }
+    val SetProgress: ProgressIndicatorNode.(Float?) -> Unit = applier { progress = it }
+    val SetStyle: ProgressIndicatorNode.(ProgressIndicatorStyle) -> Unit = applier { style = it }
   }
 }
 

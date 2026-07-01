@@ -76,7 +76,7 @@ class ColumnNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetVerticalArrangement: ColumnNode.(Arrangement.Vertical) -> Unit = { verticalArrangement = it }
-    val SetHorizontalAlignment: ColumnNode.(Alignment.Horizontal) -> Unit = { horizontalAlignment = it }
+    val SetVerticalArrangement: ColumnNode.(Arrangement.Vertical) -> Unit = applier { verticalArrangement = it }
+    val SetHorizontalAlignment: ColumnNode.(Alignment.Horizontal) -> Unit = applier { horizontalAlignment = it }
   }
 }

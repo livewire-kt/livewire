@@ -9,6 +9,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ClickAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -54,13 +55,13 @@ class ChipNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetLabel: ChipNode.(String) -> Unit = { label = it }
-    val SetAction: ChipNode.(ClickAction) -> Unit = { action = it }
-    val SetStyle: ChipNode.(ChipStyle) -> Unit = { style = it }
-    val SetElevated: ChipNode.(Boolean) -> Unit = { elevated = it }
-    val SetSelected: ChipNode.(Boolean) -> Unit = { selected = it }
-    val SetEnabled: ChipNode.(Boolean) -> Unit = { enabled = it }
-    val SetLeadingIconData: ChipNode.(String?) -> Unit = { leadingIconData = it }
+    val SetLabel: ChipNode.(String) -> Unit = applier { label = it }
+    val SetAction: ChipNode.(ClickAction) -> Unit = applier { action = it }
+    val SetStyle: ChipNode.(ChipStyle) -> Unit = applier { style = it }
+    val SetElevated: ChipNode.(Boolean) -> Unit = applier { elevated = it }
+    val SetSelected: ChipNode.(Boolean) -> Unit = applier { selected = it }
+    val SetEnabled: ChipNode.(Boolean) -> Unit = applier { enabled = it }
+    val SetLeadingIconData: ChipNode.(String?) -> Unit = applier { leadingIconData = it }
   }
 }
 

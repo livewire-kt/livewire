@@ -88,14 +88,18 @@ private fun LayoutNode.updateShadowProperties(
   strategy: LayoutNodeSerializationStrategy,
   patches: MutableList<LayoutNodePatch>,
 ) {
-  val currentBytes = encodePropertiesOnly(strategy)
-  if (nodeId !in insertedIds) {
-    val shadowBytes = shadowProperties[nodeId]
-    if (shadowBytes != null && !currentBytes.contentEquals(shadowBytes)) {
-      patches += LayoutNodePatch.UpdateNode(strategy.decodeFromByteArray(currentBytes))
+  val alreadyShadowed = nodeId in shadowProperties
+  if (propertiesDirty || !alreadyShadowed) {
+    val currentBytes = encodePropertiesOnly(strategy)
+    if (nodeId !in insertedIds && alreadyShadowed) {
+      val shadowBytes = shadowProperties[nodeId]
+      if (shadowBytes != null && !currentBytes.contentEquals(shadowBytes)) {
+        patches += LayoutNodePatch.UpdateNode(strategy.decodeFromByteArray(currentBytes))
+      }
     }
+    shadowProperties[nodeId] = currentBytes
+    propertiesDirty = false
   }
-  shadowProperties[nodeId] = currentBytes
   children.forEach { it.updateShadowProperties(insertedIds, shadowProperties, strategy, patches) }
 }
 

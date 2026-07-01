@@ -9,6 +9,7 @@ import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.actions.ValueChangeAction
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -60,15 +61,15 @@ class TextFieldNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetInitialValue: TextFieldNode.(String) -> Unit = { initialValue = it }
-    val SetOnValueChange: TextFieldNode.(ValueChangeAction) -> Unit = { onValueChange = it }
-    val SetEnabled: TextFieldNode.(Boolean) -> Unit = { enabled = it }
-    val SetReadOnly: TextFieldNode.(Boolean) -> Unit = { readOnly = it }
-    val SetLabel: TextFieldNode.(String?) -> Unit = { label = it }
-    val SetPlaceholder: TextFieldNode.(String?) -> Unit = { placeholder = it }
-    val SetSingleLine: TextFieldNode.(Boolean) -> Unit = { singleLine = it }
-    val SetMaxLines: TextFieldNode.(Int) -> Unit = { maxLines = it }
-    val SetStyle: TextFieldNode.(TextFieldStyle) -> Unit = { style = it }
+    val SetInitialValue: TextFieldNode.(String) -> Unit = applier { initialValue = it }
+    val SetOnValueChange: TextFieldNode.(ValueChangeAction) -> Unit = applier { onValueChange = it }
+    val SetEnabled: TextFieldNode.(Boolean) -> Unit = applier { enabled = it }
+    val SetReadOnly: TextFieldNode.(Boolean) -> Unit = applier { readOnly = it }
+    val SetLabel: TextFieldNode.(String?) -> Unit = applier { label = it }
+    val SetPlaceholder: TextFieldNode.(String?) -> Unit = applier { placeholder = it }
+    val SetSingleLine: TextFieldNode.(Boolean) -> Unit = applier { singleLine = it }
+    val SetMaxLines: TextFieldNode.(Int) -> Unit = applier { maxLines = it }
+    val SetStyle: TextFieldNode.(TextFieldStyle) -> Unit = applier { style = it }
   }
 }
 

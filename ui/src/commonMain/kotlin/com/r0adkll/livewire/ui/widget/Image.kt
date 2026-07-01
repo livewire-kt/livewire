@@ -8,6 +8,7 @@ import androidx.compose.runtime.toLong
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.composition.LivewireComposable
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import kotlinx.serialization.Serializable
 
@@ -38,7 +39,7 @@ class ImageNode(
   var contentDescription: String? = null
 
   companion object {
-    val SetImageData: ImageNode.(ByteArray) -> Unit = { imageData = it }
-    val SetContentDescription: ImageNode.(String?) -> Unit = { contentDescription = it }
+    val SetImageData: ImageNode.(ByteArray) -> Unit = applier { imageData = it }
+    val SetContentDescription: ImageNode.(String?) -> Unit = applier { contentDescription = it }
   }
 }

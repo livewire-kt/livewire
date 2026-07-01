@@ -20,6 +20,7 @@ dependencies {
   implementation(projects.plugins.database)
   implementation(projects.plugins.network.core)
   implementation(projects.plugins.playground)
+  implementation(projects.plugins.recomposition)
 
   implementation(compose.desktop.currentOs)
   implementation(libs.kotlinx.coroutinesSwing)
@@ -38,5 +39,6 @@ compose.desktop {
 }
 
 composeCompiler {
+  includeSourceInformation = true
   stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

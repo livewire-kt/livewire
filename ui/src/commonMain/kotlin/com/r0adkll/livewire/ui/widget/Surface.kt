@@ -15,6 +15,7 @@ import com.r0adkll.livewire.ui.graphics.ColorSerializer
 import com.r0adkll.livewire.ui.graphics.RectangleShape
 import com.r0adkll.livewire.ui.graphics.Shape
 import com.r0adkll.livewire.ui.layout.LayoutNode
+import com.r0adkll.livewire.ui.layout.applier
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
 import com.r0adkll.livewire.ui.unit.DpSerializer
 import kotlinx.serialization.Serializable
@@ -60,11 +61,11 @@ class SurfaceNode(
 ) : LayoutNode() {
 
   companion object {
-    val SetShape: SurfaceNode.(Shape) -> Unit = { shape = it }
-    val SetColor: SurfaceNode.(Color?) -> Unit = { color = it }
-    val SetContentColor: SurfaceNode.(Color?) -> Unit = { contentColor = it }
-    val SetTonalElevation: SurfaceNode.(Dp) -> Unit = { tonalElevation = it }
-    val SetShadowElevation: SurfaceNode.(Dp) -> Unit = { shadowElevation = it }
-    val SetOnClick: SurfaceNode.(ClickAction?) -> Unit = { onClick = it }
+    val SetShape: SurfaceNode.(Shape) -> Unit = applier { shape = it }
+    val SetColor: SurfaceNode.(Color?) -> Unit = applier { color = it }
+    val SetContentColor: SurfaceNode.(Color?) -> Unit = applier { contentColor = it }
+    val SetTonalElevation: SurfaceNode.(Dp) -> Unit = applier { tonalElevation = it }
+    val SetShadowElevation: SurfaceNode.(Dp) -> Unit = applier { shadowElevation = it }
+    val SetOnClick: SurfaceNode.(ClickAction?) -> Unit = applier { onClick = it }
   }
 }

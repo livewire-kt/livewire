@@ -1,3 +1,5 @@
+@file:Suppress("UnstableApiUsage")
+
 rootProject.name = "livewire"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
@@ -48,5 +50,5 @@ include(
   ":plugins:network:core",
   ":plugins:network:okhttp",
   ":plugins:network:ktor",
+  ":plugins:recomposition",
 )
-

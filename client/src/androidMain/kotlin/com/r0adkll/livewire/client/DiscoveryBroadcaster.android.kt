@@ -2,6 +2,7 @@ package com.r0adkll.livewire.client
 
 import android.os.Build
 import android.os.Process
+import com.r0adkll.livewire.ContextHolder
 import com.r0adkll.livewire.discovery.DiscoveryPacket
 
 actual fun createDiscoveryConfig(instanceId: String): DiscoveryConfig {

@@ -46,6 +46,7 @@ kotlin {
       api(libs.coil.network.ktor3)
       api(libs.coil.svg)
       api(libs.ktor.clientWebsockets)
+      implementation(libs.stately.concurrent.collections)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)
@@ -65,5 +66,6 @@ dependencies {
 }
 
 composeCompiler {
+  includeSourceInformation = true
   stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

@@ -36,7 +36,9 @@ dependencies {
   implementation(projects.plugins.database)
   implementation(projects.plugins.network.core)
   implementation(projects.plugins.playground)
+  implementation(projects.plugins.recomposition)
 
+  implementation(libs.compose.runtime)
   implementation(libs.androidx.activity.compose)
   implementation(libs.compose.uiToolingPreview)
 
@@ -50,5 +52,6 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 composeCompiler {
+  includeSourceInformation = true
   stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

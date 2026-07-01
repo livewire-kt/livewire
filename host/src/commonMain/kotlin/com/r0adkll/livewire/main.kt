@@ -134,10 +134,22 @@ fun main() = application {
   var clientManifest by remember { mutableStateOf<ClientManifest?>(null) }
   var selectedPlugin by remember { mutableStateOf<PluginInfo?>(null) }
 
+  var reconnectTargetId by remember { mutableStateOf<String?>(null) }
+
   LaunchedEffect(state) {
     if (state != Connected) {
       selectedPlugin = null
       clientManifest = null
+    }
+  }
+
+  LaunchedEffect(reconnectTargetId, apps, state) {
+    val targetId = reconnectTargetId ?: return@LaunchedEffect
+    if (state != Listening) return@LaunchedEffect
+    val matchingApp = apps.firstOrNull { it.id == targetId }
+    if (matchingApp != null) {
+      logDebug("auto-reconnect", "reconnecting to ${matchingApp.id} (instanceId=${matchingApp.instanceId})")
+      host.connection.connect(matchingApp)
     }
   }
 
@@ -178,9 +190,16 @@ fun main() = application {
       onPluginClick = { plugin ->
         selectedPlugin = plugin
         scope.launch {
-          val msg: UiProtocol = PluginSelected(plugin)
-          host.connection.send(msg)
+          host.connection.send(PluginSelected(plugin))
         }
+      },
+      onDisconnect = {
+        reconnectTargetId = null
+        scope.launch { host.connection.disconnect() }
+      },
+      onConnect = { app ->
+        reconnectTargetId = app.id
+        scope.launch { host.connection.connect(app) }
       },
     )
   }
@@ -197,6 +216,8 @@ private fun AppUi(
   clientManifest: ClientManifest?,
   selectedPlugin: PluginInfo?,
   onPluginClick: (PluginInfo) -> Unit,
+  onDisconnect: () -> Unit,
+  onConnect: (HostApp) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   var isDarkMode by remember { mutableStateOf(false) }
@@ -284,11 +305,11 @@ private fun AppUi(
           state = state,
           onConnectClick = { app ->
             selectedApp = app
-            scope.launch { host.connection.connect(app) }
+            onConnect(app)
           },
           onDisconnectClick = {
             selectedApp = null
-            scope.launch { host.connection.disconnect() }
+            onDisconnect()
           },
         )
       }

@@ -119,6 +119,7 @@ internal fun CoroutineScope.launchLivewire(
   val livewireApplier = LivewireApplier(rootNode, onOutput = emitter, serializationStrategy = strategy)
 
   val recomposer = Recomposer(finalContext)
+  LivewireRecomposers.register(recomposer)
   val composition = Composition(livewireApplier, recomposer)
 
   var snapshotHandle: ObserverHandle? = null
@@ -128,6 +129,7 @@ internal fun CoroutineScope.launchLivewire(
     } finally {
       composition.dispose()
       snapshotHandle?.dispose()
+      LivewireRecomposers.unregister(recomposer)
     }
   }
 

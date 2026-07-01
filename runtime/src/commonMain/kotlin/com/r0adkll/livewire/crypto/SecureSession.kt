@@ -3,15 +3,17 @@ package com.r0adkll.livewire.crypto
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.algorithms.AES
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
-@OptIn(DelicateCryptographyApi::class)
+@OptIn(DelicateCryptographyApi::class, ExperimentalAtomicApi::class)
 class SecureSession(
   sendKey: ByteArray,
   receiveKey: ByteArray,
   private val sendNoncePrefix: ByteArray,
   private val receiveNoncePrefix: ByteArray,
 ) {
-  private var sendCounter: Long = 0
+  private val sendCounter = AtomicLong(0L)
   private val aesGcm = CryptographyProvider.Default.get(AES.GCM)
   private val sendCipher = aesGcm
     .keyDecoder()
@@ -45,7 +47,7 @@ class SecureSession(
   }
 
   private fun encryptFrame(frameTypeTag: Byte, plaintext: ByteArray): ByteArray {
-    val nonce = buildNonce(sendNoncePrefix, sendCounter++)
+    val nonce = buildNonce(sendNoncePrefix, sendCounter.fetchAndAdd(1))
     val ciphertext = sendCipher.encryptWithIvBlocking(nonce, plaintext, null)
 
     val encryptedFrame = ByteArray(HeaderSize + ciphertext.size)
