@@ -78,7 +78,7 @@ class DiscoveryBroadcaster {
 
       for (port in LivewireConstants.TcpDiscoveryPorts) {
         try {
-          boundSocket = aSocket(selectorManager).tcp().bind("0.0.0.0", port)
+          boundSocket = aSocket(selectorManager).tcp().bind("127.0.0.1", port)
           logDebug("tcp discovery server bound on port $port")
           break
         } catch (_: Exception) {

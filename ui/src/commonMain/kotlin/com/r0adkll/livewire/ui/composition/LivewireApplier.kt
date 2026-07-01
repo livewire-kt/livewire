@@ -94,7 +94,7 @@ private fun LayoutNode.updateShadowProperties(
     if (nodeId !in insertedIds && alreadyShadowed) {
       val shadowBytes = shadowProperties[nodeId]
       if (shadowBytes != null && !currentBytes.contentEquals(shadowBytes)) {
-        patches += LayoutNodePatch.UpdateNode(strategy.decodeFromByteArray(currentBytes))
+        patches += LayoutNodePatch.UpdateNode(nodeId, currentBytes)
       }
     }
     shadowProperties[nodeId] = currentBytes

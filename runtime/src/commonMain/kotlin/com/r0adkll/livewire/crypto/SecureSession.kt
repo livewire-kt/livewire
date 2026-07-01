@@ -14,6 +14,7 @@ class SecureSession(
   private val receiveNoncePrefix: ByteArray,
 ) {
   private val sendCounter = AtomicLong(0L)
+  private val lastReceivedCounter = AtomicLong(-1L)
   private val aesGcm = CryptographyProvider.Default.get(AES.GCM)
   private val sendCipher = aesGcm
     .keyDecoder()
@@ -43,7 +44,16 @@ class SecureSession(
       }
     }
 
-    return frameTypeTag to receiveCipher.decryptWithIvBlocking(nonce, ciphertext, null)
+    val plaintext = receiveCipher.decryptWithIvBlocking(nonce, ciphertext, null)
+
+    val counter = readCounter(nonce)
+    val previous = lastReceivedCounter.load()
+    if (counter <= previous) {
+      error("Replayed or out-of-order frame: counter=$counter last=$previous")
+    }
+    lastReceivedCounter.store(counter)
+
+    return frameTypeTag to plaintext
   }
 
   private fun encryptFrame(frameTypeTag: Byte, plaintext: ByteArray): ByteArray {
@@ -56,6 +66,14 @@ class SecureSession(
     ciphertext.copyInto(encryptedFrame, HeaderSize)
 
     return encryptedFrame
+  }
+
+  private fun readCounter(nonce: ByteArray): Long {
+    var counter = 0L
+    for (byteIndex in 0..7) {
+      counter = (counter shl 8) or (nonce[NoncePrefixSize + byteIndex].toLong() and 0xFF)
+    }
+    return counter
   }
 
   internal fun buildNonce(prefix: ByteArray, counter: Long): ByteArray {

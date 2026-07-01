@@ -1,8 +1,12 @@
+@file:OptIn(ExperimentalAtomicApi::class)
+
 package com.r0adkll.livewire.ui.layout
 
 import androidx.compose.runtime.toMutableStateList
 import com.r0adkll.livewire.annotations.LivewireSerializer
 import com.r0adkll.livewire.ui.modifier.LivewireModifier
+import kotlin.concurrent.atomics.AtomicLong
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
@@ -88,5 +92,5 @@ class RootNode : LayoutNode()
 
 private const val DebugChanges = false
 
-private var nodeIdCounter = 0L
-internal fun nextNodeId() = ++nodeIdCounter
+private val nodeIdCounter = AtomicLong(0L)
+internal fun nextNodeId() = nodeIdCounter.addAndFetch(1)

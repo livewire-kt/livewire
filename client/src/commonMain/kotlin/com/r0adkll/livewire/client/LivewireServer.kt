@@ -12,11 +12,13 @@ import com.r0adkll.livewire.ui.transport.LivewireIncoming
 import com.r0adkll.livewire.ui.transport.LivewireWebSocketCodec
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.websocket.pingInterval
 import io.ktor.client.plugins.websocket.webSocket
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
 import io.ktor.websocket.readBytes
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.measureTimedValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -69,7 +71,9 @@ class LivewireServer(
   var onConnected: (suspend LivewireServer.() -> Unit)? = null
 
   private val httpClient = HttpClient(createPlatformEngine()) {
-    install(WebSockets)
+    install(WebSockets) {
+      pingInterval = 15.seconds
+    }
   }
 
   val codec = LivewireWebSocketCodec(

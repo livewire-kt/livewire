@@ -31,7 +31,18 @@ sealed class LayoutNodePatch {
   data class Clear(val nodeId: Long) : LayoutNodePatch()
 
   @Serializable
-  data class UpdateNode(val node: LayoutNode) : LayoutNodePatch()
+  data class UpdateNode(
+    val nodeId: Long,
+    val propertyBytes: ByteArray,
+  ) : LayoutNodePatch() {
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (other !is UpdateNode) return false
+      return nodeId == other.nodeId && propertyBytes.contentEquals(other.propertyBytes)
+    }
+
+    override fun hashCode(): Int = 31 * nodeId.hashCode() + propertyBytes.contentHashCode()
+  }
 }
 
 @Serializable

@@ -27,6 +27,8 @@ import io.ktor.server.response.respond
 import io.ktor.server.routing.route
 import io.ktor.server.routing.routing
 import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.pingPeriod
+import io.ktor.server.websocket.timeout
 import io.ktor.server.websocket.webSocket
 import io.ktor.websocket.Frame
 import io.ktor.websocket.WebSocketSession
@@ -50,7 +52,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.io.IOException
+import kotlin.concurrent.Volatile
 import kotlin.coroutines.CoroutineContext
+import kotlin.time.Duration.Companion.seconds
 
 enum class HostConnectionState {
   Disconnected,
@@ -83,6 +87,7 @@ class LivewireHostConnection(
   private val nodeMap = mutableMapOf<Long, LayoutNode>()
   private val parentMap = mutableMapOf<Long, LayoutNode>()
   private var currentRoot: LayoutNode = RootNode()
+  @Volatile
   private var awaitingResync = false
 
   private var activeConnection: ActiveConnection? = null
@@ -164,8 +169,11 @@ class LivewireHostConnection(
       return
     }
 
-    server = embeddedServer(CIO, port = LivewireConstants.Port) {
-      install(WebSockets)
+    server = embeddedServer(CIO, port = LivewireConstants.Port, host = "127.0.0.1") {
+      install(WebSockets) {
+        pingPeriod = 15.seconds
+        timeout = 15.seconds
+      }
 
       routing {
         route(LivewireConstants.WsPath) {
@@ -180,25 +188,26 @@ class LivewireHostConnection(
           webSocket {
             session?.close()
             session = this
+            awaitingResync = false
 
-            logDebug("performing encryption handshake…")
-            codec.secureSession = LivewireHandshake().perform(
-              sendBytes = { bytes -> send(Frame.Binary(true, bytes)) },
-              receiveBytes = { (incoming.receive() as Frame.Binary).readBytes() },
-            )
-            logDebug("encryption handshake complete")
-
-            connectionState.value = Connected
-            logDebug("client connected (session=${this.hashCode()})")
-
-            val pendingLayout = Channel<ByteArray>(Channel.UNLIMITED)
+            val pendingLayout = Channel<ByteArray>(capacity = PendingLayoutCapacity)
             try {
+              logDebug("performing encryption handshake…")
+              codec.secureSession = LivewireHandshake().perform(
+                sendBytes = { bytes -> send(Frame.Binary(true, bytes)) },
+                receiveBytes = { (incoming.receive() as Frame.Binary).readBytes() },
+              )
+              logDebug("encryption handshake complete")
+
+              connectionState.value = Connected
+              logDebug("client connected (session=${this.hashCode()})")
+
               launch(Dispatchers.Default) {
                 for (bytes in pendingLayout) {
                   try {
                     when (val incoming = codec.decodeLayoutBytes(bytes)) {
                       is LivewireIncoming.Layout -> receiveFullTree(incoming.node)
-                      is LivewireIncoming.Patches -> if (!receivePatches(incoming.patches)) requestResync()
+                      is LivewireIncoming.Patches -> if (!awaitingResync && !receivePatches(incoming.patches)) requestResync()
                       else -> Unit
                     }
                   } catch (e: Exception) {
@@ -216,7 +225,12 @@ class LivewireHostConnection(
                       val message = codec.decodeTextPayload(plaintextFrame)
                       if (message != null) incomingMessages.emit(message.payload)
                     }
-                    is Frame.Binary -> pendingLayout.trySend(plaintextFrame.readBytes())
+                    is Frame.Binary -> {
+                      if (pendingLayout.trySend(plaintextFrame.readBytes()).isFailure) {
+                        logDebug("layout queue overflow, requesting resync")
+                        requestResync()
+                      }
+                    }
                     else -> Unit
                   }
                 } catch (e: Exception) {
@@ -309,17 +323,18 @@ class LivewireHostConnection(
         node.removeAll()
       }
       is LayoutNodePatch.UpdateNode -> {
-        val existingNode = nodeMap[patch.node.nodeId] ?: return false
-        val parent = parentMap[patch.node.nodeId] ?: return false
+        val existingNode = nodeMap[patch.nodeId] ?: return false
+        val parent = parentMap[patch.nodeId] ?: return false
         val index = parent.children.indexOf(existingNode)
         if (index == -1) return false
 
-        patch.node.makeObservable()
-        patch.node.children.addAll(existingNode.children)
-        parent.children[index] = patch.node
-        nodeMap[patch.node.nodeId] = patch.node
-        for (child in patch.node.children) {
-          parentMap[child.nodeId] = patch.node
+        val node = codec.serializationStrategy.decodeFromByteArray(patch.propertyBytes)
+        node.makeObservable()
+        node.children.addAll(existingNode.children)
+        parent.children[index] = node
+        nodeMap[patch.nodeId] = node
+        for (child in node.children) {
+          parentMap[child.nodeId] = node
         }
       }
     }
@@ -332,7 +347,13 @@ class LivewireHostConnection(
   }
 
   suspend inline fun <reified T : Any> send(payload: T) {
-    session?.send(codec.encodePayload(payload))
+    try {
+      session?.send(codec.encodePayload(payload))
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      logDebug("host-connection", "failed to send payload: ${e.message}")
+    }
   }
 
   suspend fun disconnect(): Unit = connectMutex.withLock {
@@ -369,6 +390,8 @@ class LivewireHostConnection(
     logDebug("host-connection", message)
   }
 }
+
+private const val PendingLayoutCapacity = 64
 
 private fun LayoutNode.registerAll(
   nodeMap: MutableMap<Long, LayoutNode>,

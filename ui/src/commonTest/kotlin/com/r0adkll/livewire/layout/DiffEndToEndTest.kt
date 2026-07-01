@@ -151,7 +151,7 @@ private class TestHost(private val strategy: LayoutNodeSerializationStrategy) {
         is LayoutNodePatch.RemoveAt -> patch.parentNodeId
         is LayoutNodePatch.Move -> patch.parentNodeId
         is LayoutNodePatch.Clear -> patch.nodeId
-        is LayoutNodePatch.UpdateNode -> patch.node.nodeId
+        is LayoutNodePatch.UpdateNode -> patch.nodeId
       }
       if (parentId !in nodeMap) {
         desyncCount++
@@ -177,14 +177,15 @@ private class TestHost(private val strategy: LayoutNodeSerializationStrategy) {
         }
 
         is LayoutNodePatch.UpdateNode -> {
-          val existing = nodeMap.getValue(patch.node.nodeId)
-          val parent = parentMap.getValue(patch.node.nodeId)
+          val existing = nodeMap.getValue(patch.nodeId)
+          val parent = parentMap.getValue(patch.nodeId)
           val index = parent.children.indexOf(existing)
-          patch.node.makeObservable()
-          patch.node.children.addAll(existing.children)
-          parent.children[index] = patch.node
-          nodeMap[patch.node.nodeId] = patch.node
-          patch.node.children.forEach { parentMap[it.nodeId] = patch.node }
+          val node = strategy.decodeFromByteArray(patch.propertyBytes)
+          node.makeObservable()
+          node.children.addAll(existing.children)
+          parent.children[index] = node
+          nodeMap[patch.nodeId] = node
+          node.children.forEach { parentMap[it.nodeId] = node }
         }
       }
     }
