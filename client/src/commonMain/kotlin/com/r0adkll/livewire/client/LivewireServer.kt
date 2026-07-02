@@ -146,17 +146,35 @@ class LivewireServer(
   }
 
   suspend inline fun <reified T : Any> send(envelope: T) {
-    activeSession?.send(codec.encodePayload(envelope))
+    try {
+      activeSession?.send(codec.encodePayload(envelope))
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      logDebug("Livewire", "Failed to send payload: ${e.message}")
+    }
   }
 
   suspend fun sendLayoutNode(node: LayoutNode) {
-    activeSession?.send(codec.encodeLayout(node))
+    try {
+      activeSession?.send(codec.encodeLayout(node))
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      logDebug("Livewire", "Failed to send layout node: ${e.message}")
+    }
   }
 
   suspend fun sendLayout(output: LivewireOutput) {
-    when (output) {
-      is LivewireOutput.FullTree -> activeSession?.send(codec.encodeLayout(output.root))
-      is LivewireOutput.Patches -> activeSession?.send(codec.encodePatches(output.patches))
+    try {
+      when (output) {
+        is LivewireOutput.FullTree -> activeSession?.send(codec.encodeLayout(output.root))
+        is LivewireOutput.Patches -> activeSession?.send(codec.encodePatches(output.patches))
+      }
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      logDebug("Livewire", "Failed to send layout: ${e.message}")
     }
   }
 

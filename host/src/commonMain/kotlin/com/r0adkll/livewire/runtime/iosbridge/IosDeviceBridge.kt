@@ -20,6 +20,7 @@ import java.io.BufferedReader
 import java.nio.channels.Channels
 import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 class IosDeviceBridge(private val scope: CoroutineScope) {
   private val started = AtomicBoolean(false)
@@ -38,6 +39,8 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
 
   private var usbmuxJob: Job? = null
 
+  private val usbmuxClient = AtomicReference<UsbMuxClient?>(null)
+
   fun ensureStarted() {
     if (!started.compareAndSet(false, true)) return
 
@@ -46,6 +49,8 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
 
   fun shutdown(forwarder: AutoCloseable? = null) {
     forwarder?.close()
+
+    runCatching { usbmuxClient.getAndSet(null)?.close() }
 
     usbmuxJob?.cancel()
     usbmuxJob = null
@@ -80,10 +85,13 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
         continue
       }
 
+      usbmuxClient.set(client)
+
       val initialEvents = runCatching { client.listen() }.getOrNull()
 
       if (initialEvents == null) {
         logDebug("failed to listen for usbmuxd events")
+        usbmuxClient.compareAndSet(client, null)
         client.close()
         delay(500)
         continue
@@ -103,6 +111,7 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
         handleUsbMuxEvent(event)
       }
 
+      usbmuxClient.compareAndSet(client, null)
       client.close()
       delay(500)
     }

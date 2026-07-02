@@ -5,7 +5,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -18,6 +17,7 @@ import java.nio.channels.SocketChannel
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicReference
 
 internal class IosForwarder(
   private val deviceId: Int,
@@ -28,6 +28,8 @@ internal class IosForwarder(
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private val running = AtomicBoolean(false)
 
+  private val activeCloser = AtomicReference<(() -> Unit)?>(null)
+
   fun start() {
     if (!running.compareAndSet(false, true)) return
     scope.launch { runLoop() }
@@ -35,6 +37,7 @@ internal class IosForwarder(
 
   override fun close() {
     if (running.compareAndSet(true, false)) {
+      activeCloser.getAndSet(null)?.invoke()
       scope.coroutineContext[Job]?.cancel()
     }
   }
@@ -83,18 +86,31 @@ internal class IosForwarder(
 
     logDebug("connected to 127.0.0.1:$forwardPort")
 
+    activeCloser.set {
+      local.closeCatching()
+      stream.closeCatching()
+    }
+
     val result = runCatching {
       coroutineScope {
         val toLocal = launch { copyStream(Channels.newInputStream(stream), Channels.newOutputStream(local)) }
         val toStream = launch { copyStream(Channels.newInputStream(local), Channels.newOutputStream(stream)) }
 
-        toLocal.join()
-        toStream.cancelAndJoin()
+        toLocal.invokeOnCompletion {
+          local.closeCatching()
+          stream.closeCatching()
+        }
+        toStream.invokeOnCompletion {
+          local.closeCatching()
+          stream.closeCatching()
+        }
       }
     }
 
-    runCatching { local.close() }
-    runCatching { stream.close() }
+    activeCloser.set(null)
+
+    local.closeCatching()
+    stream.closeCatching()
 
     if (result.isFailure) {
       logDebug("forwarding ended (will reconnect)")
@@ -103,13 +119,17 @@ internal class IosForwarder(
 
   private fun copyStream(input: InputStream, output: OutputStream) {
     val buffer = ByteArray(16 * 1024)
-    while (true) {
-      val read = input.read(buffer)
-      if (read < 0) return
-      output.write(buffer, 0, read)
-      output.flush()
-    }
+    try {
+      while (true) {
+        val read = input.read(buffer)
+        if (read < 0) return
+        output.write(buffer, 0, read)
+        output.flush()
+      }
+    } catch (_: Throwable) { }
   }
+
+  private fun SocketChannel?.closeCatching() = runCatching { close() }
 
   private fun logDebug(message: String) {
     logDebug("ios-forwarder", message)

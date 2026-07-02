@@ -37,6 +37,8 @@ kotlin {
   iosArm64()
   iosSimulatorArm64()
 
+  applyDefaultHierarchyTemplate()
+
   sourceSets {
     val jvmSharedMain by creating {
       dependsOn(commonMain.get())

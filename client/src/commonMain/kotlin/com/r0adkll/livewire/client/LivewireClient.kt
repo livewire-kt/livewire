@@ -27,12 +27,13 @@ import com.r0adkll.livewire.ui.data.LayoutNodeSerialization
 import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Json
 import com.r0adkll.livewire.ui.data.LayoutNodeSerialization.Protobuf
 import com.r0adkll.livewire.ui.data.PluginSelected
-import com.r0adkll.livewire.ui.data.RequestFullTree
 import com.r0adkll.livewire.ui.data.ProtobufLayoutNodeSerializationStrategy
+import com.r0adkll.livewire.ui.data.RequestFullTree
 import com.r0adkll.livewire.ui.data.UiDecoders
 import com.r0adkll.livewire.ui.data.UiProtocol
 import com.r0adkll.livewire.ui.theme.LivewireTheme
 import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -51,7 +52,11 @@ class LivewireClient private constructor(
     LivewireClientBuilder().apply(configure).build(),
   )
 
-  private val scope = CoroutineScope(context + SupervisorJob())
+  private val scope = CoroutineScope(
+    context + SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
+      logDebug("LivewireClient", "Uncaught error in Livewire scope: ${throwable.message}")
+    },
+  )
   private val darkMode = MutableStateFlow(false)
   private val discoveryBroadcaster = DiscoveryBroadcaster()
 
