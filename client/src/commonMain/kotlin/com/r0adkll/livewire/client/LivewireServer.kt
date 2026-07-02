@@ -103,14 +103,14 @@ class LivewireServer(
           path = LivewireConstants.WsPath,
           request = { url.parameters.append("connection_id", connectionId) },
         ) {
-          activeSession = this
-
           logDebug("Livewire", "Performing encryption handshake…")
           codec.secureSession = LivewireHandshake().perform(
             sendBytes = { bytes -> send(Frame.Binary(true, bytes)) },
             receiveBytes = { (incoming.receive() as Frame.Binary).readBytes() },
           )
           logDebug("Livewire", "Encryption handshake complete")
+
+          activeSession = this
 
           connectionState.value = Connected
           logDebug("Livewire", "Connected")

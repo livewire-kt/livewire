@@ -43,10 +43,12 @@ import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.runtime.toMutableStateList
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -93,11 +95,17 @@ class LivewireHostConnection(
   private var activeConnection: ActiveConnection? = null
   private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
 
+  @Volatile
   private var expectedAppId: String? = null
 
   private val connectMutex = Mutex()
   private var connectJob: Job? = null
 
+  private val sessionMutex = Mutex()
+  @Volatile
+  private var activeHandlerJob: Job? = null
+
+  @Volatile
   var session: WebSocketSession? = null
     private set
 
@@ -177,7 +185,6 @@ class LivewireHostConnection(
 
       routing {
         route(LivewireConstants.WsPath) {
-          // prevent clients from entering the Connected state on a connection that will be immediately closed.
           intercept(ApplicationCallPipeline.Plugins) {
             if (expectedAppId != context.request.queryParameters["connection_id"]) {
               context.respond(HttpStatusCode.Forbidden)
@@ -186,66 +193,77 @@ class LivewireHostConnection(
           }
 
           webSocket {
+            activeHandlerJob?.cancel()
             session?.close()
-            session = this
-            awaitingResync = false
 
-            val pendingLayout = Channel<ByteArray>(capacity = PendingLayoutCapacity)
-            try {
-              logDebug("performing encryption handshake…")
-              codec.secureSession = LivewireHandshake().perform(
-                sendBytes = { bytes -> send(Frame.Binary(true, bytes)) },
-                receiveBytes = { (incoming.receive() as Frame.Binary).readBytes() },
-              )
-              logDebug("encryption handshake complete")
+            sessionMutex.withLock {
+              activeHandlerJob = coroutineContext[Job]
+              awaitingResync = false
 
-              connectionState.value = Connected
-              logDebug("client connected (session=${this.hashCode()})")
+              val pendingLayout = Channel<ByteArray>(capacity = PendingLayoutCapacity)
+              var decoderJob: Job? = null
+              try {
+                logDebug("performing encryption handshake…")
+                codec.secureSession = LivewireHandshake().perform(
+                  sendBytes = { bytes -> send(Frame.Binary(true, bytes)) },
+                  receiveBytes = { (incoming.receive() as Frame.Binary).readBytes() },
+                )
+                logDebug("encryption handshake complete")
 
-              launch(Dispatchers.Default) {
-                for (bytes in pendingLayout) {
+                if (expectedAppId == null || expectedAppId != call.request.queryParameters["connection_id"]) {
+                  logDebug("connection target changed during handshake; closing")
+                  return@withLock
+                }
+
+                session = this@webSocket
+                connectionState.value = Connected
+                logDebug("client connected (session=${this.hashCode()})")
+
+                decoderJob = launch(Dispatchers.Default) {
+                  for (bytes in pendingLayout) {
+                    try {
+                      when (val incoming = codec.decodeLayoutBytes(bytes)) {
+                        is LivewireIncoming.Layout -> receiveFullTree(incoming.node)
+                        is LivewireIncoming.Patches -> if (!awaitingResync && !receivePatches(incoming.patches)) requestResync()
+                        else -> Unit
+                      }
+                    } catch (e: Exception) {
+                      logDebug("failed to decode layout: ${e.message}")
+                      requestResync()
+                    }
+                  }
+                }
+
+                for (frame in incoming) {
                   try {
-                    when (val incoming = codec.decodeLayoutBytes(bytes)) {
-                      is LivewireIncoming.Layout -> receiveFullTree(incoming.node)
-                      is LivewireIncoming.Patches -> if (!awaitingResync && !receivePatches(incoming.patches)) requestResync()
+                    when (val plaintextFrame = codec.decryptFrame(frame) ?: continue) {
+                      is Frame.Text -> {
+                        val message = codec.decodeTextPayload(plaintextFrame)
+                        if (message != null) incomingMessages.emit(message.payload)
+                      }
+                      is Frame.Binary -> {
+                        if (pendingLayout.trySend(plaintextFrame.readBytes()).isFailure) {
+                          logDebug("layout queue overflow, requesting resync")
+                          requestResync()
+                        }
+                      }
                       else -> Unit
                     }
                   } catch (e: Exception) {
-                    logDebug("failed to decode layout: ${e.message}")
-                    requestResync()
+                    logDebug("failed to process frame: ${e.message}")
+                    e.printStackTrace()
                   }
                 }
-              }
-
-              for (frame in incoming) {
-                try {
-                  val plaintextFrame = codec.decryptFrame(frame) ?: continue
-                  when (plaintextFrame) {
-                    is Frame.Text -> {
-                      val message = codec.decodeTextPayload(plaintextFrame)
-                      if (message != null) incomingMessages.emit(message.payload)
-                    }
-                    is Frame.Binary -> {
-                      if (pendingLayout.trySend(plaintextFrame.readBytes()).isFailure) {
-                        logDebug("layout queue overflow, requesting resync")
-                        requestResync()
-                      }
-                    }
-                    else -> Unit
-                  }
-                } catch (e: Exception) {
-                  logDebug("failed to process frame: ${e.message}")
-                  e.printStackTrace()
+              } finally {
+                pendingLayout.cancel()
+                decoderJob?.let { job -> withContext(NonCancellable) { job.join() } }
+                if (session == this@webSocket) {
+                  codec.secureSession = null
+                  session = null
+                  connectionState.value = Listening
+                  incomingLayoutNodes.value = RootNode()
+                  logDebug("client disconnected, waiting for reconnection…")
                 }
-              }
-            } finally {
-              pendingLayout.close()
-              if (session == this@webSocket) {
-                codec.secureSession = null
-                session = null
-                connectionState.value = Listening
-                incomingLayoutNodes.value = RootNode()
-                logDebug("client disconnected, waiting for reconnection…")
               }
             }
           }

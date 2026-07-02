@@ -39,6 +39,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.ExperimentalSerializationApi
 
@@ -98,7 +100,9 @@ class LivewireClient private constructor(
       val actionController = rememberLivewireActionController()
 
       val isDarkMode by darkMode.collectAsState()
-      var resyncToken by remember { mutableStateOf(0) }
+      val resyncRequests = remember {
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+      }
 
       LaunchedEffect(isDarkMode, connectionState) {
         if (connectionState == ConnectionState.Connected) {
@@ -109,33 +113,22 @@ class LivewireClient private constructor(
       LaunchedEffect(Unit) {
         server.incomingMessages.collect { message ->
           when (message) {
-            is PluginSelected -> {
-              activePluginInfo = message.info
-            }
-
-            is ClearPlugin -> {
-              activePluginInfo = null
-            }
-
-            is RequestFullTree -> {
-              resyncToken++
-            }
-
-            is LivewireAction -> {
-              actionController.dispatch(message)
-            }
+            is PluginSelected -> activePluginInfo = message.info
+            is ClearPlugin -> activePluginInfo = null
+            is RequestFullTree -> resyncRequests.tryEmit(Unit)
+            is LivewireAction -> actionController.dispatch(message)
           }
         }
       }
 
-      LaunchedEffect(activePluginInfo, connectionState, resyncToken) {
+      LaunchedEffect(activePluginInfo, connectionState) {
         if (activePluginInfo != null && connectionState == ConnectionState.Connected) {
           val plugin = configuration.plugins.find { plugin ->
             plugin.info.pluginId == activePluginInfo?.pluginId
           }
 
           if (plugin != null) {
-            livewireFlow(server.codec.serializationStrategy) {
+            livewireFlow(server.codec.serializationStrategy, resyncRequests) {
               DisposableEffect(Unit) {
                 logDebug("LivewireCompose", "Plugin Entered Composition: ${plugin.info.pluginId}")
                 onDispose {

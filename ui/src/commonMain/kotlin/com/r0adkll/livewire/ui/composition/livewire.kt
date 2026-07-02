@@ -20,8 +20,12 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -32,16 +36,22 @@ sealed class LivewireOutput {
 
 fun livewireFlow(
   serializationStrategy: LayoutNodeSerializationStrategy,
+  resyncRequests: Flow<Unit> = emptyFlow(),
   body: @Composable () -> Unit,
 ): Flow<LivewireOutput> = flow {
   coroutineScope {
-    val clock = GatedFrameClock(this, EmptyCoroutineContext)
+    // frames run while holding this mutex so a resync snapshot can't observe a mid-mutation tree
+    val frameMutex = Mutex()
+    val clock = GatedFrameClock(this, EmptyCoroutineContext, frameMutex)
     val outputBuffer = Channel<LivewireOutput>(1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val resyncSignals = Channel<Unit>(Channel.CONFLATED)
+    val rootNode = RootNode()
 
     launch(clock, start = UNDISPATCHED) {
       launchLivewire(
         mode = RecompositionMode.ContextClock,
         strategy = serializationStrategy,
+        rootNode = rootNode,
         emitter = {
           clock.isRunning = false
           outputBuffer.trySend(it).getOrThrow()
@@ -50,16 +60,32 @@ fun livewireFlow(
       )
     }
 
+    launch {
+      resyncRequests.collect { resyncSignals.trySend(Unit) }
+    }
+
     while (true) {
       val result = outputBuffer.tryReceive()
-      // Per `ReceiveChannel.tryReceive` documentation: isFailure means channel is empty.
       val value = if (result.isFailure) {
         clock.isRunning = true
-        outputBuffer.receive()
+        select<LivewireOutput?> {
+          outputBuffer.onReceive { it }
+          resyncSignals.onReceive { null }
+        }
       } else {
         result.getOrThrow()
       }
-      emit(value)
+
+      if (value == null) {
+        frameMutex.withLock {
+          // drain
+          @Suppress("ControlFlowWithEmptyBody")
+          while (outputBuffer.tryReceive().isSuccess) { }
+          emit(LivewireOutput.FullTree(rootNode))
+        }
+      } else {
+        emit(value)
+      }
     }
   }
 }
@@ -105,6 +131,7 @@ internal fun CoroutineScope.launchLivewire(
   mode: RecompositionMode,
   emitter: (output: LivewireOutput) -> Unit,
   strategy: LayoutNodeSerializationStrategy?,
+  rootNode: RootNode = RootNode(),
   context: CoroutineContext = EmptyCoroutineContext,
   snapshotNotifier: SnapshotNotifier = SnapshotNotifier.WhileActive,
   body: @Composable () -> Unit,
@@ -115,7 +142,6 @@ internal fun CoroutineScope.launchLivewire(
   }
   val finalContext = coroutineContext + context + clockContext
 
-  val rootNode = RootNode()
   val livewireApplier = LivewireApplier(rootNode, onOutput = emitter, serializationStrategy = strategy)
 
   val recomposer = Recomposer(finalContext)

@@ -129,7 +129,7 @@ internal class IosForwarder(
     } catch (_: Throwable) { }
   }
 
-  private fun SocketChannel?.closeCatching() = runCatching { close() }
+  private fun SocketChannel.closeCatching() = runCatching { this.close() }
 
   private fun logDebug(message: String) {
     logDebug("ios-forwarder", message)

@@ -8,6 +8,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.Channel.Factory.CONFLATED
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * A [MonotonicFrameClock] that is either running, or not.
@@ -18,12 +20,20 @@ import kotlinx.coroutines.launch
 internal class GatedFrameClock(
   scope: CoroutineScope,
   context: CoroutineContext,
+  private val frameMutex: Mutex? = null,
 ) : MonotonicFrameClock {
   private val frameSends = Channel<Unit>(CONFLATED)
 
   init {
     scope.launch(context) {
-      for (send in frameSends) sendFrame()
+      for (send in frameSends) {
+        if (!isRunning) continue
+        if (frameMutex == null) {
+          sendFrame()
+        } else {
+          frameMutex.withLock { sendFrame() }
+        }
+      }
     }
   }
 
@@ -33,7 +43,8 @@ internal class GatedFrameClock(
       val started = value && !field
       field = value
       if (started) {
-        sendFrame()
+        // run on dispatch loop so mutex works
+        frameSends.trySend(Unit)
       }
     }
 
