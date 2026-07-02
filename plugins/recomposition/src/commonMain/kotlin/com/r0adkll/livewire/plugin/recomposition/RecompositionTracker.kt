@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composer
 import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.CompositionImpl
 import androidx.compose.runtime.ExperimentalComposeRuntimeApi
+import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.runtime.RecomposeScope
 import androidx.compose.runtime.Recomposer
 import androidx.compose.runtime.RecomposerInfo
@@ -21,6 +22,7 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.r0adkll.livewire.ui.composition.LivewireRecomposers
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
@@ -52,6 +54,8 @@ object RecompositionTracker {
   private val compositionObserverHandles = ConcurrentMutableMap<ObservableComposition, CompositionObserverHandle>()
 
   private val compositionScopes = ConcurrentMutableMap<ObservableComposition, MutableSet<RecomposeScope>>()
+
+  private val captureJobs = ConcurrentMutableMap<ObservableComposition, MutableSet<Job>>()
 
   private val commands = Channel<Command>(Channel.UNLIMITED)
   private val publishSignal = Channel<Unit>(Channel.CONFLATED)
@@ -118,12 +122,13 @@ object RecompositionTracker {
       handles.clear()
     }
 
-    // drop work queued before the processor was cancelled so a later start() begins clean. just draining here.
+    // drop work queued before the processor was canceled so the next start begins clean
     @Suppress("ControlFlowWithEmptyBody")
     while (commands.tryReceive().isSuccess) { }
 
     compositionRoots.clear()
     compositionScopes.block { it.clear() }
+    captureJobs.block { it.clear() }
     graftPoints = emptySet()
     windowIndices.clear()
     windowNodes.clear()
@@ -186,21 +191,61 @@ object RecompositionTracker {
 
   private fun process(command: Command) {
     when (command) {
-      is Command.Capture -> capture(command.composition, command.composedScopes)
+      is Command.Capture -> scheduleCapture(command.composition, command.composedScopes)
+      is Command.Rebuild -> rebuild(command.composition, command.snapshot, command.composedScopes)
       is Command.Invalidate -> registry.nodeForScope(command.scope)?.recordInvalidation(command.value)
       is Command.DisposeScope -> registry.unbindScope(command.scope)
       is Command.Unregister -> {
+        captureJobs.remove(command.composition)?.forEach { it.cancel() }
         compositionRoots.remove(command.composition)
         requestPublish()
       }
     }
   }
 
-  // captures run here, after the frame task that enqueued them instead of inside onEndComposition. seems like composers dispatch
-  // onEndComposition before applyChanges, so trying to read from there was missing every insertion from the pass that just finished
-  private fun capture(composition: ObservableComposition, composedScopes: Set<RecomposeScope>) {
+  // this is annoying and might have a better solution, but it works for now. so here's why we're doing this:
+  // a composition's slot table is only written during its recomposer's frame dispatch, so reading it via withFrameNanos on the
+  // compositions's own clock keeps us thread safe. it also keeps the read happening after `apply`
+  private fun scheduleCapture(composition: ObservableComposition, composedScopes: Set<RecomposeScope>) {
     if (!compositionObserverHandles.containsKey(composition)) return // disposed while queued
-    val snapshot = captureSnapshot(composition) ?: return
+
+    val scope = trackingScope
+    val frameClock = try {
+      (composition as? CompositionImpl)?.parent?.effectCoroutineContext[MonotonicFrameClock]
+    } catch (_: Throwable) {
+      null
+    }
+
+    if (scope == null || frameClock == null) {
+      // no clock to use as a trampoline, which _SHOULD_ mean the composition is on the main thread and we can read here
+      captureSnapshot(composition)?.let { rebuild(composition, it, composedScopes) }
+      return
+    }
+
+    val job = scope.launch {
+      val snapshot = frameClock.withFrameNanos { captureSnapshot(composition) }
+      if (snapshot != null) {
+        commands.trySend(Command.Rebuild(composition, snapshot, composedScopes))
+      }
+    }
+    captureJobs.block { jobs -> jobs.getOrPut(composition) { mutableSetOf() }.add(job) }
+    job.invokeOnCompletion {
+      captureJobs.block { jobs ->
+        val pending = jobs[composition] ?: return@block
+        pending.remove(job)
+        if (pending.isEmpty()) {
+          jobs.remove(composition)
+        }
+      }
+    }
+  }
+
+  private fun rebuild(
+    composition: ObservableComposition,
+    snapshot: List<GroupSnapshot>,
+    composedScopes: Set<RecomposeScope>,
+  ) {
+    if (!compositionObserverHandles.containsKey(composition)) return
     compositionRoots[composition] = builder.build(snapshot, composedScopes)
     requestPublish()
   }
@@ -256,6 +301,11 @@ object RecompositionTracker {
 private sealed interface Command {
   class Capture(
     val composition: ObservableComposition,
+    val composedScopes: Set<RecomposeScope>,
+  ) : Command
+  class Rebuild(
+    val composition: ObservableComposition,
+    val snapshot: List<GroupSnapshot>,
     val composedScopes: Set<RecomposeScope>,
   ) : Command
   class Invalidate(val scope: RecomposeScope, val value: Any?) : Command
