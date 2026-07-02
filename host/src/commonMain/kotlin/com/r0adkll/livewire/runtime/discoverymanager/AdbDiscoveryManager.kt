@@ -6,11 +6,7 @@ import com.r0adkll.livewire.LivewireConstants
 import com.r0adkll.livewire.discovery.DiscoveryPacket
 import com.r0adkll.livewire.logDebug
 import com.r0adkll.livewire.logError
-import dadb.Dadb
-import io.ktor.network.selector.SelectorManager
-import io.ktor.network.sockets.aSocket
-import io.ktor.network.sockets.openReadChannel
-import io.ktor.utils.io.readLine
+import dadb.adbserver.AdbServer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,33 +16,29 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.json.Json
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
 
-/**
- * Discovers Android apps by scanning the TCP discovery port range via ADB forward.
- * Each running Livewire-enabled app starts a TCP discovery server on one of the
- * ports in [LivewireConstants.TcpDiscoveryPorts].
- */
 object AdbDiscoveryManager : PlatformDiscoveryManager {
 
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private val started = AtomicBoolean(false)
 
-  final override val devices: Flow<List<HostApp>>
+  override val devices: Flow<List<HostApp>>
     field = MutableStateFlow<List<HostApp>>(emptyList())
 
-  final override val isReady: StateFlow<Boolean>
+  override val isReady: StateFlow<Boolean>
     field = MutableStateFlow(false)
 
   private val timeSource = TimeSource.Monotonic
   private val lastSeen = mutableMapOf<String, TimeSource.Monotonic.ValueTimeMark>()
   private val knownApps = mutableMapOf<String, AndroidApp>()
   private val lock = Any()
+
+  private val deviceCache = mutableMapOf<String, AdbDevice>()
 
   override suspend fun ensureStarted() {
     if (started.compareAndSet(expectedValue = false, newValue = true)) {
@@ -96,83 +88,58 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
   }
 
   private fun discoverApps(): List<AndroidApp> {
-    return Dadb.list().flatMap { dadb ->
+    val serials = AdbServer.listDadbs().map { it.toString() }
+
+    (deviceCache.keys - serials.toSet()).forEach { serial ->
+      deviceCache.remove(serial)?.connection?.close()
+    }
+
+    return serials.flatMap { serial ->
       try {
-        val device = AdbDevice(
-          connection = dadb,
-          serial = dadb.shell("getprop ro.serialno").output.trim().ifEmpty { "unknown" },
-          model = dadb.shell("getprop ro.product.model").output.trim(),
-          apiVersion = dadb.shell("getprop ro.build.version.sdk").output.trim(),
-        )
+        val device = deviceCache.getOrPut(serial) { createDevice(serial) }
         findLivewireApps(device)
       } catch (e: Exception) {
-        logError("AdbDeviceManager", "error querying device: ${e.message}", e)
+        logError("AdbDeviceManager", "error querying device $serial: ${e.message}", e)
+        deviceCache.remove(serial)?.connection?.close()
         emptyList()
-      } finally {
-        dadb.close()
       }
     }
   }
 
-  /**
-   * Scans the TCP discovery port range by setting up ADB forward for each port,
-   * attempting to connect and read a [DiscoveryPacket], then cleaning up the forward.
-   */
+  private fun createDevice(serial: String): AdbDevice {
+    val connection = AdbServer.createDadb(
+      deviceQuery = "host:transport:$serial",
+      connectTimeout = SocketTimeoutMs,
+      socketTimeout = SocketTimeoutMs,
+    )
+    return AdbDevice(
+      connection = connection,
+      serial = connection.shell("getprop ro.serialno").output.trim().ifEmpty { serial },
+      model = connection.shell("getprop ro.product.model").output.trim(),
+      apiVersion = connection.shell("getprop ro.build.version.sdk").output.trim(),
+    )
+  }
+
   private fun findLivewireApps(device: AdbDevice): List<AndroidApp> {
-    val apps = mutableListOf<AndroidApp>()
-
-    for (port in LivewireConstants.TcpDiscoveryPorts) {
-      val localPort = port + 10000  // use offset local ports to avoid conflicts
-      try {
-        // Set up ADB forward: local -> device
-        device.connection.open("host:forward:tcp:$localPort;tcp:$port").close()
-
-        val packet = tryTcpDiscovery(localPort)
-        if (packet != null) {
-          apps += AndroidApp(
-            instanceId = packet.instanceId,
-            packageName = packet.packageName,
-            label = packet.appName,
-            device = device,
-          )
-        }
-      } catch (e: Exception) {
-        logDebug("AdbDeviceManager", "port $port scan failed on ${device.serial}: ${e.message}")
-      } finally {
-        // Clean up the forward
-        runCatching {
-          device.connection.open("host:killforward:tcp:$localPort").close()
-        }
+    return LivewireConstants.TcpDiscoveryPorts.mapNotNull { port ->
+      tryTcpDiscovery(device, port)?.let { packet ->
+        AndroidApp(
+          instanceId = packet.instanceId,
+          packageName = packet.packageName,
+          label = packet.appName,
+          device = device,
+        )
       }
     }
-
-    return apps
   }
 
-  private fun tryTcpDiscovery(localPort: Int): DiscoveryPacket? {
-    val selectorManager = SelectorManager(Dispatchers.IO)
+  private fun tryTcpDiscovery(device: AdbDevice, port: Int): DiscoveryPacket? {
     return try {
-      val socket = kotlinx.coroutines.runBlocking {
-        withTimeoutOrNull(1000) {
-          aSocket(selectorManager).tcp().connect("127.0.0.1", localPort)
-        }
-      } ?: return null
-
-      val json = kotlinx.coroutines.runBlocking {
-        withTimeoutOrNull(1000) {
-          socket.openReadChannel().readLine()
-        }
+      device.connection.open("tcp:$port").use { stream ->
+        stream.source.readUtf8Line()?.let { Json.decodeFromString<DiscoveryPacket>(it) }
       }
-
-      socket.close()
-
-      if (json != null) {
-        Json.decodeFromString<DiscoveryPacket>(json)
-      } else null
-    } catch (e: Exception) {
+    } catch (_: Exception) {
       null
-    } finally {
-      selectorManager.close()
     }
   }
 
@@ -181,6 +148,8 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
     synchronized(lock) {
       lastSeen.clear()
       knownApps.clear()
+      deviceCache.values.forEach { it.connection.close() }
+      deviceCache.clear()
       devices.value = emptyList()
     }
   }
@@ -188,4 +157,5 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
 
 private const val RefreshRateMs = 2000L
 private const val PruneInterval = 2000L
+private const val SocketTimeoutMs = 1000
 private val StaleDeviceThreshold = 5000.milliseconds
