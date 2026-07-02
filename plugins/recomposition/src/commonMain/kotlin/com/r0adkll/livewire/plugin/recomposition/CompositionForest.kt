@@ -1,21 +1,35 @@
 package com.r0adkll.livewire.plugin.recomposition
 
+internal class GraftResult(
+  val graftPoints: Set<ComposableNode>,
+  val orphans: List<ComposableNode>,
+)
+
 internal fun <T : Any> graftSubcompositions(
   subCompositions: List<Pair<T, List<ComposableNode>>>,
+  previousGraftPoints: Set<ComposableNode>,
   graftPointFor: (T) -> ComposableNode?,
-): List<ComposableNode> {
-  return buildList {
-    for ((parentContext, roots) in subCompositions) {
-      val graftPoint = graftPointFor(parentContext)
-      if (graftPoint != null) {
-        for (child in roots) {
-          if (child !in graftPoint.children) graftPoint.addChild(child)
-        }
-      } else {
-        addAll(roots)
-      }
+): GraftResult {
+  val assignments = LinkedHashMap<ComposableNode, MutableList<ComposableNode>>()
+  val orphans = mutableListOf<ComposableNode>()
+
+  for ((parentContext, roots) in subCompositions) {
+    val graftPoint = graftPointFor(parentContext)
+    if (graftPoint != null) {
+      assignments.getOrPut(graftPoint) { mutableListOf() }.addAll(roots)
+    } else {
+      orphans.addAll(roots)
     }
   }
+
+  for (node in previousGraftPoints - assignments.keys) {
+    node.setGraftedChildren(emptyList())
+  }
+  for ((node, roots) in assignments) {
+    node.setGraftedChildren(roots)
+  }
+
+  return GraftResult(assignments.keys, orphans)
 }
 
 internal fun List<ComposableNode>.isDesktopWindowPlumbing(): Boolean = isEmpty() || all { it.name in WindowPlumbingNodes }

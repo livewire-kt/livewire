@@ -18,7 +18,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
 
   // snapshots needed avoid concurrent modification exceptions when building the node tree on a bg thread
   fun snapshot(groups: Iterable<CompositionGroup>): List<GroupSnapshot>? = try {
-    groups.map { it.toSnapshot() }
+    groups.map { it.toSnapshot() }.takeIf { it.isNotEmpty() }
   } catch (t: Throwable) {
     null
   }

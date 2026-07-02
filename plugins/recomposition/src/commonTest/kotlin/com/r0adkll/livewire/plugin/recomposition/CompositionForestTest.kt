@@ -8,46 +8,71 @@ import kotlin.test.assertTrue
 
 class CompositionForestTest {
   @Test
-  fun `graphs subcomposition onto parent`() {
+  fun `grafts subcomposition onto parent`() {
     val root = node("Root")
     val sub = node("Sub")
 
-    val orphans = graftSubcompositions(listOf("context" to listOf(sub))) { context ->
+    val result = graftSubcompositions(listOf("context" to listOf(sub)), emptySet()) { context ->
       if (context == "context") root else null
     }
 
-    assertEquals(emptyList(), orphans)
+    assertEquals(emptyList(), result.orphans)
+    assertEquals(setOf(root), result.graftPoints)
     assertEquals(listOf(sub), root.children)
   }
 
   @Test
   fun `returns orphan if there are no graft points`() {
     val sub = node("Sub")
-    val orphans = graftSubcompositions(listOf("missing" to listOf(sub))) { null }
+    val result = graftSubcompositions(listOf("missing" to listOf(sub)), emptySet()) { null }
 
-    assertEquals(listOf(sub), orphans)
+    assertEquals(listOf(sub), result.orphans)
+    assertEquals(emptySet(), result.graftPoints)
   }
 
   @Test
-  fun `doesn't duplicate attached child`() {
+  fun `regrafting replaces instead of adding`() {
     val root = node("Root")
     val sub = node("Sub")
-    root.addChild(sub)
 
-    graftSubcompositions(listOf("context" to listOf(sub))) { root }
+    graftSubcompositions(listOf("context" to listOf(sub)), emptySet()) { root }
+    graftSubcompositions(listOf("context" to listOf(sub)), setOf(root)) { root }
 
     assertEquals(1, root.children.size)
     assertSame(sub, root.children.single())
   }
 
   @Test
-  fun `graft uses reference id`() {
+  fun `grafted children survive rebuilds`() {
+    val root = node("Root")
+    val own = node("Own")
+    val sub = node("Sub")
+
+    graftSubcompositions(listOf("context" to listOf(sub)), emptySet()) { root }
+    root.setChildren(listOf(own))
+
+    assertEquals(listOf(own, sub), root.children)
+  }
+
+  @Test
+  fun `node that loses its subcomposition is cleared`() {
+    val root = node("Root")
+    val sub = node("Sub")
+
+    graftSubcompositions(listOf("context" to listOf(sub)), emptySet()) { root }
+    val result = graftSubcompositions(emptyList<Pair<String, List<ComposableNode>>>(), setOf(root)) { null }
+
+    assertEquals(emptySet(), result.graftPoints)
+    assertEquals(emptyList(), root.children)
+  }
+
+  @Test
+  fun `multiple subcompositions grafted onto one point`() {
     val root = node("Root")
     val sub1 = node("Dup")
     val sub2 = node("Dup")
-    root.addChild(sub1)
 
-    graftSubcompositions(listOf("context" to listOf(sub2))) { root }
+    graftSubcompositions(listOf("a" to listOf(sub1), "b" to listOf(sub2)), emptySet()) { root }
 
     assertEquals(2, root.children.size)
   }

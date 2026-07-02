@@ -34,12 +34,17 @@ internal class ComposableNode(
   var children: List<ComposableNode> = emptyList()
     private set
 
-  fun addChild(child: ComposableNode) {
-    children = children + child
-  }
+  private var ownChildren: List<ComposableNode> = emptyList()
+  private var graftedChildren: List<ComposableNode> = emptyList()
 
   fun setChildren(newChildren: List<ComposableNode>) {
-    children = newChildren.toList()
+    ownChildren = newChildren.toList()
+    children = ownChildren + graftedChildren
+  }
+
+  fun setGraftedChildren(newChildren: List<ComposableNode>) {
+    graftedChildren = newChildren.toList()
+    children = ownChildren + graftedChildren
   }
 
   fun recentInvalidationReasons(): List<InvalidationReason> = invalidationReasons.toList()

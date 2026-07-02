@@ -42,6 +42,7 @@ object RecompositionTracker {
   private val builder = CompositionTreeBuilder(registry)
 
   private val compositionRoots = mutableMapOf<ObservableComposition, List<ComposableNode>>()
+  private var graftPoints = setOf<ComposableNode>()
   private var windowCounter = 0
   private val windowIndices = mutableMapOf<Recomposer, Int>()
   private val windowNodes = mutableMapOf<Recomposer, ComposableNode>()
@@ -123,6 +124,7 @@ object RecompositionTracker {
 
     compositionRoots.clear()
     compositionScopes.block { it.clear() }
+    graftPoints = emptySet()
     windowIndices.clear()
     windowNodes.clear()
     windowCounter = 0
@@ -149,8 +151,7 @@ object RecompositionTracker {
 
       val handle = composition.setObserver(compositionObserverFor(composition))
       compositionObserverHandles.block { it[composition] = handle }
-      val snapshot = captureSnapshot(composition) ?: return
-      commands.trySend(Command.Rebuild(composition, snapshot, emptySet()))
+      commands.trySend(Command.Capture(composition, emptySet()))
     }
 
     override fun onCompositionUnregistered(composition: ObservableComposition) {
@@ -167,8 +168,7 @@ object RecompositionTracker {
 
     override fun onEndComposition(composition: ObservableComposition) {
       val composedScopes = compositionScopes.remove(composition)?.toSet().orEmpty()
-      val snapshot = captureSnapshot(composition) ?: return
-      commands.trySend(Command.Rebuild(composition, snapshot, composedScopes))
+      commands.trySend(Command.Capture(composition, composedScopes))
     }
 
     override fun onScopeInvalidated(scope: RecomposeScope, value: Any?) {
@@ -186,7 +186,7 @@ object RecompositionTracker {
 
   private fun process(command: Command) {
     when (command) {
-      is Command.Rebuild -> rebuildTree(command.composition, command.snapshot, command.composedScopes)
+      is Command.Capture -> capture(command.composition, command.composedScopes)
       is Command.Invalidate -> registry.nodeForScope(command.scope)?.recordInvalidation(command.value)
       is Command.DisposeScope -> registry.unbindScope(command.scope)
       is Command.Unregister -> {
@@ -194,6 +194,15 @@ object RecompositionTracker {
         requestPublish()
       }
     }
+  }
+
+  // captures run here, after the frame task that enqueued them instead of inside onEndComposition. seems like composers dispatch
+  // onEndComposition before applyChanges, so trying to read from there was missing every insertion from the pass that just finished
+  private fun capture(composition: ObservableComposition, composedScopes: Set<RecomposeScope>) {
+    if (!compositionObserverHandles.containsKey(composition)) return // disposed while queued
+    val snapshot = captureSnapshot(composition) ?: return
+    compositionRoots[composition] = builder.build(snapshot, composedScopes)
+    requestPublish()
   }
 
   private fun captureSnapshot(composition: ObservableComposition): List<GroupSnapshot>? {
@@ -204,15 +213,6 @@ object RecompositionTracker {
       return null
     }
     return builder.snapshot(compositionData.compositionGroups)
-  }
-
-  private fun rebuildTree(
-    composition: ObservableComposition,
-    snapshot: List<GroupSnapshot>,
-    composedScopes: Set<RecomposeScope>,
-  ) {
-    compositionRoots[composition] = builder.build(snapshot, composedScopes)
-    requestPublish()
   }
 
   private fun mergeRoots(): List<ComposableNode> {
@@ -227,13 +227,14 @@ object RecompositionTracker {
       }
     }
 
-    val orphans = graftSubcompositions(subcompositions) { registry.graftPointFor(it) }
+    val graft = graftSubcompositions(subcompositions, graftPoints) { registry.graftPointFor(it) }
+    graftPoints = graft.graftPoints
     val contentRecomposers = rootsByRecomposer.filterValues { !it.isDesktopWindowPlumbing() }
 
     windowIndices.keys.retainAll(contentRecomposers.keys)
     windowNodes.keys.retainAll(contentRecomposers.keys)
 
-    return groupRootCompositions(contentRecomposers, orphans, ::windowGroupNode)
+    return groupRootCompositions(contentRecomposers, graft.orphans, ::windowGroupNode)
   }
 
   private fun windowGroupNode(recomposer: Recomposer, roots: List<ComposableNode>): ComposableNode {
@@ -253,9 +254,8 @@ object RecompositionTracker {
 }
 
 private sealed interface Command {
-  class Rebuild(
+  class Capture(
     val composition: ObservableComposition,
-    val snapshot: List<GroupSnapshot>,
     val composedScopes: Set<RecomposeScope>,
   ) : Command
   class Invalidate(val scope: RecomposeScope, val value: Any?) : Command
