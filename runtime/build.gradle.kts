@@ -1,27 +1,10 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-  alias(libs.plugins.kotlinMultiplatform)
-  alias(libs.plugins.androidLibrary)
+  id("livewire.kmp.library")
+  id("livewire.compose")
   alias(libs.plugins.kotlinSerialization)
-  alias(libs.plugins.composeMultiplatform)
-  alias(libs.plugins.composeCompiler)
 }
 
 kotlin {
-  android {
-    namespace = "com.r0adkll.livewire.runtime"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    minSdk = libs.versions.android.minSdk.get().toInt()
-    compilerOptions {
-      jvmTarget.set(JvmTarget.JVM_11)
-    }
-  }
-
-  jvm()
-  iosArm64()
-  iosSimulatorArm64()
-
   sourceSets {
     androidMain.dependencies {
       api(libs.kotlinx.coroutines.android)
@@ -41,9 +24,4 @@ kotlin {
       api(libs.kotlinx.coroutinesSwing)
     }
   }
-}
-
-composeCompiler {
-  includeSourceInformation = true
-  stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

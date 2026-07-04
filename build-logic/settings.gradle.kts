@@ -1,10 +1,6 @@
 @file:Suppress("UnstableApiUsage")
 
-rootProject.name = "livewire"
-enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
-
 pluginManagement {
-  includeBuild("build-logic")
   repositories {
     google {
       mavenContent {
@@ -28,28 +24,15 @@ dependencyResolutionManagement {
       }
     }
     mavenCentral()
+    gradlePluginPortal()
+  }
+  versionCatalogs {
+    create("libs") {
+      from(files("../gradle/libs.versions.toml"))
+    }
   }
 }
 
-plugins {
-  id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
-}
+rootProject.name = "build-logic"
 
-include(":demo:common")
-include(":demo:android")
-include(":demo:desktop")
-
-include(":host")
-include(":runtime")
-include(":client")
-include(":ui")
-include("compiler")
-
-include(
-  ":plugins:database",
-  ":plugins:playground",
-  ":plugins:network:core",
-  ":plugins:network:okhttp",
-  ":plugins:network:ktor",
-  ":plugins:recomposition",
-)
+include(":convention")

@@ -1,11 +1,8 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
-  alias(libs.plugins.kotlinMultiplatform)
-  alias(libs.plugins.androidLibrary)
-  alias(libs.plugins.composeMultiplatform)
-  alias(libs.plugins.composeCompiler)
+  id("livewire.kmp.library")
+  id("livewire.compose")
   alias(libs.plugins.kotlinSerialization)
   alias(libs.plugins.sqldelight)
 }
@@ -28,19 +25,6 @@ kotlin {
       "-Xcontext-sensitive-resolution",
     )
   }
-
-  android {
-    namespace = "com.r0adkll.livewire.demo.common"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    minSdk = libs.versions.android.minSdk.get().toInt()
-    compilerOptions {
-      jvmTarget.set(JvmTarget.JVM_11)
-    }
-  }
-
-  jvm()
-  iosArm64()
-  iosSimulatorArm64()
 
   targets.withType<KotlinNativeTarget>().configureEach {
     binaries.framework {
@@ -98,9 +82,4 @@ kotlin {
       implementation(libs.sqldelight.native.driver)
     }
   }
-}
-
-composeCompiler {
-  includeSourceInformation = true
-  stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }

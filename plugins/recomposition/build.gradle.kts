@@ -1,11 +1,7 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-
 plugins {
-  alias(libs.plugins.kotlinMultiplatform)
-  alias(libs.plugins.androidLibrary)
+  id("livewire.kmp.library")
+  id("livewire.compose")
   alias(libs.plugins.kotlinSerialization)
-  alias(libs.plugins.composeMultiplatform)
-  alias(libs.plugins.composeCompiler)
 }
 
 kotlin {
@@ -18,12 +14,6 @@ kotlin {
   }
 
   android {
-    namespace = "com.r0adkll.livewire.plugin.recomposition"
-    compileSdk = libs.versions.android.compileSdk.get().toInt()
-    minSdk = libs.versions.android.minSdk.get().toInt()
-    compilerOptions {
-      jvmTarget.set(JvmTarget.JVM_11)
-    }
     withHostTest {
       isReturnDefaultValues = true
     }
@@ -31,11 +21,6 @@ kotlin {
       instrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
   }
-
-  jvm()
-
-  iosArm64()
-  iosSimulatorArm64()
 
   applyDefaultHierarchyTemplate()
 
@@ -83,11 +68,6 @@ kotlin {
       }
     }
   }
-}
-
-composeCompiler {
-  includeSourceInformation = true
-  stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }
 
 tasks.matching { it.name == "copyAndroidDeviceTestComposeResourcesToAndroidAssets" }.configureEach {

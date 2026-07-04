@@ -2,8 +2,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
   alias(libs.plugins.kotlinJvm)
-  alias(libs.plugins.composeMultiplatform)
-  alias(libs.plugins.composeCompiler)
+  id("livewire.compose")
 }
 
 kotlin {
@@ -36,9 +35,4 @@ compose.desktop {
       packageVersion = "1.0.0"
     }
   }
-}
-
-composeCompiler {
-  includeSourceInformation = true
-  stabilityConfigurationFiles.add(rootProject.layout.projectDirectory.file("stability_config.conf"))
 }
