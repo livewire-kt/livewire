@@ -38,6 +38,12 @@ internal fun Project.configureKotlinMultiplatformLibrary(withIos: Boolean) {
       jvmTarget.set(JvmTarget.JVM_11)
     }
 
+    compilerOptions {
+      freeCompilerArgs.addAll(
+        "-Xexplicit-backing-fields"
+      )
+    }
+
     jvm()
 
     if (withIos) {
