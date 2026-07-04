@@ -2,7 +2,7 @@ plugins {
   `kotlin-dsl`
 }
 
-group = "com.r0adkll.livewire.buildlogic"
+group = "com.livewire.buildlogic"
 
 dependencies {
   compileOnly(libs.android.gradlePlugin)
@@ -14,23 +14,23 @@ gradlePlugin {
   plugins {
     register("kmpLibrary") {
       id = "livewire.kmp.library"
-      implementationClass = "com.r0adkll.livewire.buildlogic.KmpLibraryConventionPlugin"
+      implementationClass = "com.livewire.buildlogic.KmpLibraryConventionPlugin"
     }
     register("kmpLibraryJvmOnly") {
       id = "livewire.kmp.library.jvmonly"
-      implementationClass = "com.r0adkll.livewire.buildlogic.KmpLibraryJvmOnlyConventionPlugin"
+      implementationClass = "com.livewire.buildlogic.KmpLibraryJvmOnlyConventionPlugin"
     }
     register("compose") {
       id = "livewire.compose"
-      implementationClass = "com.r0adkll.livewire.buildlogic.ComposeConventionPlugin"
+      implementationClass = "com.livewire.buildlogic.ComposeConventionPlugin"
     }
     register("androidApplication") {
       id = "livewire.android.application"
-      implementationClass = "com.r0adkll.livewire.buildlogic.AndroidApplicationConventionPlugin"
+      implementationClass = "com.livewire.buildlogic.AndroidApplicationConventionPlugin"
     }
     register("jvmLibrary") {
       id = "livewire.jvm.library"
-      implementationClass = "com.r0adkll.livewire.buildlogic.JvmLibraryConventionPlugin"
+      implementationClass = "com.livewire.buildlogic.JvmLibraryConventionPlugin"
     }
   }
 }

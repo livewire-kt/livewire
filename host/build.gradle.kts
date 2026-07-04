@@ -58,11 +58,11 @@ kotlin {
 
 compose.desktop {
   application {
-    mainClass = "com.r0adkll.livewire.MainKt"
+    mainClass = "com.livewire.MainKt"
 
     nativeDistributions {
       targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-      packageName = "com.r0adkll.livewire.host"
+      packageName = "com.livewire.host"
       packageVersion = "1.0.0"
     }
   }

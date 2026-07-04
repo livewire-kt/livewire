@@ -10,7 +10,7 @@ plugins {
 sqldelight {
   databases {
     create("LivewireDatabase") {
-      packageName.set("com.r0adkll.livewire.app")
+      packageName.set("com.livewire.app")
       srcDirs.setFrom("src/commonMain/sqldelight")
       generateAsync.set(true)
     }

@@ -10,7 +10,7 @@
       tools:node="merge">
 
       <meta-data
-        android:name="com.r0adkll.livewire.ContextHolder"
+        android:name="com.livewire.ContextHolder"
         android:value="androidx.startup" />
     </provider>
   </application>

@@ -12,7 +12,7 @@
         <list>
           <option value="hotRunJvm" />
           <option value="--mainClass" />
-          <option value="&quot;com.r0adkll.livewire.MainKt&quot;" />
+          <option value="&quot;com.livewire.MainKt&quot;" />
         </list>
       </option>
       <option name="vmOptions" />

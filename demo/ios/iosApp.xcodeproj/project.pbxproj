@@ -188,7 +188,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.r0adkll.livewire.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.livewire.ios;
 				PRODUCT_NAME = iosApp;
 				SWIFT_VERSION = 5.0;
 			};
@@ -209,7 +209,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.r0adkll.livewire.ios;
+				PRODUCT_BUNDLE_IDENTIFIER = com.livewire.ios;
 				PRODUCT_NAME = iosApp;
 				SWIFT_VERSION = 5.0;
 			};
