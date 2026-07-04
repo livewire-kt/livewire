@@ -3,9 +3,10 @@ package com.livewire.plugin.network.ktor
 import com.livewire.plugin.network.data.NetworkEventCollector
 import com.livewire.plugin.network.data.NetworkRequest
 import com.livewire.plugin.network.data.NetworkResponse
-import io.ktor.client.call.body
 import io.ktor.client.plugins.api.createClientPlugin
+import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.statement.bodyAsText
+import io.ktor.client.statement.readRawBytes
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
@@ -46,49 +47,52 @@ val LivewireNetworkPlugin = createClientPlugin(
     request.attributes.put(EventIdKey, eventId)
   }
 
-  onResponse { response ->
-    val eventId = response.call.request.attributes.getOrNull(EventIdKey) ?: return@onResponse
-    val startTime = response.call.request.attributes.getOrNull(StartTimeKey) ?: return@onResponse
-    val durationMs = currentTimeMillis() - startTime
+  val observer = ResponseObserver.prepare {
+    onResponse { response ->
+      val eventId = response.call.request.attributes.getOrNull(EventIdKey) ?: return@onResponse
+      val startTime = response.call.request.attributes.getOrNull(StartTimeKey) ?: return@onResponse
+      val durationMs = currentTimeMillis() - startTime
 
-    val contentType = response.contentType()?.toString()
-    // TODO: probably need better heuristics than this.
-    // TODO: can handle more types this way too. videos? gifs?
-    val isImage = contentType?.startsWith("image/") == true
+      val contentType = response.contentType()?.toString()
+      // TODO: probably need better heuristics than this.
+      // TODO: can handle more types this way too. videos? gifs?
+      val isImage = contentType?.startsWith("image/") == true
 
-    var responseBody: String? = null
-    var responseBodyBytes: ByteArray? = null
-    if (isImage) {
-      responseBodyBytes = try {
-        val bytes = response.body<ByteArray>()
-        if (bytes.size <= maxBodySize) bytes else null
-      } catch (_: Exception) {
-        null
+      var responseBody: String? = null
+      var responseBodyBytes: ByteArray? = null
+      if (isImage) {
+        responseBodyBytes = try {
+          val bytes = response.readRawBytes()
+          if (bytes.size <= maxBodySize) bytes else null
+        } catch (_: Exception) {
+          null
+        }
+      } else {
+        responseBody = try {
+          val text = response.bodyAsText()
+          if (text.length <= maxBodySize) text else text.take(maxBodySize.toInt())
+        } catch (_: Exception) {
+          null
+        }
       }
-    } else {
-      responseBody = try {
-        val text = response.bodyAsText()
-        if (text.length <= maxBodySize) text else text.take(maxBodySize.toInt())
-      } catch (_: Exception) {
-        null
+
+      val responseHeaders = mutableMapOf<String, String>()
+      response.headers.entries().forEach { (key, values) ->
+        responseHeaders[key] = values.joinToString(", ")
       }
+
+      val networkResponse = NetworkResponse(
+        statusCode = response.status.value,
+        headers = responseHeaders,
+        body = responseBody,
+        bodyBytes = responseBodyBytes,
+        contentType = contentType,
+        contentLength = response.headers[HttpHeaders.ContentLength]?.toLongOrNull(),
+        timestamp = currentTimeMillis(),
+      )
+
+      NetworkEventCollector.recordResponse(eventId, networkResponse, durationMs)
     }
-
-    val responseHeaders = mutableMapOf<String, String>()
-    response.headers.entries().forEach { (key, values) ->
-      responseHeaders[key] = values.joinToString(", ")
-    }
-
-    val networkResponse = NetworkResponse(
-      statusCode = response.status.value,
-      headers = responseHeaders,
-      body = responseBody,
-      bodyBytes = responseBodyBytes,
-      contentType = contentType,
-      contentLength = response.headers[HttpHeaders.ContentLength]?.toLongOrNull(),
-      timestamp = currentTimeMillis(),
-    )
-
-    NetworkEventCollector.recordResponse(eventId, networkResponse, durationMs)
   }
+  ResponseObserver.install(observer, client)
 }
