@@ -1,5 +1,5 @@
 plugins {
-  alias(libs.plugins.kotlinJvm)
+  id("livewire.jvm.library")
 }
 
 dependencies {
