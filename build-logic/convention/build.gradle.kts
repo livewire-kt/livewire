@@ -8,6 +8,7 @@ dependencies {
   compileOnly(libs.android.gradlePlugin)
   compileOnly(libs.kotlin.gradlePlugin)
   compileOnly(libs.composeCompiler.gradlePlugin)
+  compileOnly(libs.vanniktech.mavenPublish.gradlePlugin)
 }
 
 gradlePlugin {
@@ -31,6 +32,10 @@ gradlePlugin {
     register("jvmLibrary") {
       id = "livewire.jvm.library"
       implementationClass = "com.livewire.buildlogic.JvmLibraryConventionPlugin"
+    }
+    register("publish") {
+      id = "livewire.publish"
+      implementationClass = "com.livewire.buildlogic.LivewirePublishConventionPlugin"
     }
   }
 }

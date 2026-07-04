@@ -9,4 +9,5 @@ plugins {
   alias(libs.plugins.kotlinSerialization) apply false
   alias(libs.plugins.ksp) apply false
   alias(libs.plugins.buildConfig) apply false
+  alias(libs.plugins.mavenPublish) apply false
 }

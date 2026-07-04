@@ -1,5 +1,6 @@
 plugins {
   id("livewire.kmp.library.jvmonly")
+  id("livewire.publish")
 }
 
 kotlin {
