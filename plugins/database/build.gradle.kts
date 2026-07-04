@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
   id("livewire.kmp.library")
+  id("livewire.publish")
   id("livewire.compose")
   alias(libs.plugins.kotlinSerialization)
 }

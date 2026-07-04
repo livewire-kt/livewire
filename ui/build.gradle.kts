@@ -1,5 +1,6 @@
 plugins {
   id("livewire.kmp.library")
+  id("livewire.publish")
   id("livewire.compose")
   alias(libs.plugins.kotlinSerialization)
   alias(libs.plugins.ksp)
