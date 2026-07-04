@@ -1,0 +1,49 @@
+package com.livewire.ui.widget
+
+import androidx.compose.runtime.Applier
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
+import com.livewire.annotations.LivewireSerializer
+import com.livewire.ui.composition.LivewireComposable
+import com.livewire.ui.layout.LayoutNode
+import com.livewire.ui.layout.applier
+import com.livewire.ui.modifier.LivewireModifier
+import kotlinx.serialization.Serializable
+
+@LivewireComposable
+@Composable
+fun Table(
+  columns: List<String>,
+  rows: List<List<String>>,
+  modifier: LivewireModifier = LivewireModifier,
+  pageSize: Int = 10,
+) {
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
+  ReusableComposeNode<TableNode, Applier<LayoutNode>>(
+    factory = { TableNode(columns, rows, pageSize) },
+    update = {
+      set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
+      set(columns, TableNode.SetColumns)
+      set(rows, TableNode.SetRows)
+      set(pageSize, TableNode.SetPageSize)
+    },
+  )
+}
+
+@LivewireSerializer
+@Serializable
+class TableNode(
+  var columns: List<String>,
+  var rows: List<List<String>>,
+  var pageSize: Int = 10,
+) : LayoutNode() {
+
+  companion object {
+    val SetColumns: TableNode.(List<String>) -> Unit = applier { columns = it }
+    val SetRows: TableNode.(List<List<String>>) -> Unit = applier { rows = it }
+    val SetPageSize: TableNode.(Int) -> Unit = applier { pageSize = it }
+  }
+}

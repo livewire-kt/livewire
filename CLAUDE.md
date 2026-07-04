@@ -62,8 +62,8 @@ livewire/
 
 - Version catalog in `gradle/libs.versions.toml` — all dependency versions centralized there
 - Typesafe project accessors enabled (`projects.shared`, `projects.hostRuntime`, etc.)
-- Package root: `com.r0adkll.livewire` (runtime modules use `.runtime` subpackage)
-- Android app package: `com.r0adkll.livewire.livewire`
+- Package root: `com.livewire` (runtime modules use `.runtime` subpackage)
+- Android app package: `com.livewire.livewire`
 - KMP modules use `androidMain` / `jvmMain` / `commonMain` source set layout
 - JVM-only modules (`:host-runtime`) use standard `src/main/kotlin` layout
 - After generating files, run `git add .`

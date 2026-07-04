@@ -1,0 +1,94 @@
+package com.livewire.ui.widget
+
+import androidx.compose.runtime.Applier
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReusableComposeNode
+import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.toLong
+import com.livewire.annotations.LivewireSerializer
+import com.livewire.ui.actions.ClickAction
+import com.livewire.ui.composition.LivewireComposable
+import com.livewire.ui.layout.ColumnScope
+import com.livewire.ui.layout.ColumnScopeInstance
+import com.livewire.ui.layout.LayoutNode
+import com.livewire.ui.layout.applier
+import com.livewire.ui.modifier.LivewireModifier
+import kotlinx.serialization.Serializable
+
+@LivewireComposable
+@Composable
+fun DropdownMenu(
+  expanded: Boolean,
+  onDismissRequest: ClickAction,
+  modifier: LivewireModifier = LivewireModifier,
+  content: @Composable @LivewireComposable ColumnScope.() -> Unit,
+) {
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
+  ReusableComposeNode<DropdownMenuNode, Applier<LayoutNode>>(
+    factory = { DropdownMenuNode(expanded, onDismissRequest) },
+    update = {
+      set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
+      update(expanded, DropdownMenuNode.SetExpanded)
+      update(onDismissRequest, DropdownMenuNode.SetOnDismissRequest)
+    },
+    content = { ColumnScopeInstance.content() },
+  )
+}
+
+@LivewireSerializer
+@Serializable
+class DropdownMenuNode(
+  var expanded: Boolean,
+  var onDismissRequest: ClickAction,
+) : LayoutNode() {
+
+  companion object {
+    val SetExpanded: DropdownMenuNode.(Boolean) -> Unit = applier { expanded = it }
+    val SetOnDismissRequest: DropdownMenuNode.(ClickAction) -> Unit = applier { onDismissRequest = it }
+  }
+}
+
+@LivewireComposable
+@Composable
+fun DropdownMenuItem(
+  text: String,
+  onClick: ClickAction,
+  modifier: LivewireModifier = LivewireModifier,
+  leadingIconData: String? = null,
+  trailingIconData: String? = null,
+  enabled: Boolean = true,
+) {
+  val compositeKeyHash = currentCompositeKeyHashCode.toLong()
+  ReusableComposeNode<DropdownMenuItemNode, Applier<LayoutNode>>(
+    factory = { DropdownMenuItemNode(text, onClick) },
+    update = {
+      set(modifier, LayoutNode.SetModifier)
+      init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
+      update(text, DropdownMenuItemNode.SetText)
+      update(onClick, DropdownMenuItemNode.SetOnClick)
+      set(leadingIconData, DropdownMenuItemNode.SetLeadingIconData)
+      set(trailingIconData, DropdownMenuItemNode.SetTrailingIconData)
+      set(enabled, DropdownMenuItemNode.SetEnabled)
+    },
+  )
+}
+
+@LivewireSerializer
+@Serializable
+class DropdownMenuItemNode(
+  var text: String,
+  var onClick: ClickAction,
+  var leadingIconData: String? = null,
+  var trailingIconData: String? = null,
+  var enabled: Boolean = true,
+) : LayoutNode() {
+
+  companion object {
+    val SetText: DropdownMenuItemNode.(String) -> Unit = applier { text = it }
+    val SetOnClick: DropdownMenuItemNode.(ClickAction) -> Unit = applier { onClick = it }
+    val SetLeadingIconData: DropdownMenuItemNode.(String?) -> Unit = applier { leadingIconData = it }
+    val SetTrailingIconData: DropdownMenuItemNode.(String?) -> Unit = applier { trailingIconData = it }
+    val SetEnabled: DropdownMenuItemNode.(Boolean) -> Unit = applier { enabled = it }
+  }
+}
