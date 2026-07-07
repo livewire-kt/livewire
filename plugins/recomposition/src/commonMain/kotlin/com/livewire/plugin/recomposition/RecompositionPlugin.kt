@@ -5,6 +5,7 @@ package com.livewire.plugin.recomposition
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -86,8 +87,8 @@ class RecompositionPlugin(
     var selectedKey by remember { mutableStateOf<Any?>(null) }
     val breadcrumbExpansions = remember { mutableStateMapOf<Any, Set<Int>>() }
 
-    val rows = remember(collapsed, expandOverrides, breadcrumbExpansions, version) {
-      flattenTree(collapsed, expandOverrides, breadcrumbExpansions)
+    val rows by remember(collapsed) {
+      derivedStateOf { flattenTree(collapsed, expandOverrides, breadcrumbExpansions) }
     }
 
     val selectedRow = rows.firstOrNull { it.key == selectedKey }
