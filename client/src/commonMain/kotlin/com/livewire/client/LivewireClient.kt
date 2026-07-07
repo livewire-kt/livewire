@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.launchMolecule
 import com.livewire.logDebug
+import com.livewire.logError
 import com.livewire.transport.DefaultDecoders
 import com.livewire.transport.PayloadDecoder
 import com.livewire.ui.Plugin
@@ -56,7 +57,7 @@ class LivewireClient private constructor(
 
   private val scope = CoroutineScope(
     context + SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
-      logDebug("LivewireClient", "Uncaught error in Livewire scope: ${throwable.message}")
+      logError("LivewireClient", "Uncaught error in Livewire scope", throwable)
     },
   )
   private val darkMode = MutableStateFlow(false)
