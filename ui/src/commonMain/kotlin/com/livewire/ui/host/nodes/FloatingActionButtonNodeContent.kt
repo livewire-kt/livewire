@@ -49,7 +49,7 @@ internal fun FloatingActionButtonNodeContent(
       icon = {
         if (iconNode != null) {
           RemoteIcon(
-            svgData = iconNode.svgData,
+            node = iconNode,
             contentDescription = null,
             tint = iconNode.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
             modifier = Modifier.size(24.dp),
@@ -65,7 +65,7 @@ internal fun FloatingActionButtonNodeContent(
         when (child) {
           is IconNode -> {
             RemoteIcon(
-              svgData = child.svgData,
+              node = child,
               contentDescription = null,
               tint = child.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
               modifier = Modifier.size(24.dp),

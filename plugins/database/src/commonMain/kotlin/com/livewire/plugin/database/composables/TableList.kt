@@ -6,7 +6,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.livewire.plugin.database.data.ColumnInfo
+import com.livewire.plugin.database.ui.DropdownArrow
 import com.livewire.plugin.database.ui.Icons
+import com.livewire.plugin.database.ui.Table
 import com.livewire.plugin.database.data.TableInfo
 import com.livewire.ui.actions.clickAction
 import com.livewire.ui.graphics.CircleShape
@@ -86,7 +88,7 @@ internal fun TableList(
                 }
               ) {
                 Icon(
-                  svgData = Icons.DropdownArrow,
+                  imageVector = Icons.DropdownArrow,
                 )
               }
             }
@@ -131,7 +133,7 @@ private fun TableRootListItem(
     ) {
       val contentColor = LivewireTheme.colorScheme.onSurface
       Icon(
-        svgData = Icons.Table,
+        imageVector = Icons.Table,
         tint = contentColor,
         modifier = LivewireModifier.size(24.dp)
       )

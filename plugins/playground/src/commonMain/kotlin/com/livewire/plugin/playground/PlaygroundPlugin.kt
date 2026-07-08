@@ -62,8 +62,8 @@ import com.livewire.ui.widget.VerticalDivider
 class PlaygroundPlugin : Plugin {
   override val info: PluginInfo = PluginInfo(
     pluginId = "playground",
-    iconData = Icons.Playground,
     title = "Playground",
+    icon = Icons.Playground,
   )
 
   @Composable
@@ -477,7 +477,7 @@ class PlaygroundPlugin : Plugin {
             DropdownMenuItem(
               text = "Option 1",
               onClick = clickAction { menuExpanded = false },
-              leadingIconData = Icons.Sync,
+              leadingIcon = Icons.Sync,
             )
             DropdownMenuItem(
               text = "Option 2",
@@ -556,7 +556,7 @@ class PlaygroundPlugin : Plugin {
         Chip(
           label = "Assist Icon",
           action = clickAction { },
-          leadingIconData = Icons.Sync,
+          leadingIcon = Icons.Sync,
         )
         Chip(
           label = "Elevated",
@@ -577,7 +577,7 @@ class PlaygroundPlugin : Plugin {
           action = clickAction { },
           style = ChipStyle.Input,
           selected = true,
-          leadingIconData = Icons.Sync,
+          leadingIcon = Icons.Sync,
         )
 
         Chip(

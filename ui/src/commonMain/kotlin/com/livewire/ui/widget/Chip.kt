@@ -4,10 +4,14 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.toLong
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.livewire.annotations.LivewireSerializer
 import com.livewire.ui.actions.ClickAction
 import com.livewire.ui.composition.LivewireComposable
+import com.livewire.ui.graphics.VectorIcon
+import com.livewire.ui.graphics.toVectorIcon
 import com.livewire.ui.layout.LayoutNode
 import com.livewire.ui.layout.applier
 import com.livewire.ui.modifier.LivewireModifier
@@ -23,8 +27,9 @@ fun Chip(
   elevated: Boolean = false,
   selected: Boolean = false,
   enabled: Boolean = true,
-  leadingIconData: String? = null,
+  leadingIcon: ImageVector? = null,
 ) {
+  val leadingVector = remember(leadingIcon) { leadingIcon?.toVectorIcon() }
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<ChipNode, Applier<LayoutNode>>(
     factory = { ChipNode(label, action) },
@@ -37,7 +42,7 @@ fun Chip(
       set(elevated, ChipNode.SetElevated)
       set(selected, ChipNode.SetSelected)
       set(enabled, ChipNode.SetEnabled)
-      set(leadingIconData, ChipNode.SetLeadingIconData)
+      set(leadingVector, ChipNode.SetLeadingIcon)
     },
   )
 }
@@ -51,8 +56,9 @@ class ChipNode(
   var elevated: Boolean = false,
   var selected: Boolean = false,
   var enabled: Boolean = true,
-  var leadingIconData: String? = null,
 ) : LayoutNode() {
+
+  var leadingIcon: VectorIcon? = null
 
   companion object {
     val SetLabel: ChipNode.(String) -> Unit = applier { label = it }
@@ -61,7 +67,7 @@ class ChipNode(
     val SetElevated: ChipNode.(Boolean) -> Unit = applier { elevated = it }
     val SetSelected: ChipNode.(Boolean) -> Unit = applier { selected = it }
     val SetEnabled: ChipNode.(Boolean) -> Unit = applier { enabled = it }
-    val SetLeadingIconData: ChipNode.(String?) -> Unit = applier { leadingIconData = it }
+    val SetLeadingIcon: ChipNode.(VectorIcon?) -> Unit = applier { leadingIcon = it }
   }
 }
 

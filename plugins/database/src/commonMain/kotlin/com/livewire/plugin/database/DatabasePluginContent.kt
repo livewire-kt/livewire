@@ -11,7 +11,10 @@ import androidx.compose.ui.unit.dp
 import com.livewire.plugin.database.composables.DatabaseToolBar
 import com.livewire.plugin.database.composables.TableList
 import com.livewire.plugin.database.data.DatabaseInspector
+import com.livewire.plugin.database.ui.DatabaseSearch
 import com.livewire.plugin.database.ui.Icons
+import com.livewire.plugin.database.ui.Run
+import com.livewire.plugin.database.ui.Schema
 import com.livewire.ui.actions.clickAction
 import com.livewire.ui.actions.intValueChangeAction
 import com.livewire.ui.actions.valueChangeAction

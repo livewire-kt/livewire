@@ -2,7 +2,10 @@ package com.livewire.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.livewire.ui.composition.LivewireComposable
+import com.livewire.ui.graphics.VectorIcon
+import com.livewire.ui.graphics.toVectorIcon
 import kotlinx.serialization.Serializable
 
 /**
@@ -30,6 +33,13 @@ interface Plugin {
 @Serializable
 data class PluginInfo(
   val pluginId: String,
-  val iconData: String,
   val title: String,
-)
+  /** Plugin icon, rendered as a vector on the host. */
+  val icon: VectorIcon? = null,
+) {
+  constructor(
+    pluginId: String,
+    title: String,
+    icon: ImageVector,
+  ) : this(pluginId, title, icon.toVectorIcon())
+}

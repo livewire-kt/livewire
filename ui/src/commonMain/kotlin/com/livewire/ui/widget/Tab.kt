@@ -4,10 +4,14 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.toLong
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.livewire.annotations.LivewireSerializer
 import com.livewire.ui.actions.IntValueChangeAction
 import com.livewire.ui.composition.LivewireComposable
+import com.livewire.ui.graphics.VectorIcon
+import com.livewire.ui.graphics.toVectorIcon
 import com.livewire.ui.layout.LayoutNode
 import com.livewire.ui.layout.applier
 import com.livewire.ui.modifier.LivewireModifier
@@ -56,17 +60,18 @@ class TabRowNode(
 fun Tab(
   text: String? = null,
   modifier: LivewireModifier = LivewireModifier,
-  iconData: String? = null,
+  icon: ImageVector? = null,
   enabled: Boolean = true,
 ) {
+  val vector = remember(icon) { icon?.toVectorIcon() }
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<TabNode, Applier<LayoutNode>>(
-    factory = { TabNode(text, iconData, enabled) },
+    factory = { TabNode(text, enabled) },
     update = {
       set(modifier, LayoutNode.SetModifier)
       init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(text, TabNode.SetText)
-      set(iconData, TabNode.SetIconData)
+      set(vector, TabNode.SetIcon)
       set(enabled, TabNode.SetEnabled)
     },
   )
@@ -76,13 +81,14 @@ fun Tab(
 @Serializable
 class TabNode(
   var text: String? = null,
-  var iconData: String? = null,
   var enabled: Boolean = true,
 ) : LayoutNode() {
 
+  var icon: VectorIcon? = null
+
   companion object {
     val SetText: TabNode.(String?) -> Unit = applier { text = it }
-    val SetIconData: TabNode.(String?) -> Unit = applier { iconData = it }
+    val SetIcon: TabNode.(VectorIcon?) -> Unit = applier { icon = it }
     val SetEnabled: TabNode.(Boolean) -> Unit = applier { enabled = it }
   }
 }

@@ -6,9 +6,11 @@ import com.livewire.plugin.network.composables.NetworkToolbar
 import com.livewire.plugin.network.composables.RequestDetailPane
 import com.livewire.plugin.network.composables.RequestListItem
 import com.livewire.plugin.network.ui.Icons
+import com.livewire.plugin.network.ui.Network
 import com.livewire.ui.Plugin
 import com.livewire.ui.PluginInfo
 import com.livewire.ui.actions.clickAction
+import com.livewire.ui.graphics.toVectorIcon
 import com.livewire.ui.actions.valueChangeAction
 import com.livewire.ui.layout.Column
 import com.livewire.ui.layout.Row
@@ -31,8 +33,8 @@ class NetworkPlugin : Plugin {
 
   override val info: PluginInfo = PluginInfo(
     pluginId = "network",
-    iconData = Icons.Network,
     title = "Network",
+    icon = Icons.Network,
   )
 
   @Composable

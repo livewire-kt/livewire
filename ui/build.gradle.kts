@@ -28,7 +28,6 @@ kotlin {
       api(libs.okio)
       api(libs.coil.compose)
       api(libs.coil.network.ktor3)
-      api(libs.coil.svg)
       api(libs.ktor.clientWebsockets)
       implementation(libs.stately.concurrent.collections)
     }

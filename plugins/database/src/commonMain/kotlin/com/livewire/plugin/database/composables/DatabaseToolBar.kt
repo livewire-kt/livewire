@@ -7,6 +7,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.livewire.plugin.database.data.DatabaseInfo
+import com.livewire.plugin.database.ui.Database
+import com.livewire.plugin.database.ui.DropdownArrow
 import com.livewire.plugin.database.ui.Icons
 import com.livewire.ui.actions.clickAction
 import com.livewire.ui.graphics.RoundedCornerShape
@@ -72,7 +74,7 @@ fun DatabaseToolBar(
           )
           Spacer(LivewireModifier.width(8.dp))
           Icon(
-            svgData = Icons.DropdownArrow,
+            imageVector = Icons.DropdownArrow,
             modifier = LivewireModifier
               .size(24.dp)
           )
@@ -86,7 +88,7 @@ fun DatabaseToolBar(
         ) {
           availableDatabases.forEach { databaseInfo ->
             DropdownMenuItem(
-              leadingIconData = Icons.Database,
+              leadingIcon = Icons.Database,
               text = databaseInfo.name,
               onClick = clickAction {
                 onDatabaseSelected(databaseInfo)

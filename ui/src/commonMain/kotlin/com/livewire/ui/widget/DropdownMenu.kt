@@ -4,10 +4,14 @@ import androidx.compose.runtime.Applier
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReusableComposeNode
 import androidx.compose.runtime.currentCompositeKeyHashCode
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.toLong
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.livewire.annotations.LivewireSerializer
 import com.livewire.ui.actions.ClickAction
 import com.livewire.ui.composition.LivewireComposable
+import com.livewire.ui.graphics.VectorIcon
+import com.livewire.ui.graphics.toVectorIcon
 import com.livewire.ui.layout.ColumnScope
 import com.livewire.ui.layout.ColumnScopeInstance
 import com.livewire.ui.layout.LayoutNode
@@ -55,10 +59,12 @@ fun DropdownMenuItem(
   text: String,
   onClick: ClickAction,
   modifier: LivewireModifier = LivewireModifier,
-  leadingIconData: String? = null,
-  trailingIconData: String? = null,
+  leadingIcon: ImageVector? = null,
+  trailingIcon: ImageVector? = null,
   enabled: Boolean = true,
 ) {
+  val leadingVector = remember(leadingIcon) { leadingIcon?.toVectorIcon() }
+  val trailingVector = remember(trailingIcon) { trailingIcon?.toVectorIcon() }
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<DropdownMenuItemNode, Applier<LayoutNode>>(
     factory = { DropdownMenuItemNode(text, onClick) },
@@ -67,8 +73,8 @@ fun DropdownMenuItem(
       init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       update(text, DropdownMenuItemNode.SetText)
       update(onClick, DropdownMenuItemNode.SetOnClick)
-      set(leadingIconData, DropdownMenuItemNode.SetLeadingIconData)
-      set(trailingIconData, DropdownMenuItemNode.SetTrailingIconData)
+      set(leadingVector, DropdownMenuItemNode.SetLeadingIcon)
+      set(trailingVector, DropdownMenuItemNode.SetTrailingIcon)
       set(enabled, DropdownMenuItemNode.SetEnabled)
     },
   )
@@ -79,16 +85,18 @@ fun DropdownMenuItem(
 class DropdownMenuItemNode(
   var text: String,
   var onClick: ClickAction,
-  var leadingIconData: String? = null,
-  var trailingIconData: String? = null,
   var enabled: Boolean = true,
 ) : LayoutNode() {
+
+  var leadingIcon: VectorIcon? = null
+
+  var trailingIcon: VectorIcon? = null
 
   companion object {
     val SetText: DropdownMenuItemNode.(String) -> Unit = applier { text = it }
     val SetOnClick: DropdownMenuItemNode.(ClickAction) -> Unit = applier { onClick = it }
-    val SetLeadingIconData: DropdownMenuItemNode.(String?) -> Unit = applier { leadingIconData = it }
-    val SetTrailingIconData: DropdownMenuItemNode.(String?) -> Unit = applier { trailingIconData = it }
+    val SetLeadingIcon: DropdownMenuItemNode.(VectorIcon?) -> Unit = applier { leadingIcon = it }
+    val SetTrailingIcon: DropdownMenuItemNode.(VectorIcon?) -> Unit = applier { trailingIcon = it }
     val SetEnabled: DropdownMenuItemNode.(Boolean) -> Unit = applier { enabled = it }
   }
 }
