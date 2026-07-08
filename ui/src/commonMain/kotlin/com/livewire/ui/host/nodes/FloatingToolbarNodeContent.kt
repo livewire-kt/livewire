@@ -3,6 +3,7 @@ package com.livewire.ui.host.nodes
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.HorizontalFloatingToolbar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.livewire.ui.host.LayoutNodeContent
 import com.livewire.ui.host.debugFrame
@@ -19,7 +20,9 @@ internal fun FloatingToolbarNodeContent(
     modifier = modifier.debugFrame(),
     content = {
       node.children.forEach { child ->
-        LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+        key(child.compositeKeyHash) {
+          LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+        }
       }
     },
   )

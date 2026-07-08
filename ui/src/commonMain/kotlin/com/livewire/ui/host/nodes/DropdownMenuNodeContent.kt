@@ -5,6 +5,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -34,33 +35,35 @@ internal fun DropdownMenuNodeContent(
   ) {
     node.children.forEach { child ->
       if (child is DropdownMenuItemNode) {
-        DropdownMenuItem(
-          text = { Text(child.text) },
-          onClick = {
-            scope.launch {
-              eventDispatcher.dispatch(child.onClick)
-            }
-          },
-          modifier = child.modifier.toComposeUi(Modifier),
-          enabled = child.enabled,
-          leadingIcon = child.leadingIcon?.let { icon ->
-            {
-              RemoteIcon(
-                vector = icon,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-              )
-            }
-          },
-          trailingIcon = child.trailingIcon?.let { icon ->
-            {
-              RemoteIcon(
-                vector = icon,
-                contentDescription = null,
-              )
-            }
-          },
-        )
+        key(child.compositeKeyHash) {
+          DropdownMenuItem(
+            text = { Text(child.text) },
+            onClick = {
+              scope.launch {
+                eventDispatcher.dispatch(child.onClick)
+              }
+            },
+            modifier = child.modifier.toComposeUi(Modifier),
+            enabled = child.enabled,
+            leadingIcon = child.leadingIcon?.let { icon ->
+              {
+                RemoteIcon(
+                  vector = icon,
+                  contentDescription = null,
+                  modifier = Modifier.size(20.dp),
+                )
+              }
+            },
+            trailingIcon = child.trailingIcon?.let { icon ->
+              {
+                RemoteIcon(
+                  vector = icon,
+                  contentDescription = null,
+                )
+              }
+            },
+          )
+        }
       }
     }
   }

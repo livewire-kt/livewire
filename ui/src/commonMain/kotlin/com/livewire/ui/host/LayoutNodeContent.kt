@@ -2,12 +2,14 @@ package com.livewire.ui.host
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.livewire.ui.host.nodes.AnimatedVisibilityNodeContent
 import com.livewire.ui.host.nodes.BoxNodeContent
 import com.livewire.ui.host.nodes.ButtonNodeContent
 import com.livewire.ui.host.nodes.CheckboxNodeContent
 import com.livewire.ui.host.nodes.ChipNodeContent
+import com.livewire.ui.host.nodes.CodeBlockNodeContent
 import com.livewire.ui.host.nodes.ColumnNodeContent
 import com.livewire.ui.host.nodes.DividerNodeContent
 import com.livewire.ui.host.nodes.DropdownMenuNodeContent
@@ -37,6 +39,7 @@ import com.livewire.ui.widget.AnimatedVisibilityNode
 import com.livewire.ui.widget.ButtonNode
 import com.livewire.ui.widget.CheckboxNode
 import com.livewire.ui.widget.ChipNode
+import com.livewire.ui.widget.CodeBlockNode
 import com.livewire.ui.widget.DividerNode
 import com.livewire.ui.widget.DropdownMenuNode
 import com.livewire.ui.widget.FloatingActionButtonNode
@@ -74,6 +77,7 @@ fun LayoutNodeContent(
     is ImageNode -> ImageNodeContent(node, modifier)
     is CheckboxNode -> CheckboxNodeContent(node, modifier)
     is ChipNode -> ChipNodeContent(node, modifier)
+    is CodeBlockNode -> CodeBlockNodeContent(node, modifier)
     is DividerNode -> DividerNodeContent(node, modifier)
     is DropdownMenuNode -> DropdownMenuNodeContent(node, modifier)
     is FloatingActionButtonNode -> FloatingActionButtonNodeContent(node, modifier)
@@ -93,7 +97,9 @@ fun LayoutNodeContent(
     else -> {
       Box(modifier.debugFrame()) {
         node.children.forEach { child ->
-          LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+          key(child.compositeKeyHash) {
+            LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+          }
         }
       }
     }
