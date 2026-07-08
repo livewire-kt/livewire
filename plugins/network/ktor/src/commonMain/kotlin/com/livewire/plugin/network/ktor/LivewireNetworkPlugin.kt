@@ -3,11 +3,13 @@ package com.livewire.plugin.network.ktor
 import com.livewire.plugin.network.data.NetworkEventCollector
 import com.livewire.plugin.network.data.NetworkRequest
 import com.livewire.plugin.network.data.NetworkResponse
+import io.ktor.client.plugins.api.SendingRequest
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.plugins.observer.ResponseObserver
 import io.ktor.client.statement.bodyAsText
 import io.ktor.client.statement.readRawBytes
 import io.ktor.http.HttpHeaders
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.contentType
 import io.ktor.util.AttributeKey
 
@@ -45,6 +47,29 @@ val LivewireNetworkPlugin = createClientPlugin(
 
     val eventId = NetworkEventCollector.recordRequest(networkRequest)
     request.attributes.put(EventIdKey, eventId)
+  }
+
+  // Runs after content negotiation, so serialized bodies are available.
+  // Streaming bodies (channel content) are skipped — reading them here
+  // would consume the request.
+  on(SendingRequest) { request, content ->
+    val eventId = request.attributes.getOrNull(EventIdKey) ?: return@on
+    if (content is OutgoingContent.ByteArrayContent) {
+      val body = try {
+        val text = content.bytes().decodeToString()
+        if (text.length <= maxBodySize) text else text.take(maxBodySize.toInt())
+      } catch (_: Exception) {
+        null
+      }
+      if (body != null) {
+        NetworkEventCollector.updateRequestBody(
+          id = eventId,
+          body = body,
+          contentType = content.contentType?.toString(),
+          contentLength = content.contentLength,
+        )
+      }
+    }
   }
 
   val observer = ResponseObserver.prepare {

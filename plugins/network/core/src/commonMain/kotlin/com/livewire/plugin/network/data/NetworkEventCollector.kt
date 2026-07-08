@@ -29,6 +29,34 @@ object NetworkEventCollector {
     return id
   }
 
+  /**
+   * Patches the recorded request once its final body is known — e.g. after
+   * content negotiation has serialized it. Null arguments keep the values
+   * captured at record time.
+   */
+  fun updateRequestBody(
+    id: String,
+    body: String?,
+    contentType: String? = null,
+    contentLength: Long? = null,
+  ) {
+    _events.update { current ->
+      current.map { event ->
+        if (event.id == id) {
+          event.copy(
+            request = event.request.copy(
+              body = body ?: event.request.body,
+              contentType = contentType ?: event.request.contentType,
+              contentLength = contentLength ?: event.request.contentLength,
+            ),
+          )
+        } else {
+          event
+        }
+      }
+    }
+  }
+
   fun recordResponse(id: String, response: NetworkResponse, durationMs: Long) {
     _events.update { current ->
       current.map { event ->
