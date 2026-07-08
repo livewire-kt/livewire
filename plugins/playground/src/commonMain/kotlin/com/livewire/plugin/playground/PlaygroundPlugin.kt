@@ -2,6 +2,7 @@ package com.livewire.plugin.playground
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -11,7 +12,6 @@ import com.livewire.ui.PluginInfo
 import com.livewire.ui.actions.checkedChangeAction
 import com.livewire.ui.actions.clickAction
 import com.livewire.ui.actions.floatValueChangeAction
-import com.livewire.ui.actions.intValueChangeAction
 import com.livewire.ui.actions.valueChangeAction
 import com.livewire.ui.graphics.CircleShape
 import com.livewire.ui.graphics.RoundedCornerShape
@@ -635,17 +635,77 @@ class PlaygroundPlugin : Plugin {
         )
       }
 
-      var selectedTab by remember { mutableStateOf(0) }
+      // Tabs are selected by name rather than index, so dynamic add/remove needs no bookkeeping
+      var selectedTab by remember { mutableStateOf("Overview") }
+      var openTabs by remember { mutableStateOf(listOf("Query #1", "Query #2")) }
+      var nextTabNumber by remember { mutableStateOf(3) }
+
       TabRow(
-        selectedTabIndex = selectedTab,
-        onTabSelected = intValueChangeAction {
-          selectedTab = it
-        },
         modifier = LivewireModifier.fillMaxWidth(),
       ) {
-        Tab(text = "Overview")
-        Tab(text = "Details")
-        Tab(text = "Settings")
+        listOf("Overview", "Details", "Settings").forEach { name ->
+          key(name) {
+            Tab(
+              selected = selectedTab == name,
+              onClick = clickAction { selectedTab = name },
+              text = name,
+            )
+          }
+        }
+
+        key("Icon") {
+          Tab(
+            selected = selectedTab == "Icon",
+            onClick = clickAction { selectedTab = "Icon" },
+            text = "Icon",
+          ) {
+            Icon(
+              Icons.Sync,
+              modifier = LivewireModifier.size(16.dp),
+            )
+          }
+        }
+
+        openTabs.forEach { name ->
+          key(name) {
+            Tab(
+              selected = selectedTab == name,
+              onClick = clickAction { selectedTab = name },
+              text = name,
+            ) {
+              IconButton(
+                action = clickAction {
+                  if (selectedTab == name) selectedTab = "Overview"
+                  openTabs = openTabs - name
+                },
+                size = ButtonSize.ExtraSmall,
+                modifier = LivewireModifier.size(24.dp),
+              ) {
+                Icon(
+                  Icons.Sync,
+                  modifier = LivewireModifier.size(14.dp),
+                )
+              }
+            }
+          }
+        }
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Button(
+          action = clickAction {
+            openTabs = openTabs + "Query #$nextTabNumber"
+            nextTabNumber++
+          },
+          size = ButtonSize.ExtraSmall,
+        ) {
+          Text("Add Tab")
+        }
       }
 
       Row(

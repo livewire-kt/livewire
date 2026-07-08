@@ -16,7 +16,6 @@ import com.livewire.plugin.database.ui.Icons
 import com.livewire.plugin.database.ui.Run
 import com.livewire.plugin.database.ui.Schema
 import com.livewire.ui.actions.clickAction
-import com.livewire.ui.actions.intValueChangeAction
 import com.livewire.ui.actions.valueChangeAction
 import com.livewire.ui.graphics.CircleShape
 import com.livewire.ui.graphics.RoundedCornerShape
@@ -78,14 +77,16 @@ internal fun DatabasePluginContent(inspector: DatabaseInspector) {
         },
         tabs = {
           TabRow(
-            selectedTabIndex = selectedTabIndex,
-            onTabSelected = intValueChangeAction {
-              selectedTabIndex = it
-            },
             modifier = LivewireModifier.fillMaxWidth(),
           ) {
-            state.pages.forEach { page ->
-              Tab(text = page.name)
+            state.pages.forEachIndexed { index, page ->
+              key(page.name) {
+                Tab(
+                  selected = index == selectedTabIndex,
+                  onClick = clickAction { selectedTabIndex = index },
+                  text = page.name,
+                )
+              }
             }
           }
         },
