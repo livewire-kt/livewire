@@ -60,8 +60,8 @@ class RecompositionPlugin(
 ) : Plugin {
   override val info: PluginInfo = PluginInfo(
     pluginId = "recomposition",
-    iconData = Icons.Compose,
     title = "Recomposition",
+    icon = Icons.Compose,
   )
 
   init {
