@@ -5,6 +5,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.livewire.plugin.network.data.NetworkEvent
+import com.livewire.plugin.network.ui.Close
 import com.livewire.plugin.network.ui.Icons
 import com.livewire.ui.actions.ClickAction
 import com.livewire.ui.actions.checkedChangeAction
@@ -63,7 +64,7 @@ internal fun RequestDetailPane(
             modifier = LivewireModifier.weight(1f).padding(left = 8.dp),
           )
           IconButton(action = onClose) {
-            Icon(svgData = Icons.Close)
+            Icon(imageVector = Icons.Close)
           }
         }
 

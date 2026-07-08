@@ -2,6 +2,7 @@ package com.livewire.plugin.network.composables
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
+import com.livewire.plugin.network.ui.Delete
 import com.livewire.plugin.network.ui.Icons
 import com.livewire.ui.actions.ClickAction
 import com.livewire.ui.actions.ValueChangeAction
@@ -51,7 +52,7 @@ internal fun NetworkToolbar(
     Button(
       action = onClearAll,
     ) {
-      Icon(svgData = Icons.Delete)
+      Icon(imageVector = Icons.Delete)
       Text("Clear")
     }
 
