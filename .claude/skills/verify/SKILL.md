@@ -45,6 +45,17 @@ Render the real host pipeline to PNGs with `ImageComposeScene`:
 Scene width/height are px; content lays out at `density`, so budget
 ~2x the dp sum or the bottom gets clipped.
 
+Interaction in headless scenes:
+- `scene.sendPointerEvent(PointerEventType.Press/Release, Offset(px, px))`
+  works for clicks/focus.
+- `scene.sendKeyEvent(KeyEvent(key, type, ...))` works for shortcuts and
+  Enter/arrows — needs `@file:OptIn(androidx.compose.ui.InternalComposeUiApi::class)`.
+- Typing text does NOT work (no platform text-input service headless).
+  Workaround: stage the text on the AWT clipboard
+  (`Toolkit.getDefaultToolkit().systemClipboard.setContents(StringSelection("..."), null)`),
+  focus the field with a click, then send Meta+V — paste goes through the
+  key mapping and inserts text fine.
+
 ## Quick compile matrix
 
 ```bash

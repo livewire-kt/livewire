@@ -37,6 +37,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -189,7 +195,21 @@ private fun SearchRow(
           color = MaterialTheme.colorScheme.onSurface,
         ),
         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+          .fillMaxWidth()
+          .onPreviewKeyEvent { event ->
+            if (event.type == KeyEventType.KeyDown &&
+              event.key == Key.Enter &&
+              searchState.totalResults > 0
+            ) {
+              scope.launch {
+                if (event.isShiftPressed) searchState.selectPrevious() else searchState.selectNext()
+              }
+              true
+            } else {
+              false
+            }
+          },
       )
     }
     if (query.isNotEmpty()) {
