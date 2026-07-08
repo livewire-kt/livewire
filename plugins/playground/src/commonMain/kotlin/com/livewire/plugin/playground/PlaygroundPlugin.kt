@@ -28,6 +28,7 @@ import com.livewire.ui.modifier.size
 import com.livewire.ui.modifier.verticalScroll
 import com.livewire.ui.modifier.width
 import com.livewire.ui.widget.AnimatedVisibility
+import com.livewire.ui.widget.BasicTextField
 import com.livewire.ui.widget.Button
 import com.livewire.ui.widget.ButtonSize
 import com.livewire.ui.widget.ButtonStyle
@@ -56,6 +57,7 @@ import com.livewire.ui.widget.Table
 import com.livewire.ui.widget.Text
 import com.livewire.ui.widget.TextField
 import com.livewire.ui.widget.TextFieldStyle
+import com.livewire.ui.widget.TextStyle
 import com.livewire.ui.widget.ToggleButton
 import com.livewire.ui.widget.VerticalDivider
 
@@ -314,6 +316,52 @@ class PlaygroundPlugin : Plugin {
           initialValue = "",
           onValueChange = valueChangeAction { },
           style = TextFieldStyle.Outlined,
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(16.dp),
+        )
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+
+        BasicTextField(
+          initialValue = "",
+          onValueChange = valueChangeAction { },
+          placeholder = "Plain BasicTextField",
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(16.dp),
+        )
+
+        Surface(
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(16.dp),
+          shape = RoundedCornerShape(8.dp),
+          tonalElevation = 2.dp,
+        ) {
+          BasicTextField(
+            initialValue = "",
+            onValueChange = valueChangeAction { },
+            placeholder = "Search…",
+            singleLine = true,
+            textStyle = TextStyle.BodyMedium,
+            modifier = LivewireModifier
+              .fillMaxWidth()
+              .padding(12.dp),
+          )
+        }
+
+        BasicTextField(
+          initialValue = "Read-only, styled",
+          onValueChange = valueChangeAction { },
+          readOnly = true,
+          textStyle = TextStyle.TitleMedium,
+          fontWeight = 700,
           modifier = LivewireModifier
             .weight(1f)
             .padding(16.dp),

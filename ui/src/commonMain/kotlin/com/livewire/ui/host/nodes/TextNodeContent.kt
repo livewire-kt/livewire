@@ -25,7 +25,7 @@ internal fun TextNodeContent(
   )
 }
 
-private val LivewireTextStyle?.asComposeTextStyle: TextStyle
+internal val LivewireTextStyle?.asComposeTextStyle: TextStyle
   @Composable get() = when (this) {
     LivewireTextStyle.DisplayLarge -> MaterialTheme.typography.displayLarge
     LivewireTextStyle.DisplayMedium -> MaterialTheme.typography.displayMedium
