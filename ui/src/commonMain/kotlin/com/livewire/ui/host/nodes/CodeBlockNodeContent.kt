@@ -1,22 +1,42 @@
 package com.livewire.ui.host.nodes
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -29,6 +49,9 @@ import com.livewire.ui.widget.CodeLanguage
 import com.sebastianneubauer.jsontree.JsonTree
 import com.sebastianneubauer.jsontree.TreeColors
 import com.sebastianneubauer.jsontree.TreeState
+import com.sebastianneubauer.jsontree.search.SearchState
+import com.sebastianneubauer.jsontree.search.rememberSearchState
+import kotlinx.coroutines.launch
 
 @Composable
 internal fun CodeBlockNodeContent(
@@ -41,6 +64,7 @@ internal fun CodeBlockNodeContent(
   when {
     language == CodeLanguage.Json && !jsonParseFailed -> JsonContent(
       json = node.content,
+      searchable = node.searchable,
       onError = { jsonParseFailed = true },
       modifier = modifier.debugFrame(),
     )
@@ -71,23 +95,188 @@ private fun detectLanguage(content: String): CodeLanguage {
 @Composable
 private fun JsonContent(
   json: String,
+  searchable: Boolean,
   onError: (Throwable) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  JsonTree(
-    json = json,
-    onLoading = {
-      Box(modifier, contentAlignment = Alignment.Center) {
-        CircularProgressIndicator()
-      }
-    },
-    colors = MaterialTheme.colorScheme.asTreeColors,
-    initialState = TreeState.FIRST_ITEM_EXPANDED,
-    textStyle = codeTextStyle(),
-    showItemCount = true,
-    onError = onError,
+  val searchState = rememberSearchState()
+  val lazyListState = rememberLazyListState()
+  var query by remember { mutableStateOf("") }
+  var parseGeneration by remember { mutableStateOf(0) }
+
+  LaunchedEffect(searchState.selectedResultListIndex) {
+    searchState.selectedResultListIndex?.let { lazyListState.animateScrollToItem(it) }
+  }
+
+  // A query typed while the tree is still parsing searches an empty tree
+  // and is not re-run by JsonTree, so re-apply it once parsing finishes.
+  // The intermediate null (plus a frame in between, so the writes don't
+  // coalesce into one snapshot) forces JsonTree's search effect to restart.
+  LaunchedEffect(parseGeneration) {
+    if (parseGeneration > 0 && query.isNotEmpty()) {
+      searchState.query = null
+      withFrameNanos {}
+      searchState.query = query
+    }
+  }
+
+  Column(modifier) {
+    if (searchable) {
+      SearchRow(
+        query = query,
+        onQueryChange = {
+          query = it
+          searchState.query = it.ifEmpty { null }
+        },
+        searchState = searchState,
+        modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+      )
+    }
+    JsonTree(
+      json = json,
+      onLoading = {
+        DisposableEffect(Unit) {
+          onDispose { parseGeneration++ }
+        }
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+          CircularProgressIndicator()
+        }
+      },
+      colors = MaterialTheme.colorScheme.asTreeColors,
+      initialState = TreeState.FIRST_ITEM_EXPANDED,
+      textStyle = codeTextStyle(),
+      showItemCount = true,
+      searchState = searchState,
+      lazyListState = lazyListState,
+      onError = onError,
+      modifier = Modifier.weight(1f).fillMaxWidth(),
+    )
+  }
+}
+
+@Composable
+private fun SearchRow(
+  query: String,
+  onQueryChange: (String) -> Unit,
+  searchState: SearchState,
+  modifier: Modifier = Modifier,
+) {
+  val scope = rememberCoroutineScope()
+
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
     modifier = modifier,
-  )
+  ) {
+    Box(
+      modifier = Modifier
+        .weight(1f)
+        .clip(RoundedCornerShape(6.dp))
+        .background(MaterialTheme.colorScheme.surfaceVariant)
+        .padding(horizontal = 8.dp, vertical = 6.dp),
+    ) {
+      if (query.isEmpty()) {
+        Text(
+          text = "Search",
+          style = MaterialTheme.typography.bodySmall,
+          color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+      }
+      BasicTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        singleLine = true,
+        textStyle = MaterialTheme.typography.bodySmall.copy(
+          color = MaterialTheme.colorScheme.onSurface,
+        ),
+        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+        modifier = Modifier.fillMaxWidth(),
+      )
+    }
+    if (query.isNotEmpty()) {
+      Text(
+        text = if (searchState.totalResults > 0) {
+          "${(searchState.selectedResultIndex ?: 0) + 1} / ${searchState.totalResults}"
+        } else {
+          "0 / 0"
+        },
+        style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 8.dp),
+      )
+    }
+    SearchArrowButton(
+      icon = chevronUp,
+      contentDescription = "Previous result",
+      enabled = searchState.totalResults > 0,
+      onClick = { scope.launch { searchState.selectPrevious() } },
+    )
+    SearchArrowButton(
+      icon = chevronDown,
+      contentDescription = "Next result",
+      enabled = searchState.totalResults > 0,
+      onClick = { scope.launch { searchState.selectNext() } },
+    )
+  }
+}
+
+@Composable
+private fun SearchArrowButton(
+  icon: ImageVector,
+  contentDescription: String,
+  enabled: Boolean,
+  onClick: () -> Unit,
+) {
+  IconButton(
+    onClick = onClick,
+    enabled = enabled,
+    modifier = Modifier.size(28.dp),
+  ) {
+    Icon(
+      imageVector = icon,
+      contentDescription = contentDescription,
+      modifier = Modifier.size(18.dp),
+    )
+  }
+}
+
+private val chevronUp: ImageVector by lazy {
+  ImageVector.Builder(
+    name = "ChevronUp",
+    defaultWidth = 24.dp,
+    defaultHeight = 24.dp,
+    viewportWidth = 24f,
+    viewportHeight = 24f,
+  ).apply {
+    path(fill = SolidColor(Color.Black)) {
+      moveTo(7.41f, 15.41f)
+      lineTo(12f, 10.83f)
+      lineTo(16.59f, 15.41f)
+      lineTo(18f, 14f)
+      lineTo(12f, 8f)
+      lineTo(6f, 14f)
+      close()
+    }
+  }.build()
+}
+
+private val chevronDown: ImageVector by lazy {
+  ImageVector.Builder(
+    name = "ChevronDown",
+    defaultWidth = 24.dp,
+    defaultHeight = 24.dp,
+    viewportWidth = 24f,
+    viewportHeight = 24f,
+  ).apply {
+    path(fill = SolidColor(Color.Black)) {
+      moveTo(7.41f, 8.59f)
+      lineTo(12f, 13.17f)
+      lineTo(16.59f, 8.59f)
+      lineTo(18f, 10f)
+      lineTo(12f, 16f)
+      lineTo(6f, 10f)
+      close()
+    }
+  }.build()
 }
 
 @Composable

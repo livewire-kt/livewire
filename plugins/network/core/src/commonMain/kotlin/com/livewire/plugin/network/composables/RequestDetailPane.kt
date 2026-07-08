@@ -256,6 +256,7 @@ private fun ColumnScope.BodyTab(event: NetworkEvent) {
     CodeBlock(
       content = requestBody,
       language = CodeLanguage.fromContentType(event.request.contentType),
+      searchable = true,
       modifier = LivewireModifier
         .weight(1f)
         .fillMaxWidth(),
@@ -283,6 +284,7 @@ private fun ColumnScope.BodyTab(event: NetworkEvent) {
       response.body != null -> CodeBlock(
         content = response.body,
         language = CodeLanguage.fromContentType(response.contentType),
+        searchable = true,
         modifier = LivewireModifier
           .weight(2f)
           .fillMaxWidth(),

@@ -20,6 +20,7 @@ class CodeBlockNodeSerializationTest {
     val node = CodeBlockNode(
       content = """{"user":{"name":"Alice","tags":["a","b"]}}""",
       language = CodeLanguage.Json,
+      searchable = true,
     )
 
     val bytes = LivewireUiProtobuf.encodeToByteArray(node)
@@ -27,6 +28,7 @@ class CodeBlockNodeSerializationTest {
 
     assertEquals(node.content, decoded.content)
     assertEquals(node.language, decoded.language)
+    assertEquals(node.searchable, decoded.searchable)
   }
 
   @Test
