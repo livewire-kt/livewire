@@ -29,11 +29,6 @@ object NetworkEventCollector {
     return id
   }
 
-  /**
-   * Patches the recorded request once its final body is known — e.g. after
-   * content negotiation has serialized it. Null arguments keep the values
-   * captured at record time.
-   */
   fun updateRequestBody(
     id: String,
     body: String?,

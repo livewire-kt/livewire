@@ -87,10 +87,6 @@ internal fun CodeBlockNodeContent(
   }
 }
 
-/**
- * Content-sniffing fallback for bodies served with missing or generic
- * content types (e.g. JSON as text/plain).
- */
 private fun detectLanguage(content: String): CodeLanguage {
   val trimmed = content.trimStart()
   return when {
@@ -340,8 +336,6 @@ private val ColorScheme.asTreeColors: TreeColors
     selectedHighlightColor = primaryContainer,
   )
 
-// Alternation groups: 1 = comment, 2 = tag name, 3 = tag close,
-// 4 = attribute name, 5 = quoted attribute value.
 private val markupRegex = Regex(
   "(<!--[\\s\\S]*?-->|<!\\[CDATA\\[[\\s\\S]*?]]>|<[!?][\\s\\S]*?>)" +
     "|(</?[A-Za-z][\\w:.-]*)" +
