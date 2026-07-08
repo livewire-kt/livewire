@@ -53,6 +53,7 @@ internal fun RequestDetailPane(
   ) {
     // Header bar
     Surface(
+      modifier = LivewireModifier.height(60.dp),
       shadowElevation = 4.dp,
     ) {
       Row(

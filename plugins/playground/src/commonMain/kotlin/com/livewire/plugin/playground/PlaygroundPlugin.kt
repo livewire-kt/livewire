@@ -2,6 +2,7 @@ package com.livewire.plugin.playground
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -11,7 +12,6 @@ import com.livewire.ui.PluginInfo
 import com.livewire.ui.actions.checkedChangeAction
 import com.livewire.ui.actions.clickAction
 import com.livewire.ui.actions.floatValueChangeAction
-import com.livewire.ui.actions.intValueChangeAction
 import com.livewire.ui.actions.valueChangeAction
 import com.livewire.ui.graphics.CircleShape
 import com.livewire.ui.graphics.RoundedCornerShape
@@ -28,6 +28,7 @@ import com.livewire.ui.modifier.size
 import com.livewire.ui.modifier.verticalScroll
 import com.livewire.ui.modifier.width
 import com.livewire.ui.widget.AnimatedVisibility
+import com.livewire.ui.widget.BasicTextField
 import com.livewire.ui.widget.Button
 import com.livewire.ui.widget.ButtonSize
 import com.livewire.ui.widget.ButtonStyle
@@ -56,6 +57,7 @@ import com.livewire.ui.widget.Table
 import com.livewire.ui.widget.Text
 import com.livewire.ui.widget.TextField
 import com.livewire.ui.widget.TextFieldStyle
+import com.livewire.ui.widget.TextStyle
 import com.livewire.ui.widget.ToggleButton
 import com.livewire.ui.widget.VerticalDivider
 
@@ -314,6 +316,52 @@ class PlaygroundPlugin : Plugin {
           initialValue = "",
           onValueChange = valueChangeAction { },
           style = TextFieldStyle.Outlined,
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(16.dp),
+        )
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+
+        BasicTextField(
+          initialValue = "",
+          onValueChange = valueChangeAction { },
+          placeholder = "Plain BasicTextField",
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(16.dp),
+        )
+
+        Surface(
+          modifier = LivewireModifier
+            .weight(1f)
+            .padding(16.dp),
+          shape = RoundedCornerShape(8.dp),
+          tonalElevation = 2.dp,
+        ) {
+          BasicTextField(
+            initialValue = "",
+            onValueChange = valueChangeAction { },
+            placeholder = "Search…",
+            singleLine = true,
+            textStyle = TextStyle.BodyMedium,
+            modifier = LivewireModifier
+              .fillMaxWidth()
+              .padding(12.dp),
+          )
+        }
+
+        BasicTextField(
+          initialValue = "Read-only, styled",
+          onValueChange = valueChangeAction { },
+          readOnly = true,
+          textStyle = TextStyle.TitleMedium,
+          fontWeight = 700,
           modifier = LivewireModifier
             .weight(1f)
             .padding(16.dp),
@@ -587,17 +635,77 @@ class PlaygroundPlugin : Plugin {
         )
       }
 
-      var selectedTab by remember { mutableStateOf(0) }
+      // Tabs are selected by name rather than index, so dynamic add/remove needs no bookkeeping
+      var selectedTab by remember { mutableStateOf("Overview") }
+      var openTabs by remember { mutableStateOf(listOf("Query #1", "Query #2")) }
+      var nextTabNumber by remember { mutableStateOf(3) }
+
       TabRow(
-        selectedTabIndex = selectedTab,
-        onTabSelected = intValueChangeAction {
-          selectedTab = it
-        },
         modifier = LivewireModifier.fillMaxWidth(),
       ) {
-        Tab(text = "Overview")
-        Tab(text = "Details")
-        Tab(text = "Settings")
+        listOf("Overview", "Details", "Settings").forEach { name ->
+          key(name) {
+            Tab(
+              selected = selectedTab == name,
+              onClick = clickAction { selectedTab = name },
+              text = name,
+            )
+          }
+        }
+
+        key("Icon") {
+          Tab(
+            selected = selectedTab == "Icon",
+            onClick = clickAction { selectedTab = "Icon" },
+            text = "Icon",
+          ) {
+            Icon(
+              Icons.Sync,
+              modifier = LivewireModifier.size(16.dp),
+            )
+          }
+        }
+
+        openTabs.forEach { name ->
+          key(name) {
+            Tab(
+              selected = selectedTab == name,
+              onClick = clickAction { selectedTab = name },
+              text = name,
+            ) {
+              IconButton(
+                action = clickAction {
+                  if (selectedTab == name) selectedTab = "Overview"
+                  openTabs = openTabs - name
+                },
+                size = ButtonSize.ExtraSmall,
+                modifier = LivewireModifier.size(24.dp),
+              ) {
+                Icon(
+                  Icons.Sync,
+                  modifier = LivewireModifier.size(14.dp),
+                )
+              }
+            }
+          }
+        }
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Button(
+          action = clickAction {
+            openTabs = openTabs + "Query #$nextTabNumber"
+            nextTabNumber++
+          },
+          size = ButtonSize.ExtraSmall,
+        ) {
+          Text("Add Tab")
+        }
       }
 
       Row(

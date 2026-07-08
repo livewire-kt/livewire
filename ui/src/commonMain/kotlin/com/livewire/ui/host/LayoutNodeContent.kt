@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.livewire.ui.host.nodes.AnimatedVisibilityNodeContent
+import com.livewire.ui.host.nodes.BasicTextFieldNodeContent
 import com.livewire.ui.host.nodes.BoxNodeContent
 import com.livewire.ui.host.nodes.ButtonNodeContent
 import com.livewire.ui.host.nodes.CheckboxNodeContent
@@ -36,6 +37,7 @@ import com.livewire.ui.layout.ColumnNode
 import com.livewire.ui.layout.LayoutNode
 import com.livewire.ui.layout.RowNode
 import com.livewire.ui.widget.AnimatedVisibilityNode
+import com.livewire.ui.widget.BasicTextFieldNode
 import com.livewire.ui.widget.ButtonNode
 import com.livewire.ui.widget.CheckboxNode
 import com.livewire.ui.widget.ChipNode
@@ -67,6 +69,7 @@ fun LayoutNodeContent(
 ) {
   when (node) {
     is AnimatedVisibilityNode -> AnimatedVisibilityNodeContent(node, modifier)
+    is BasicTextFieldNode -> BasicTextFieldNodeContent(node, modifier)
     is BoxNode -> BoxNodeContent(node, modifier)
     is ColumnNode -> ColumnNodeContent(node, modifier)
     is RowNode -> RowNodeContent(node, modifier)

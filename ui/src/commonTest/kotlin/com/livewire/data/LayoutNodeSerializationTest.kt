@@ -20,7 +20,7 @@ import com.livewire.ui.actions.LocalLivewireActionObserver
 import com.livewire.ui.actions.checkedChangeAction
 import com.livewire.ui.actions.clickAction
 import com.livewire.ui.actions.floatValueChangeAction
-import com.livewire.ui.actions.intValueChangeAction
+import androidx.compose.runtime.key
 import com.livewire.ui.actions.valueChangeAction
 import com.livewire.ui.composition.launchLivewire
 import com.livewire.ui.composition.livewireFlow
@@ -617,17 +617,19 @@ fun TestContent() {
     }
 
     // TabRow
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf("Overview") }
     TabRow(
-      selectedTabIndex = selectedTab,
-      onTabSelected = intValueChangeAction {
-        selectedTab = it
-      },
       modifier = LivewireModifier.fillMaxWidth(),
     ) {
-      Tab(text = "Overview")
-      Tab(text = "Details")
-      Tab(text = "Settings")
+      listOf("Overview", "Details", "Settings").forEach { name ->
+        key(name) {
+          Tab(
+            selected = selectedTab == name,
+            onClick = clickAction { selectedTab = name },
+            text = name,
+          )
+        }
+      }
     }
 
     // AnimatedVisibility

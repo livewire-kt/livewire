@@ -62,8 +62,6 @@ class NetworkPlugin : Plugin {
           eventCount = state.events.size,
         )
 
-        HorizontalDivider(LivewireModifier.fillMaxWidth())
-
         Column(
           modifier = LivewireModifier
             .weight(1f)
