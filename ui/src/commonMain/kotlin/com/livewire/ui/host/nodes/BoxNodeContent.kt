@@ -2,6 +2,7 @@ package com.livewire.ui.host.nodes
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.livewire.ui.host.LayoutNodeContent
 import com.livewire.ui.host.debugFrame
@@ -26,8 +27,10 @@ internal fun BoxNodeContent(
     }
   ) {
     node.children.forEach { child ->
-      val modifier = with(child.modifier) { this@Box.toComposeUi(Modifier) }
-      LayoutNodeContent(child, modifier)
+      key(child.compositeKeyHash) {
+        val modifier = with(child.modifier) { this@Box.toComposeUi(Modifier) }
+        LayoutNodeContent(child, modifier)
+      }
     }
   }
 }

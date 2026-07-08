@@ -12,6 +12,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.livewire.ui.host.LayoutNodeContent
 import com.livewire.ui.host.debugFrame
@@ -43,7 +44,9 @@ internal fun AnimatedVisibilityNodeContent(
     },
   ) {
     node.children.forEach { child ->
-      LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+      key(child.compositeKeyHash) {
+        LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+      }
     }
   }
 }

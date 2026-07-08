@@ -2,6 +2,7 @@ package com.livewire.ui.host
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.livewire.ui.host.nodes.AnimatedVisibilityNodeContent
 import com.livewire.ui.host.nodes.BoxNodeContent
@@ -96,7 +97,9 @@ fun LayoutNodeContent(
     else -> {
       Box(modifier.debugFrame()) {
         node.children.forEach { child ->
-          LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+          key(child.compositeKeyHash) {
+            LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+          }
         }
       }
     }

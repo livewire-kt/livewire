@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.livewire.ui.actions.LocalLivewireActionDispatcher
@@ -28,7 +29,9 @@ internal fun SurfaceNodeContent(
 
   val content: @Composable () -> Unit = {
     node.children.forEach { child ->
-      LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+      key(child.compositeKeyHash) {
+        LayoutNodeContent(child, child.modifier.toComposeUi(Modifier))
+      }
     }
   }
 

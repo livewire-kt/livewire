@@ -2,6 +2,7 @@ package com.livewire.ui.host.nodes
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import com.livewire.ui.host.LayoutNodeContent
 import com.livewire.ui.host.debugFrame
@@ -24,8 +25,12 @@ internal fun ColumnNodeContent(
     }
   ) {
     node.children.forEach { child ->
-      val modifier = with(child.modifier) { this@Column.toComposeUi(Modifier) }
-      LayoutNodeContent(child, modifier)
+      // Keyed by the guest composition's identity so host-side state
+      // survives siblings being inserted or removed above this child.
+      key(child.compositeKeyHash) {
+        val modifier = with(child.modifier) { this@Column.toComposeUi(Modifier) }
+        LayoutNodeContent(child, modifier)
+      }
     }
   }
 }
