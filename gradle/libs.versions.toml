@@ -16,6 +16,7 @@ kotlin = "2.4.0"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 dadb = "1.2.10"
+jsontree = "2.7.0"
 ktor = "3.5.0"
 material3 = "1.10.0-alpha05"
 coil = "3.4.0"
@@ -40,6 +41,7 @@ androidx-test-runner = { module = "androidx.test:runner", version.ref = "android
 androidx-test-ext-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext-junit" }
 androidx-sqlite-framework = { module = "androidx.sqlite:sqlite-framework", version.ref = "androidx-sqlite" }
 dadb = { module = "dev.mobile:dadb", version.ref = "dadb" }
+jsontree = { module = "com.sebastianneubauer.jsontree:jsontree", version.ref = "jsontree" }
 compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }

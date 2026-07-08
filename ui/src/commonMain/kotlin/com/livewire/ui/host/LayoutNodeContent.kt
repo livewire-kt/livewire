@@ -8,6 +8,7 @@ import com.livewire.ui.host.nodes.BoxNodeContent
 import com.livewire.ui.host.nodes.ButtonNodeContent
 import com.livewire.ui.host.nodes.CheckboxNodeContent
 import com.livewire.ui.host.nodes.ChipNodeContent
+import com.livewire.ui.host.nodes.CodeBlockNodeContent
 import com.livewire.ui.host.nodes.ColumnNodeContent
 import com.livewire.ui.host.nodes.DividerNodeContent
 import com.livewire.ui.host.nodes.DropdownMenuNodeContent
@@ -37,6 +38,7 @@ import com.livewire.ui.widget.AnimatedVisibilityNode
 import com.livewire.ui.widget.ButtonNode
 import com.livewire.ui.widget.CheckboxNode
 import com.livewire.ui.widget.ChipNode
+import com.livewire.ui.widget.CodeBlockNode
 import com.livewire.ui.widget.DividerNode
 import com.livewire.ui.widget.DropdownMenuNode
 import com.livewire.ui.widget.FloatingActionButtonNode
@@ -74,6 +76,7 @@ fun LayoutNodeContent(
     is ImageNode -> ImageNodeContent(node, modifier)
     is CheckboxNode -> CheckboxNodeContent(node, modifier)
     is ChipNode -> ChipNodeContent(node, modifier)
+    is CodeBlockNode -> CodeBlockNodeContent(node, modifier)
     is DividerNode -> DividerNodeContent(node, modifier)
     is DropdownMenuNode -> DropdownMenuNodeContent(node, modifier)
     is FloatingActionButtonNode -> FloatingActionButtonNodeContent(node, modifier)

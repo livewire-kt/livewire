@@ -13,6 +13,7 @@ import com.livewire.ui.graphics.RoundedCornerShape
 import com.livewire.ui.layout.Alignment
 import com.livewire.ui.layout.Arrangement
 import com.livewire.ui.layout.Column
+import com.livewire.ui.layout.ColumnScope
 import com.livewire.ui.layout.Row
 import com.livewire.ui.modifier.LivewireModifier
 import com.livewire.ui.modifier.copyClickable
@@ -27,6 +28,8 @@ import com.livewire.ui.theme.LivewireTheme
 import com.livewire.ui.util.asReadableBytes
 import com.livewire.ui.widget.ButtonGroupDefaults
 import com.livewire.ui.widget.ButtonSize
+import com.livewire.ui.widget.CodeBlock
+import com.livewire.ui.widget.CodeLanguage
 import com.livewire.ui.widget.Icon
 import com.livewire.ui.widget.IconButton
 import com.livewire.ui.widget.Image
@@ -112,12 +115,13 @@ internal fun RequestDetailPane(
       }
     }
 
-    // Tab content
+    // Tab content. The body tab hosts viewers that scroll internally,
+    // so it must not sit inside an outer scroll container.
     Column(
       modifier = LivewireModifier
         .weight(1f)
         .fillMaxWidth()
-        .verticalScroll()
+        .thenIf(selectedTab != 2) { verticalScroll() }
         .padding(12.dp),
     ) {
       when (selectedTab) {
@@ -245,53 +249,72 @@ private fun HeadersTab(event: NetworkEvent) {
 }
 
 @Composable
-private fun BodyTab(event: NetworkEvent) {
-  Text(
-    text = "Request Body",
-    style = TextStyle.TitleSmall,
-    modifier = LivewireModifier.padding(bottom = 8.dp),
-  )
-  Text(
-    text = event.request.body ?: "(empty)",
-    style = TextStyle.BodySmall,
-    color = if (event.request.body != null) {
-      LivewireTheme.colorScheme.onSurface
-    } else {
-      LivewireTheme.colorScheme.onSurfaceVariant
-    },
-  )
+private fun ColumnScope.BodyTab(event: NetworkEvent) {
+  val requestBody = event.request.body
+  BodySectionTitle(title = "Request Body", copyValue = requestBody)
+  if (requestBody != null) {
+    CodeBlock(
+      content = requestBody,
+      language = CodeLanguage.fromContentType(event.request.contentType),
+      modifier = LivewireModifier
+        .weight(1f)
+        .fillMaxWidth(),
+    )
+  } else {
+    Text(
+      text = "(empty)",
+      style = TextStyle.BodySmall,
+      color = LivewireTheme.colorScheme.onSurfaceVariant,
+    )
+  }
 
   Spacer(modifier = LivewireModifier.padding(vertical = 8.dp))
 
   event.response?.let { response ->
-    Text(
-      text = "Response Body",
-      style = TextStyle.TitleSmall,
-      modifier = LivewireModifier.padding(bottom = 8.dp),
-    )
+    BodySectionTitle(title = "Response Body", copyValue = response.body)
     val isImageResponse = response.contentType?.startsWith("image/") == true
-    if (isImageResponse && response.bodyBytes != null) {
-      Image(
+    when {
+      isImageResponse && response.bodyBytes != null -> Image(
         imageData = response.bodyBytes,
-        modifier = LivewireModifier.fillMaxWidth(),
-      )
-    } else {
-      Text(
-        text = response.body ?: "(empty)",
-        style = TextStyle.BodySmall,
-        color = if (response.body != null) {
-          LivewireTheme.colorScheme.onSurface
-        } else {
-          LivewireTheme.colorScheme.onSurfaceVariant
-        },
         modifier = LivewireModifier
-          .thenIf(
-            response.body != null &&
-              (response.contentType?.startsWith("text") == true ||
-                response.contentType?.contains("json") == true)
-          ) {
-            copyClickable(response.body!!)
-          }
+          .weight(2f)
+          .fillMaxWidth(),
+      )
+      response.body != null -> CodeBlock(
+        content = response.body,
+        language = CodeLanguage.fromContentType(response.contentType),
+        modifier = LivewireModifier
+          .weight(2f)
+          .fillMaxWidth(),
+      )
+      else -> Text(
+        text = "(empty)",
+        style = TextStyle.BodySmall,
+        color = LivewireTheme.colorScheme.onSurfaceVariant,
+      )
+    }
+  }
+}
+
+@Composable
+private fun BodySectionTitle(title: String, copyValue: String?) {
+  Row(
+    verticalAlignment = Alignment.CenterVertically,
+    modifier = LivewireModifier
+      .fillMaxWidth()
+      .padding(bottom = 8.dp),
+  ) {
+    Text(
+      text = title,
+      style = TextStyle.TitleSmall,
+      modifier = LivewireModifier.weight(1f),
+    )
+    if (copyValue != null) {
+      Text(
+        text = "Copy",
+        style = TextStyle.LabelSmall,
+        color = LivewireTheme.colorScheme.primary,
+        modifier = LivewireModifier.copyClickable(copyValue),
       )
     }
   }
