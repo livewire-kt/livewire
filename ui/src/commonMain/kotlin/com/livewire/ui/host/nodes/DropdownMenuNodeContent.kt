@@ -43,19 +43,19 @@ internal fun DropdownMenuNodeContent(
           },
           modifier = child.modifier.toComposeUi(Modifier),
           enabled = child.enabled,
-          leadingIcon = child.leadingIconData?.let { iconData ->
+          leadingIcon = child.leadingIcon?.let { icon ->
             {
               RemoteIcon(
-                svgData = iconData,
+                vector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(20.dp),
               )
             }
           },
-          trailingIcon = child.trailingIconData?.let { iconData ->
+          trailingIcon = child.trailingIcon?.let { icon ->
             {
               RemoteIcon(
-                svgData = iconData,
+                vector = icon,
                 contentDescription = null,
               )
             }

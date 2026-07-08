@@ -58,7 +58,7 @@ internal fun IconButtonNodeContent(
     require(child is IconNode) { "Only IconNode can be used in an IconButton content." }
 
     RemoteIcon(
-      svgData = child.svgData,
+      node = child,
       contentDescription = null,
       tint = child.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
       modifier = Modifier.size(ButtonDefaults.iconSizeFor(buttonSize))

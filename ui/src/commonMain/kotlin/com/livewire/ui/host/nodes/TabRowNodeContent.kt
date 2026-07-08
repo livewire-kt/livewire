@@ -63,10 +63,10 @@ internal fun TabRowNodeContent(
             .background(tabContainerColor),
           enabled = child.enabled,
           text = child.text?.let { { Text(it) } },
-          icon = child.iconData?.let { iconData ->
+          icon = child.icon?.let { icon ->
             {
               RemoteIcon(
-                svgData = iconData,
+                vector = icon,
                 contentDescription = null,
                 modifier = Modifier.size(24.dp),
               )

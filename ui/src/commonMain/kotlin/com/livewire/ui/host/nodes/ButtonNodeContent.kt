@@ -71,7 +71,7 @@ internal fun ButtonNodeContent(
 
         is IconNode -> {
           RemoteIcon(
-            svgData = child.svgData,
+            node = child,
             contentDescription = null,
             tint = child.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
             modifier = Modifier.size(ButtonDefaults.iconSizeFor(buttonSize))

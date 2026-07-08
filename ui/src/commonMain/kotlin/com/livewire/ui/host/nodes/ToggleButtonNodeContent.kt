@@ -67,7 +67,7 @@ internal fun ToggleButtonNodeContent(
 
         is IconNode -> {
           RemoteIcon(
-            svgData = child.svgData,
+            node = child,
             contentDescription = null,
             tint = child.tint,
             modifier = Modifier.size(ButtonDefaults.iconSizeFor(buttonSize))

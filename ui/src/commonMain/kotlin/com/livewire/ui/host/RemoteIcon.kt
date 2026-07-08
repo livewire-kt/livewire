@@ -6,32 +6,43 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import coil3.compose.LocalPlatformContext
-import coil3.compose.rememberAsyncImagePainter
-import coil3.request.ImageRequest
-import coil3.svg.SvgDecoder
-import io.ktor.utils.io.core.toByteArray
+import com.livewire.ui.graphics.VectorIcon
+import com.livewire.ui.widget.IconNode
 
+/**
+ * Renders an [IconNode] received over the wire.
+ */
 @Composable
 fun RemoteIcon(
-  svgData: String,
+  node: IconNode,
   contentDescription: String?,
   modifier: Modifier = Modifier,
-  tint: Color = LocalContentColor.current
+  tint: Color = node.tint.takeIf { it != Color.Unspecified } ?: LocalContentColor.current,
 ) {
-  val context = LocalPlatformContext.current
-  val imageRequest = remember(svgData) {
-    ImageRequest.Builder(context)
-      .data(svgData.toByteArray())
-      .decoderFactory(SvgDecoder.Factory())
-      .build()
-  }
-
-  val painter = rememberAsyncImagePainter(imageRequest)
-  Icon(
-    painter = painter,
+  RemoteIcon(
+    vector = node.vector,
     contentDescription = contentDescription,
-    modifier = modifier,
     tint = tint,
+    modifier = modifier,
   )
+}
+
+/**
+ * Renders a [VectorIcon] received over the wire; renders nothing when [vector] is null.
+ */
+@Composable
+fun RemoteIcon(
+  vector: VectorIcon?,
+  contentDescription: String?,
+  modifier: Modifier = Modifier,
+  tint: Color = LocalContentColor.current,
+) {
+  if (vector != null) {
+    Icon(
+      imageVector = remember(vector) { vector.toImageVector() },
+      contentDescription = contentDescription,
+      tint = tint,
+      modifier = modifier,
+    )
+  }
 }

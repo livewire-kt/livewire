@@ -35,10 +35,10 @@ internal fun ChipNodeContent(
       eventDispatcher.dispatch(node.action)
     }
   }
-  val leadingIcon: (@Composable () -> Unit)? = node.leadingIconData?.let { svgData ->
+  val leadingIcon: (@Composable () -> Unit)? = node.leadingIcon?.let { icon ->
     {
       RemoteIcon(
-        svgData = svgData,
+        vector = icon,
         contentDescription = null,
         modifier = Modifier
           .size(
