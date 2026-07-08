@@ -56,6 +56,31 @@ Interaction in headless scenes:
   focus the field with a click, then send Meta+V — paste goes through the
   key mapping and inserts text fine.
 
+## Full guest↔host pipeline harness (plugin UI changes)
+
+To verify a plugin's remote UI end-to-end without the WebSocket, bridge
+both sides in one process:
+
+1. Populate real data stores (e.g. `NetworkEventCollector.recordRequest/
+   recordResponse`) with fakes.
+2. Guest side, on a `CoroutineScope(Dispatchers.Default)`:
+   `livewireFlow(strategy, resyncFlow) { rememberLivewireActionController()
+   → SideEffect { ref.set(it) } → CompositionLocalProvider(
+   LocalLivewireActionObserver provides controller) { LivewireTheme(
+   CustomLivewireTheme, false) { plugin.Content() } } }` — collect
+   `LivewireOutput.FullTree`, re-encode/decode via the strategy, publish
+   to a `MutableStateFlow<LayoutNode?>`.
+3. Host side in an `ImageComposeScene`: collect the tree flow, render
+   `LayoutNodeContent(tree)` under `MaterialTheme` + provide
+   `LocalLivewireActionDispatcher` (an object delegating to the guest
+   controller via the AtomicReference) and `LocalSnackDispatcher`
+   (`rememberSnackbarDispatcher(SnackbarHostState())`).
+4. Interactions: `sendPointerEvent` clicks dispatch real actions to the
+   guest presenter; after each click emit to `resyncFlow` to get a fresh
+   FullTree (skips patch application). Capture PNGs between steps.
+5. Coordinates shift as sections expand/collapse — capture first, read
+   the PNG, then aim follow-up clicks.
+
 ## Quick compile matrix
 
 ```bash

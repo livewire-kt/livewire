@@ -101,9 +101,9 @@ class NetworkPlugin : Plugin {
           state.selectedEvent?.let { event ->
             RequestDetailPane(
               event = event,
-              selectedTab = state.selectedDetailTab,
-              onTabSelected = {
-                state.eventSink(NetworkUiEvent.SelectDetailTab(it))
+              expandedSections = state.expandedSections,
+              onToggleSection = {
+                state.eventSink(NetworkUiEvent.ToggleDetailSection(it))
               },
               onClose = clickAction {
                 state.eventSink(NetworkUiEvent.ClearSelection)

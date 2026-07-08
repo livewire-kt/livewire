@@ -3,7 +3,6 @@ package com.livewire.plugin.network
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.livewire.plugin.network.data.NetworkEvent
@@ -13,7 +12,7 @@ class NetworkPresenter {
 
   private var selectedEvent by mutableStateOf<NetworkEvent?>(null)
   private var filterText by mutableStateOf("")
-  private var selectedDetailTab by mutableIntStateOf(0)
+  private var expandedSections by mutableStateOf(DefaultExpandedSections)
 
   @Composable
   fun present(): NetworkUiState {
@@ -39,17 +38,17 @@ class NetworkPresenter {
       events = filteredEvents,
       selectedEvent = currentSelected,
       filterText = filterText,
-      selectedDetailTab = selectedDetailTab,
+      expandedSections = expandedSections,
     ) { event ->
       when (event) {
         is NetworkUiEvent.SelectEvent -> {
           selectedEvent = event.event
-          selectedDetailTab = 0
+          expandedSections = DefaultExpandedSections
         }
 
         NetworkUiEvent.ClearSelection -> {
           selectedEvent = null
-          selectedDetailTab = 0
+          expandedSections = DefaultExpandedSections
         }
 
         is NetworkUiEvent.UpdateFilter -> {
@@ -60,13 +59,24 @@ class NetworkPresenter {
           NetworkEventCollector.clear()
           selectedEvent = null
           filterText = ""
-          selectedDetailTab = 0
+          expandedSections = DefaultExpandedSections
         }
 
-        is NetworkUiEvent.SelectDetailTab -> {
-          selectedDetailTab = event.index
+        is NetworkUiEvent.ToggleDetailSection -> {
+          expandedSections = if (event.section in expandedSections) {
+            expandedSections - event.section
+          } else {
+            expandedSections + event.section
+          }
         }
       }
     }
+  }
+
+  companion object {
+    private val DefaultExpandedSections = setOf(
+      DetailSection.RequestBody,
+      DetailSection.ResponseBody,
+    )
   }
 }
