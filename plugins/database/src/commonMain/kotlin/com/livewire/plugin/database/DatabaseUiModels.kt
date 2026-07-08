@@ -29,6 +29,7 @@ sealed interface DatabaseUiEvent {
 
 sealed interface DatabaseUiPage {
   val name: String
+  val closeable: Boolean get() = false
 }
 
 @Immutable
@@ -44,4 +45,6 @@ data class QueryPage(
   override val name: String,
   val query: String = "",
   val result: QueryResult? = null,
-) : DatabaseUiPage
+) : DatabaseUiPage {
+  override val closeable: Boolean = true
+}

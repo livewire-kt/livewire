@@ -26,6 +26,8 @@ class DatabasePresenter(
     TableContentPage(),
   )
 
+  private var nextQueryNumber = 0
+
   @Composable
   fun present(): DatabaseUiState {
     val scope = rememberCoroutineScope()
@@ -58,8 +60,7 @@ class DatabasePresenter(
         }
 
         DatabaseUiEvent.AddQueryTab -> {
-          val nextIndex = pages.filterIsInstance<QueryPage>().size
-          pages.add(QueryPage(name = "Query #$nextIndex"))
+          pages.add(QueryPage(name = "Query #${nextQueryNumber++}"))
         }
 
         is DatabaseUiEvent.RemoveQueryTab -> {

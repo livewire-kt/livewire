@@ -11,18 +11,21 @@ import androidx.compose.ui.unit.dp
 import com.livewire.plugin.database.composables.DatabaseToolBar
 import com.livewire.plugin.database.composables.TableList
 import com.livewire.plugin.database.data.DatabaseInspector
+import com.livewire.plugin.database.ui.Close
 import com.livewire.plugin.database.ui.DatabaseSearch
 import com.livewire.plugin.database.ui.Icons
 import com.livewire.plugin.database.ui.Run
 import com.livewire.plugin.database.ui.Schema
 import com.livewire.ui.actions.clickAction
 import com.livewire.ui.actions.valueChangeAction
+import com.livewire.ui.composition.LivewireComposable
 import com.livewire.ui.graphics.CircleShape
 import com.livewire.ui.graphics.RoundedCornerShape
 import com.livewire.ui.layout.Alignment
 import com.livewire.ui.layout.Box
 import com.livewire.ui.layout.Column
 import com.livewire.ui.layout.Row
+import com.livewire.ui.layout.RowScope
 import com.livewire.ui.modifier.LivewireModifier
 import com.livewire.ui.modifier.animateContentSize
 import com.livewire.ui.modifier.background
@@ -81,10 +84,26 @@ internal fun DatabasePluginContent(inspector: DatabaseInspector) {
           ) {
             state.pages.forEachIndexed { index, page ->
               key(page.name) {
+                val tabContent: @Composable @LivewireComposable RowScope.() -> Unit = {
+                  IconButton(
+                    size = ButtonSize.ExtraSmall,
+                    action = clickAction {
+                      when {
+                        index < selectedTabIndex -> selectedTabIndex--
+                        index == selectedTabIndex -> selectedTabIndex = (index - 1).coerceAtLeast(0)
+                      }
+                      state.eventSink(DatabaseUiEvent.RemoveQueryTab(index))
+                    },
+                  ) {
+                    Icon(Icons.Close)
+                  }
+                }
+
                 Tab(
                   selected = index == selectedTabIndex,
                   onClick = clickAction { selectedTabIndex = index },
                   text = page.name,
+                  content = if (page.closeable) tabContent else null,
                 )
               }
             }
