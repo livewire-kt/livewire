@@ -20,6 +20,7 @@ import com.livewire.ui.widget.BasicTextField
 import com.livewire.ui.widget.Button
 import com.livewire.ui.widget.ButtonShapes
 import com.livewire.ui.widget.ButtonSize
+import com.livewire.ui.widget.ButtonStyle
 import com.livewire.ui.widget.Icon
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Surface
@@ -69,6 +70,7 @@ internal fun NetworkToolbar(
     Button(
       action = onClearAll,
       size = ButtonSize.Small,
+      style = ButtonStyle.Tonal,
       shapes = ButtonShapes(
         shape = RoundedCornerShape(8.dp),
         pressedShape = CircleShape,

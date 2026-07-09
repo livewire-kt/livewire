@@ -17,9 +17,11 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -55,6 +57,7 @@ import com.livewire.runtime.discoverymanager.DesktopDevice
 import com.livewire.runtime.discoverymanager.HostApp
 import com.livewire.runtime.discoverymanager.IosApp
 import com.livewire.runtime.discoverymanager.IosDevice
+import com.livewire.theme.BlackHanSans
 import com.livewire.ui.icons.CloseIcon
 import com.livewire.ui.icons.DisconnectedIcon
 import livewire.host.generated.resources.Res
@@ -84,20 +87,27 @@ internal fun DisconnectedStateLayout(
       Column(
         horizontalAlignment = Alignment.CenterHorizontally,
       ) {
+        Spacer(Modifier.weight(1f))
+
         Image(
           painterResource(Res.drawable.logo),
           contentDescription = null,
-          modifier = Modifier.size(128.dp)
+          modifier = Modifier.height(150.dp)
         )
+
+        Spacer(Modifier.weight(1f))
 
         Text(
           text = "Connect to a Livewire application",
           style = MaterialTheme.typography.titleLarge,
+          fontFamily = BlackHanSans,
           fontWeight = FontWeight.Medium,
           color = MaterialTheme.colorScheme.onSurface
         )
       }
     }
+
+    Spacer(Modifier.height(16.dp))
 
     BoxWithConstraints(
       modifier = Modifier.weight(2f),

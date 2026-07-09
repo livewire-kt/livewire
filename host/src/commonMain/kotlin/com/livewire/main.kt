@@ -54,6 +54,7 @@ import com.livewire.settings.observe
 import com.livewire.runtime.discoverymanager.CompositeDiscoveryManager
 import com.livewire.runtime.discoverymanager.HostApp
 import com.livewire.settings.rememberLivewireSettings
+import com.livewire.theme.DefaultLivewireTheme
 import com.livewire.theme.LivewireThemeContent
 import com.livewire.ui.PluginDrawerItem
 import com.livewire.ui.PluginInfo
@@ -230,7 +231,7 @@ private fun AppUi(
   }
 
   LivewireThemeContent(
-    theme = clientManifest?.theme ?: LivewireTheme(),
+    theme = clientManifest?.theme ?: DefaultLivewireTheme,
     // TODO: Should have a host setting that defaults back to host choice
     darkMode = clientManifest != null && isDarkMode,
     host = host,

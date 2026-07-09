@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github/logo.png" width="200" alt="Livewire logo" />
+  <img src=".github/logo.webp" width="200" alt="Livewire logo" />
 </p>
 
 <h1 align="center">Livewire</h1>

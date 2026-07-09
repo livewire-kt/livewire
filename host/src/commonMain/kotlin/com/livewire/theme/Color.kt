@@ -1,4 +1,4 @@
-package com.livewire.ui.theme
+package com.livewire.theme
 
 import androidx.compose.ui.graphics.Color
 
