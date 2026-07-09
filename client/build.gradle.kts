@@ -28,7 +28,7 @@ kotlin {
     }
     androidMain.dependencies {
       implementation(libs.kotlin.reflect)
-      implementation(libs.ktor.clientOkhttp)
+      implementation(libs.ktor.clientCio)
     }
     iosMain.dependencies {
       implementation(libs.ktor.clientDarwin)

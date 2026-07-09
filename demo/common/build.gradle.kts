@@ -64,7 +64,7 @@ kotlin {
     androidMain.dependencies {
       implementation(projects.plugins.recomposition)
 
-      implementation(libs.ktor.clientOkhttp)
+      implementation(libs.ktor.clientCio)
       implementation(libs.sqldelight.android.driver)
     }
     jvmMain.dependencies {
