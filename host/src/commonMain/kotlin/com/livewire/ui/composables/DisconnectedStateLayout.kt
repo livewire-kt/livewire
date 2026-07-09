@@ -92,13 +92,13 @@ internal fun DisconnectedStateLayout(
         Image(
           painterResource(Res.drawable.logo),
           contentDescription = null,
-          modifier = Modifier.height(150.dp)
+          modifier = Modifier.height(128.dp)
         )
 
         Spacer(Modifier.weight(1f))
 
         Text(
-          text = "Connect to a Livewire application",
+          text = "Connect to an application",
           style = MaterialTheme.typography.titleLarge,
           fontFamily = BlackHanSans,
           fontWeight = FontWeight.Medium,
