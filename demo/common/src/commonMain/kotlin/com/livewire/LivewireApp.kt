@@ -49,7 +49,7 @@ import com.livewire.ui.icons.Disconnected
 import com.livewire.ui.icons.HomeFilled
 import com.livewire.ui.icons.HomeOutlined
 import com.livewire.ui.icons.LightMode
-import com.livewire.ui.theme.CustomLivewireTheme
+import com.livewire.theme.CustomLivewireTheme
 import com.livewire.ui.util.asReadableBytes
 import kotlinx.coroutines.launch
 

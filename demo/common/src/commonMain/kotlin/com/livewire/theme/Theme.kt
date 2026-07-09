@@ -1,4 +1,4 @@
-package com.livewire.ui.theme
+package com.livewire.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -7,6 +7,7 @@ import androidx.compose.material3.MotionScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import com.livewire.ui.theme.LivewireTheme
 
 private val lightColorScheme = lightColorScheme(
   primary = PrimaryLight,
@@ -58,6 +59,7 @@ private val lightColorScheme = lightColorScheme(
   onTertiaryFixed = OnTertiaryFixed,
   onTertiaryFixedVariant = OnTertiaryFixedVariant,
 )
+
 private val darkColorScheme = darkColorScheme(
   primary = PrimaryDark,
   onPrimary = OnPrimaryDark,

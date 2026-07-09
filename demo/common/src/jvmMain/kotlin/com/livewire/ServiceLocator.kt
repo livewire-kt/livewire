@@ -12,12 +12,12 @@ import com.livewire.plugin.network.NetworkPlugin
 import com.livewire.plugin.playground.PlaygroundPlugin
 import com.livewire.plugin.recomposition.RecompositionPlugin
 import com.livewire.ui.data.LayoutNodeSerialization
-import com.livewire.ui.theme.CustomLivewireTheme
+import com.livewire.theme.CustomLivewireTheme
 
 object ServiceLocator {
   val livewireClient by lazy {
     LivewireClient {
-      theme(CustomLivewireTheme)
+//      theme(CustomLivewireTheme)
       install(DatabasePlugin("."))
       install(NetworkPlugin())
       install(PlaygroundPlugin())

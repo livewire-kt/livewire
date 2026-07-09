@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -31,10 +32,10 @@ internal fun PluginDrawerItem(
   modifier: Modifier = Modifier,
 ) {
   val containerColor by animateColorAsState(
-    if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
+    if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
   )
   val contentColor by animateColorAsState(
-    if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
+    if (selected) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
   )
 
   Surface(
@@ -50,17 +51,25 @@ internal fun PluginDrawerItem(
         .padding(8.dp)
         .animateContentSize(),
     ) {
+      val iconContainerColor by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.primary
+      )
+      val iconContentColor by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.onSecondary else MaterialTheme.colorScheme.onPrimary
+      )
+
       Box(
         modifier = Modifier
           .size(32.dp)
           .background(
-            color = MaterialTheme.colorScheme.primary,
+            color = iconContainerColor,
             shape = MaterialTheme.shapes.small,
           ),
         contentAlignment = Alignment.Center,
       ) {
         PluginIcon(
           info = info,
+          color = iconContentColor,
           modifier = Modifier.size(18.dp),
         )
       }
@@ -83,13 +92,14 @@ internal fun PluginDrawerItem(
 @Composable
 private fun PluginIcon(
   info: PluginInfo,
+  color: Color,
   modifier: Modifier = Modifier,
 ) {
   val icon = info.icon ?: return
   Icon(
     imageVector = remember(icon) { icon.toImageVector() },
     contentDescription = null,
-    tint = MaterialTheme.colorScheme.onPrimary,
+    tint = color,
     modifier = modifier,
   )
 }

@@ -3,6 +3,7 @@ package com.livewire
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -40,6 +41,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -49,10 +51,10 @@ import androidx.compose.ui.window.rememberWindowState
 import com.livewire.runtime.HostConnectionState
 import com.livewire.runtime.HostConnectionState.Connected
 import com.livewire.runtime.LivewireHost
-import com.livewire.settings.LivewireSettings
-import com.livewire.settings.observe
 import com.livewire.runtime.discoverymanager.CompositeDiscoveryManager
 import com.livewire.runtime.discoverymanager.HostApp
+import com.livewire.settings.LivewireSettings
+import com.livewire.settings.observe
 import com.livewire.settings.rememberLivewireSettings
 import com.livewire.theme.LivewireThemeContent
 import com.livewire.ui.PluginDrawerItem
@@ -63,17 +65,17 @@ import com.livewire.ui.composables.DisconnectedStateLayout
 import com.livewire.ui.data.ClientManifest
 import com.livewire.ui.data.DarkModeChange
 import com.livewire.ui.data.PluginSelected
-import com.livewire.ui.data.UiProtocol
 import com.livewire.ui.host.DebugNodes
 import com.livewire.ui.host.LayoutNodeContent
 import com.livewire.ui.host.snackbar.LocalSnackDispatcher
 import com.livewire.ui.host.snackbar.rememberSnackbarDispatcher
 import com.livewire.ui.icons.BugReport
+import com.livewire.ui.icons.DarkMode
+import com.livewire.ui.icons.LightMode
 import com.livewire.ui.icons.MenuOpen
 import com.livewire.ui.layout.HostDrawerSheet
 import com.livewire.ui.layout.HostScaffold
 import com.livewire.ui.theme.LivewireTheme
-import com.livewire.ui.theme.LocalDarkMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
@@ -220,7 +222,8 @@ private fun AppUi(
   onConnect: (HostApp) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  var isDarkMode by remember { mutableStateOf(false) }
+  val systemDarkMode = isSystemInDarkTheme()
+  var isDarkMode by remember { mutableStateOf(systemDarkMode) }
   LaunchedEffect(host.connection) {
     host.connection.incomingMessages
       .filterIsInstance<DarkModeChange>()
@@ -232,7 +235,7 @@ private fun AppUi(
   LivewireThemeContent(
     theme = clientManifest?.theme ?: LivewireTheme(),
     // TODO: Should have a host setting that defaults back to host choice
-    darkMode = clientManifest != null && isDarkMode,
+    darkMode = isDarkMode,
     host = host,
   ) {
     val menuExpanded by remember {
@@ -246,6 +249,8 @@ private fun AppUi(
     HostScaffold(
       topBar = {
         AppTopBar(
+          darkMode = isDarkMode,
+          onDarkModeChanged = { isDarkMode = it },
           hostConnectionState = state,
           selectedApp = selectedApp,
           onDisconnectClick = { scope.launch { host.connection.disconnect() } },
@@ -319,6 +324,8 @@ private fun AppUi(
 
 @Composable
 private fun AppTopBar(
+  darkMode: Boolean,
+  onDarkModeChanged: (Boolean) -> Unit,
   hostConnectionState: HostConnectionState,
   selectedApp: HostApp?,
   onDisconnectClick: () -> Unit,
@@ -355,6 +362,7 @@ private fun AppTopBar(
 
       Spacer(Modifier.weight(1f))
 
+      // TODO: Hide behind a 'Debug' build flag
       Switch(
         checked = DebugNodes,
         onCheckedChange = { DebugNodes = it },
@@ -363,6 +371,21 @@ private fun AppTopBar(
             BugReport,
             contentDescription = null,
             modifier = Modifier.size(SwitchDefaults.IconSize),
+          )
+        },
+      )
+
+      Spacer(Modifier.width(8.dp))
+
+      Switch(
+        checked = darkMode,
+        onCheckedChange = onDarkModeChanged,
+        thumbContent = {
+          Icon(
+            if (darkMode) DarkMode else LightMode,
+            contentDescription = null,
+            modifier = Modifier.size(SwitchDefaults.IconSize),
+            tint = Color.White
           )
         },
       )

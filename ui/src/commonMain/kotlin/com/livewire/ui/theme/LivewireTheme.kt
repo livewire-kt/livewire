@@ -1,8 +1,6 @@
 package com.livewire.ui.theme
 
 import androidx.compose.material3.ColorScheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
@@ -21,9 +19,9 @@ val LocalLivewireTheme = compositionLocalOf {
 @Serializable
 data class LivewireTheme(
   @Serializable(with = ColorSchemeSerializer::class)
-  val lightColorScheme: ColorScheme = lightColorScheme(),
+  val lightColorScheme: ColorScheme = defaultLightColorScheme(),
   @Serializable(with = ColorSchemeSerializer::class)
-  val darkColorScheme: ColorScheme = darkColorScheme(),
+  val darkColorScheme: ColorScheme = defaultDarkColorScheme(),
 ) {
 
   companion object {
