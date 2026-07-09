@@ -149,7 +149,9 @@ class CheckboxNode(
 }
 ```
 
-### 2. Host renderer: `ui/src/commonMain/kotlin/com/livewire/ui/host/nodes/<Name>NodeContent.kt`
+### 2. Host renderer: `host-ui/src/commonMain/kotlin/com/livewire/host/ui/nodes/<Name>NodeContent.kt`
+
+Host renderers live in the `:host-ui` module (package `com.livewire.host.ui`), NOT in `:ui` — client apps consume `:ui` and must not ship the host-side rendering code.
 
 This renders the actual Material3 composable on the host/desktop side from the node data.
 
@@ -162,14 +164,14 @@ This renders the actual Material3 composable on the host/desktop side from the n
 
 Here is an example of CheckboxNodeContent.kt:
 ```kotlin
-package com.livewire.ui.host.nodes
+package com.livewire.host.ui.nodes
 
 import androidx.compose.material3.Checkbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import com.livewire.host.ui.debugFrame
 import com.livewire.ui.actions.LocalLivewireActionDispatcher
-import com.livewire.ui.host.debugFrame
 import com.livewire.ui.widget.CheckboxNode
 import kotlinx.coroutines.launch
 
@@ -194,7 +196,7 @@ internal fun CheckboxNodeContent(
 }
 ```
 
-### 3. Update the router: `ui/src/commonMain/kotlin/com/livewire/ui/host/LayoutNodeContent.kt`
+### 3. Update the router: `host-ui/src/commonMain/kotlin/com/livewire/host/ui/LayoutNodeContent.kt`
 
 Add a new `is {Name}Node -> {Name}NodeContent(node, modifier)` branch to the `when` expression in `LayoutNodeContent()`. Add the necessary imports for the new node type and content function.
 
@@ -209,9 +211,9 @@ When creating a new action, you must also add it as a subclass in `LivewireActio
 
 ## Important conventions
 
-- Package: `com.livewire.ui.widget` for widget files
-- Package: `com.livewire.ui.host.nodes` for host renderers
-- Package: `com.livewire.ui.actions` for action types
+- Package: `com.livewire.ui.widget` for widget files (`:ui` module — shared with clients)
+- Package: `com.livewire.host.ui.nodes` for host renderers (`:host-ui` module — host only)
+- Package: `com.livewire.ui.actions` for action types (`:ui` module)
 - Naming: `{Name}Node` for node class, `{Name}NodeContent` for host renderer
 - The `@LivewireSerializer` annotation auto-registers the node with the KSP-generated polymorphic serializer — no manual registration needed
 - All node properties that will be transmitted must be serializable
@@ -269,5 +271,5 @@ class PlaygroundPlugin : Plugin {
 
 ## After generating
 
-1. Verify the code compiles: `./gradlew :ui:assemble :plugins:playground:assemble`
+1. Verify the code compiles: `./gradlew :ui:assemble :host-ui:assemble :plugins:playground:assemble`
 2. Summarize what was created and what Material3 composable it wraps

@@ -6,7 +6,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import com.livewire.annotations.LivewireSerializer
-import com.livewire.ui.host.snackbar.LocalSnackDispatcher
+import com.livewire.ui.snackbar.LocalSnackDispatcher
 import kotlinx.serialization.Serializable
 
 @LivewireSerializer

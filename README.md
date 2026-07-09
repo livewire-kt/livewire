@@ -27,6 +27,7 @@ livewire/
 ├── ui/                  # KMP UI library — LayoutNode types, modifiers, serialization
 ├── client/              # KMP client library (Android/iOS/JVM) — LivewireClient + server
 ├── host/                # Desktop host app (Compose Desktop) — device management + UI rendering
+├── host-ui/             # KMP host rendering library — renders LayoutNode trees as Compose UI
 ├── compiler/            # KSP plugin — generates serialization code for nodes & modifiers
 ├── plugins/
 │   ├── database/        # SQLite browser plugin (SQLDelight, platform-specific drivers)

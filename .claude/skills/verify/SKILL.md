@@ -9,8 +9,10 @@ description: How to verify Livewire changes by running the apps and capturing ev
 
 Plugin UI is remote: plugins emit serializable `LayoutNode`s on the guest
 (demo app); the desktop host deserializes and renders them as real
-Material3 Compose via `ui/.../host/LayoutNodeContent.kt`. Verifying a
-widget/renderer change means rendering the **host side**.
+Material3 Compose via `LayoutNodeContent` in the `:host-ui` module
+(`host-ui/src/commonMain/kotlin/com/livewire/host/ui/`, package
+`com.livewire.host.ui`). Verifying a widget/renderer change means
+rendering the **host side**.
 
 ## Full-stack GUI (manual only)
 
@@ -27,7 +29,9 @@ Render the real host pipeline to PNGs with `ImageComposeScene`:
 
 1. Drop a scratch `fun main()` into
    `demo/desktop/src/main/kotlin/com/livewire/` (this module sees `:ui`,
-   all plugins, and `compose.desktop.currentOs`).
+   all plugins, and `compose.desktop.currentOs` — but NOT `:host-ui`,
+   which holds `LayoutNodeContent`; temporarily add
+   `implementation(projects.hostUi)` to `demo/desktop/build.gradle.kts`).
 2. Build the node(s) under test, round-trip them through
    `LayoutNodeSerializationStrategy.Default` (the real wire format), then
    render `LayoutNodeContent(node, ...)` inside
@@ -40,7 +44,8 @@ Render the real host pipeline to PNGs with `ImageComposeScene`:
 5. Run it by temporarily pointing `mainClass` in
    `demo/desktop/build.gradle.kts` at the scratch file:
    `./gradlew :demo:desktop:run`.
-6. Clean up: delete the scratch file and `git checkout demo/desktop/build.gradle.kts`.
+6. Clean up: delete the scratch file and `git checkout demo/desktop/build.gradle.kts`
+   (reverts both the `mainClass` and the temporary `:host-ui` dependency).
 
 Scene width/height are px; content lays out at `density`, so budget
 ~2x the dp sum or the bottom gets clipped.
@@ -74,7 +79,8 @@ both sides in one process:
    `LayoutNodeContent(tree)` under `MaterialTheme` + provide
    `LocalLivewireActionDispatcher` (an object delegating to the guest
    controller via the AtomicReference) and `LocalSnackDispatcher`
-   (`rememberSnackbarDispatcher(SnackbarHostState())`).
+   (`rememberSnackbarDispatcher(SnackbarHostState())`, from
+   `com.livewire.ui.snackbar` in `:ui`).
 4. Interactions: `sendPointerEvent` clicks dispatch real actions to the
    guest presenter; after each click emit to `resyncFlow` to get a fresh
    FullTree (skips patch application). Capture PNGs between steps.
@@ -84,8 +90,8 @@ both sides in one process:
 ## Quick compile matrix
 
 ```bash
-./gradlew :ui:jvmMainClasses :plugins:network:core:jvmMainClasses :host:jvmMainClasses
-./gradlew :ui:compileKotlinIosArm64      # :ui commonMain must compile for iOS
+./gradlew :ui:jvmMainClasses :host-ui:jvmMainClasses :plugins:network:core:jvmMainClasses :host:jvmMainClasses
+./gradlew :ui:compileKotlinIosArm64 :host-ui:compileKotlinIosArm64  # commonMain must compile for iOS
 ./gradlew :demo:android:assembleDebug    # Android target
 ./gradlew :ui:jvmTest                    # serialization round-trip tests
 ```
