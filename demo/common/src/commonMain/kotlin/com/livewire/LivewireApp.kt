@@ -70,10 +70,6 @@ fun LivewireApp(
   val connectionState by livewireClient.server.connectionState.collectAsState()
   var isDarkMode by remember { mutableStateOf(isSystemDarkMode) }
 
-  LaunchedEffect(isDarkMode) {
-    livewireClient.setDarkMode(isDarkMode)
-  }
-
   CustomLivewireTheme(
     darkTheme = isDarkMode,
   ) {

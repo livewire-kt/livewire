@@ -15,7 +15,7 @@ class LivewireSettings(
   ),
 ) : AppSettings() {
 
-  var darkMode by booleanSetting(KEY_DARK_MODE, defaultValue = false)
+  var darkMode by booleanSetting(KEY_DARK_MODE, defaultValue = true)
   var lastConnectedApp by stringOrNullSetting(KEY_LAST_CONNECTED_APP)
   var menuExpanded by booleanSetting(KEY_MENU_EXPANDED, defaultValue = true)
 

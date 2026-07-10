@@ -64,12 +64,8 @@ class LivewireClient private constructor(
       logError("LivewireClient", "Uncaught error in Livewire scope", throwable)
     },
   )
-  private val darkMode = MutableStateFlow(false)
+  private val darkMode = MutableStateFlow(true)
   private val discoveryBroadcaster = DiscoveryBroadcaster()
-
-  fun setDarkMode(darkMode: Boolean) {
-    this.darkMode.value = darkMode
-  }
 
   val server = LivewireServer(
     decoders = configuration.decoders + DefaultDecoders + UiDecoders,
@@ -111,12 +107,6 @@ class LivewireClient private constructor(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
       }
 
-      LaunchedEffect(isDarkMode, connectionState) {
-        if (connectionState == ConnectionState.Connected) {
-          server.send(DarkModeChange(isDarkMode))
-        }
-      }
-
       LaunchedEffect(Unit) {
         server.incomingMessages.collect { message ->
           when (message) {
@@ -124,6 +114,7 @@ class LivewireClient private constructor(
             is ClearPlugin -> activePluginInfo = null
             is RequestFullTree -> resyncRequests.tryEmit(Unit)
             is LivewireAction -> actionController.dispatch(message)
+            is DarkModeChange -> darkMode.value = message.darkMode
           }
         }
       }
