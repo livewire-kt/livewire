@@ -20,6 +20,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import com.livewire.host.ui.LayoutNodeContent
 import com.livewire.runtime.HostConnectionState
 import com.livewire.runtime.HostConnectionState.Connected
@@ -154,8 +155,12 @@ internal fun AppUi(
           },
         )
       } else if (selectedPlugin == null) {
+        val uriHandler = LocalUriHandler.current
         EmptyPluginLayout(
-          modifier = Modifier.fillMaxSize()
+          onOpenUrl = { url ->
+            uriHandler.openUri(url)
+          },
+          modifier = Modifier.fillMaxSize(),
         )
       }
     }
