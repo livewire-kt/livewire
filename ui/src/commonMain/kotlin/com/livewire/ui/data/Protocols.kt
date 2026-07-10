@@ -59,6 +59,15 @@ data class PluginSelected(
 data object ClearPlugin : UiProtocol
 
 /**
+ * Sent by the client when the active plugin's composition crashes
+ */
+@Serializable
+data class PluginCrashed(
+  val pluginId: String,
+  val message: String? = null,
+) : UiProtocol
+
+/**
  * Sent by the host when it detects that its diff'd layout tree has desynced from the client. The client will respond by restarting
  * the active plugin's composition and emitting a fresh full tree.
  */

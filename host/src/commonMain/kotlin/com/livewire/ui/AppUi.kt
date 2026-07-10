@@ -17,6 +17,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +34,7 @@ import com.livewire.ui.composables.AppTopBar
 import com.livewire.ui.composables.DisconnectedStateLayout
 import com.livewire.ui.data.ClientManifest
 import com.livewire.ui.data.DarkModeChange
+import com.livewire.ui.data.PluginCrashed
 import com.livewire.ui.layout.HostDrawerSheet
 import com.livewire.ui.layout.HostScaffold
 import com.livewire.ui.snackbar.LocalSnackDispatcher
@@ -53,6 +55,7 @@ internal fun AppUi(
   clientManifest: ClientManifest?,
   selectedPlugin: PluginInfo?,
   onPluginClick: (PluginInfo) -> Unit,
+  onReloadPlugin: (pluginId: String) -> Unit,
   onDisconnect: () -> Unit,
   onConnect: (HostApp) -> Unit,
   modifier: Modifier = Modifier,
@@ -81,6 +84,23 @@ internal fun AppUi(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarDispatcher = rememberSnackbarDispatcher(snackbarHostState)
+
+    val currentManifest by rememberUpdatedState(clientManifest)
+    LaunchedEffect(host.connection, snackbarDispatcher) {
+      host.connection.incomingMessages
+        .filterIsInstance<PluginCrashed>()
+        .collect { crashed ->
+          val title = currentManifest?.availablePlugins?.find { it.pluginId == crashed.pluginId }?.title
+          snackbarDispatcher.showSnackbar(
+            message = "${title ?: "The plugin"} crashed",
+            actionLabel = "Reload",
+            withDismissAction = true,
+          ) {
+            onReloadPlugin(crashed.pluginId)
+          }
+        }
+    }
+
     HostScaffold(
       topBar = {
         AppTopBar(
