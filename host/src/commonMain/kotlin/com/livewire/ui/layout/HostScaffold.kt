@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -31,24 +33,28 @@ fun HostScaffold(
       .background(MaterialTheme.colorScheme.background)
       .fillMaxSize()
   ) {
-    Column(modifier = Modifier.fillMaxSize()) {
-      Box(
-        modifier = Modifier
-          .fillMaxWidth()
-          .zIndex(1f),
-      ) {
-        topBar()
+    CompositionLocalProvider(
+      LocalContentColor provides MaterialTheme.colorScheme.onBackground,
+    ) {
+      Column(modifier = Modifier.fillMaxSize()) {
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .zIndex(1f),
+        ) {
+          topBar()
+        }
+        PermanentNavigationDrawer(
+          drawerContent = {
+            drawer()
+          },
+        ) {
+          content()
+        }
       }
-      PermanentNavigationDrawer(
-        drawerContent = {
-          drawer()
-        },
-      ) {
-        content()
-      }
-    }
 
-    snackbarHost()
+      snackbarHost()
+    }
   }
 }
 
