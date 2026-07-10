@@ -142,6 +142,14 @@ fun main() = application {
           host.connection.send(PluginSelected(plugin))
         }
       },
+      onReloadPlugin = { pluginId ->
+        clientManifest?.availablePlugins?.firstOrNull { it.pluginId == pluginId }?.let { plugin ->
+          selectedPlugin = plugin
+          scope.launch {
+            host.connection.send(PluginSelected(plugin))
+          }
+        }
+      },
       onDisconnect = {
         reconnectTargetId = null
         scope.launch { host.connection.disconnect() }

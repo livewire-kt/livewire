@@ -28,6 +28,7 @@ import com.livewire.ui.data.JsonLayoutNodeSerializationStrategy
 import com.livewire.ui.data.LayoutNodeSerialization
 import com.livewire.ui.data.LayoutNodeSerialization.Json
 import com.livewire.ui.data.LayoutNodeSerialization.Protobuf
+import com.livewire.ui.data.PluginCrashed
 import com.livewire.ui.data.PluginSelected
 import com.livewire.ui.data.ProtobufLayoutNodeSerializationStrategy
 import com.livewire.ui.data.RequestFullTree
@@ -35,6 +36,7 @@ import com.livewire.ui.data.UiDecoders
 import com.livewire.ui.data.UiProtocol
 import com.livewire.ui.theme.LivewireTheme
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -130,26 +132,35 @@ class LivewireClient private constructor(
           }
 
           if (plugin != null) {
-            livewireFlow(server.codec.serializationStrategy, resyncRequests) {
-              DisposableEffect(Unit) {
-                logDebug("LivewireCompose", "Plugin Entered Composition: ${plugin.info.pluginId}")
-                onDispose {
-                  logDebug("LivewireCompose", "Plugin Exited Composition: ${plugin.info.pluginId}")
+            try {
+              livewireFlow(server.codec.serializationStrategy, resyncRequests) {
+                DisposableEffect(Unit) {
+                  logDebug("LivewireCompose", "Plugin Entered Composition: ${plugin.info.pluginId}")
+                  onDispose {
+                    logDebug("LivewireCompose", "Plugin Exited Composition: ${plugin.info.pluginId}")
+                  }
                 }
-              }
 
-              CompositionLocalProvider(
-                LocalLivewireActionObserver provides actionController,
-              ) {
-                LivewireTheme(
-                  theme = configuration.theme,
-                  darkMode = isDarkMode,
+                CompositionLocalProvider(
+                  LocalLivewireActionObserver provides actionController,
                 ) {
-                  plugin.Content()
+                  LivewireTheme(
+                    theme = configuration.theme,
+                    darkMode = isDarkMode,
+                  ) {
+                    plugin.Content()
+                  }
                 }
+              }.collect { output ->
+                server.sendLayout(output)
               }
-            }.collect { output ->
-              server.sendLayout(output)
+            } catch (e: CancellationException) {
+              throw e
+            } catch (e: Throwable) {
+              // if we're here, the plugin's composition is disposed and can't be recovered. tell the host so it can offer to reload
+              logError("LivewireClient", "Plugin '${plugin.info.pluginId}' crashed", e)
+              server.send(PluginCrashed(plugin.info.pluginId, e.message))
+              activePluginInfo = null
             }
           }
         } else if (activePluginInfo != null) {

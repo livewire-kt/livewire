@@ -75,7 +75,6 @@ class PlaygroundPlugin : Plugin {
         .fillMaxSize()
         .verticalScroll(),
     ) {
-
       Row(
         LivewireModifier
           .fillMaxWidth(),
@@ -296,7 +295,6 @@ class PlaygroundPlugin : Plugin {
             .padding(horizontal = 16.dp),
         )
       }
-
 
       Row(
         LivewireModifier
@@ -753,6 +751,12 @@ class PlaygroundPlugin : Plugin {
           .height(300.dp)
           .padding(16.dp),
       )
+
+      Button(
+        action = clickAction { throw RuntimeException("AHHH!") },
+      ) {
+        Text("Throw Exception")
+      }
     }
   }
 }

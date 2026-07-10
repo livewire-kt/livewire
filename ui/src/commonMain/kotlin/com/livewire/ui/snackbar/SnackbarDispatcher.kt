@@ -2,6 +2,7 @@ package com.livewire.ui.snackbar
 
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -21,12 +22,14 @@ class SnackbarDispatcher internal constructor(
     message: String,
     actionLabel: String? = null,
     withDismissAction: Boolean = false,
-    duration: SnackbarDuration =
-      if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite,
+    duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite,
+    onAction: () -> Unit = {},
   ) {
     currentSnackJob?.cancel()
     currentSnackJob = scope.launch {
-      host.showSnackbar(message, actionLabel, withDismissAction, duration)
+      if (host.showSnackbar(message, actionLabel, withDismissAction, duration) == SnackbarResult.ActionPerformed) {
+        onAction()
+      }
     }
   }
 }
