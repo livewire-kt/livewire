@@ -58,6 +58,8 @@ import kotlinx.coroutines.launch
 
 class RecompositionPlugin(
   private val alwaysOnSampling: Boolean = false,
+  private val recompositionThresholds: RecompositionThresholds = RecompositionThresholds(),
+  private val childRecompositionThresholds: RecompositionThresholds = RecompositionThresholds(),
 ) : Plugin {
   override val info: PluginInfo = PluginInfo(
     pluginId = "recomposition",
@@ -306,7 +308,7 @@ class RecompositionPlugin(
               } else {
                 MetricBadge(
                   count = row.recompositionCount,
-                  color = recompositionColor(row.recompositionCount),
+                  color = recompositionColor(row.recompositionCount, recompositionThresholds),
                 )
                 MetricBadge(
                   count = row.skipCount,
@@ -315,7 +317,7 @@ class RecompositionPlugin(
                 )
                 MetricBadge(
                   count = row.childRecompositionCount,
-                  color = recompositionColor(row.childRecompositionCount),
+                  color = recompositionColor(row.childRecompositionCount, childRecompositionThresholds),
                 )
               }
             }
@@ -634,11 +636,10 @@ class RecompositionPlugin(
   }
 
   companion object {
-    // TODO: pretty arbitrary colors and counts
-    private fun recompositionColor(count: Int): Color = when {
-      count < 2 -> Color(0xFF4CAF50)
-      count < 10 -> Color(0xFFFFC107)
-      count < 100 -> Color(0xFFFF9800)
+    private fun recompositionColor(count: Int, thresholds: RecompositionThresholds): Color = when {
+      count < thresholds.low -> Color(0xFF4CAF50)
+      count < thresholds.moderate -> Color(0xFFFFC107)
+      count < thresholds.high -> Color(0xFFFF9800)
       else -> Color(0xFFFF5252)
     }
 
@@ -648,6 +649,12 @@ class RecompositionPlugin(
     }
   }
 }
+
+data class RecompositionThresholds(
+  val low: Int = 2,
+  val moderate: Int = 5,
+  val high: Int = 10,
+)
 
 private fun formatOneDecimal(value: Float): String {
   val scaled = (value * 10).roundToInt()
