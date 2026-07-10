@@ -218,8 +218,9 @@
 		A10000000000000000007052 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = DF3MY2T2H2;
+				DEVELOPMENT_TEAM = "";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(BUILT_PRODUCTS_DIR)",
@@ -234,6 +235,7 @@
 		A10000000000000000007053 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = DF3MY2T2H2;
 				FRAMEWORK_SEARCH_PATHS = (

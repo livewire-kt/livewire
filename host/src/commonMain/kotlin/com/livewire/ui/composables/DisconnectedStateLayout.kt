@@ -47,6 +47,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.livewire.runtime.HostConnectionState
@@ -63,6 +64,8 @@ import com.livewire.ui.icons.DisconnectedIcon
 import livewire.host.generated.resources.Res
 import livewire.host.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.skia.Image as SkiaImage
+import kotlin.io.encoding.Base64
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -314,7 +317,7 @@ private fun AppItem(
         tint = MaterialTheme.colorScheme.onSurfaceVariant,
       )
 
-      Column {
+      Column(Modifier.weight(1f)) {
         Text(
           text = app.displayName,
           style = MaterialTheme.typography.bodyMedium,
@@ -337,7 +340,33 @@ private fun AppItem(
           color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
       }
+
+      AppIcon(app = app)
     }
+  }
+}
+
+@Composable
+private fun AppIcon(
+  app: HostApp,
+  modifier: Modifier = Modifier,
+) {
+  val iconBitmap = remember(app.appIcon) {
+    app.appIcon?.let { encoded ->
+      runCatching {
+        SkiaImage.makeFromEncoded(Base64.decode(encoded)).toComposeImageBitmap()
+      }.getOrNull()
+    }
+  }
+
+  iconBitmap?.let { bitmap ->
+    Image(
+      bitmap = bitmap,
+      contentDescription = null,
+      modifier = modifier
+        .size(40.dp)
+        .clip(MaterialTheme.shapes.medium),
+    )
   }
 }
 

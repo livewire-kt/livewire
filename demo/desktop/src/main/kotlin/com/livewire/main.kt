@@ -1,6 +1,7 @@
 package com.livewire
 
 import androidx.compose.runtime.remember
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -23,6 +24,7 @@ fun main() {
       state = rememberWindowState(
         size = DpSize(400.dp, 800.dp),
       ),
+      icon = painterResource("icon.webp")
     ) {
       LivewireApp(
         livewireClient = livewireClient,

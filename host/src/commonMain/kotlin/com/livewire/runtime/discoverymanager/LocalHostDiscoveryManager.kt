@@ -130,12 +130,14 @@ private fun DiscoveryPacket.toHostApp(): HostApp = when (platform) {
     instanceId = instanceId,
     appName = appName,
     processId = processId,
+    appIcon = appIcon,
   )
   IosSimulator -> {
     IosApp(
       instanceId = instanceId,
       appName = appName,
       bundleId = packageName,
+      appIcon = appIcon,
       device = IosDevice(
         connection = IosDeviceConnection.forSimulator(),
         udid = instanceId,

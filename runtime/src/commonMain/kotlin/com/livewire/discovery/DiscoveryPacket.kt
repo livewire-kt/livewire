@@ -19,4 +19,5 @@ data class DiscoveryPacket(
   val platform: DiscoveryPlatform,
   val deviceName: String,
   val osVersion: String,
+  val appIcon: String? = null,
 )
