@@ -321,13 +321,6 @@ private fun AppItem(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       AppIcon(app = app)
-      val canConnect = app.protocolVersion == LivewireConstants.ProtocolVersion
-      Icon(
-        imageVector = if (canConnect) app.device.platformIcon else Warning,
-        contentDescription = null,
-        modifier = Modifier.size(24.dp),
-        tint = if (canConnect) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
-      )
 
       Column(Modifier.weight(1f)) {
         Text(
@@ -353,17 +346,16 @@ private fun AppItem(
         )
       }
 
+      val canConnect = app.protocolVersion == LivewireConstants.ProtocolVersion
       Icon(
-        imageVector = app.device.platformIcon,
+        imageVector = if (canConnect) app.device.platformIcon else Warning,
         contentDescription = null,
         modifier = Modifier.size(24.dp),
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        tint = if (canConnect) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
       )
     }
   }
 }
-
-private val AppIconSize = 40.dp
 
 @Composable
 private fun AppIcon(
@@ -551,3 +543,6 @@ fun ConnectButton(
     }
   }
 }
+
+private val AppIconSize = 40.dp
+
