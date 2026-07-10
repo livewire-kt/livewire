@@ -23,6 +23,7 @@ import com.livewire.settings.rememberLivewireSettings
 import com.livewire.ui.AppUi
 import com.livewire.ui.PluginInfo
 import com.livewire.ui.data.ClientManifest
+import com.livewire.ui.data.DarkModeChange
 import com.livewire.ui.data.PluginSelected
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
@@ -112,6 +113,9 @@ fun main() = application {
         //  Switch out the layoutNode parsing based on what the client is reporting.
         host.connection.codec.serializationStrategy = it.layoutNodeSerialization.toStrategy()
         clientManifest = it
+
+        // Tell the newly connected client what our current dark mode setting is
+        host.connection.send(DarkModeChange(settings.darkMode))
       }
   }
 

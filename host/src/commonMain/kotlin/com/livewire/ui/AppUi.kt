@@ -30,6 +30,7 @@ import com.livewire.runtime.discoverymanager.HostApp
 import com.livewire.settings.LivewireSettings
 import com.livewire.settings.observe
 import com.livewire.theme.LivewireThemeContent
+import com.livewire.ui.actions.LivewireAction
 import com.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.livewire.ui.composables.AppTopBar
 import com.livewire.ui.composables.DisconnectedStateLayout
@@ -62,19 +63,12 @@ internal fun AppUi(
   onConnect: (HostApp) -> Unit,
   modifier: Modifier = Modifier,
 ) {
-  val systemDarkMode = isSystemInDarkTheme()
-  var isDarkMode by remember { mutableStateOf(systemDarkMode) }
-  LaunchedEffect(host.connection) {
-    host.connection.incomingMessages
-      .filterIsInstance<DarkModeChange>()
-      .collect {
-        isDarkMode = it.darkMode
-      }
-  }
+  val isDarkMode: Boolean by remember {
+    settings::darkMode.observe()
+  }.collectAsState()
 
   LivewireThemeContent(
     theme = clientManifest?.theme ?: LivewireTheme(),
-    // TODO: Should have a host setting that defaults back to host choice
     darkMode = isDarkMode,
     host = host,
   ) {
@@ -107,7 +101,12 @@ internal fun AppUi(
       topBar = {
         AppTopBar(
           darkMode = isDarkMode,
-          onDarkModeChanged = { isDarkMode = it },
+          onDarkModeChanged = {
+            settings.darkMode = it
+            scope.launch {
+              host.connection.send(DarkModeChange(it))
+            }
+          },
           hostConnectionState = state,
           selectedApp = selectedApp,
           onDisconnectClick = { scope.launch { host.connection.disconnect() } },
