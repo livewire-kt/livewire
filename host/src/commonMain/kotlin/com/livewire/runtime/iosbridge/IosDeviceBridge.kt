@@ -168,6 +168,7 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
               appName = packet.appName,
               bundleId = packet.packageName,
               device = device,
+              protocolVersion = packet.protocolVersion,
             )
             updateDeviceList()
           }

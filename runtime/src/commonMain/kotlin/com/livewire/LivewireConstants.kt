@@ -1,6 +1,8 @@
 package com.livewire
 
 object LivewireConstants {
+  const val ProtocolVersion = 1
+
   const val Port = 38301
   const val BridgePort = 38302
   const val UdpDiscoveryPort = 38303

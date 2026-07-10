@@ -1,5 +1,6 @@
 package com.livewire.discovery
 
+import com.livewire.LivewireConstants
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -19,4 +20,6 @@ data class DiscoveryPacket(
   val platform: DiscoveryPlatform,
   val deviceName: String,
   val osVersion: String,
-)
+) {
+  val protocolVersion: Int = LivewireConstants.ProtocolVersion
+}
