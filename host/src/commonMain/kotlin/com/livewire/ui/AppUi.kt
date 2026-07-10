@@ -31,6 +31,7 @@ import com.livewire.theme.LivewireThemeContent
 import com.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.livewire.ui.composables.AppTopBar
 import com.livewire.ui.composables.DisconnectedStateLayout
+import com.livewire.ui.composables.EmptyPluginLayout
 import com.livewire.ui.data.ClientManifest
 import com.livewire.ui.data.DarkModeChange
 import com.livewire.ui.layout.HostDrawerSheet
@@ -151,6 +152,10 @@ internal fun AppUi(
             selectedApp = null
             onDisconnect()
           },
+        )
+      } else if (selectedPlugin == null) {
+        EmptyPluginLayout(
+          modifier = Modifier.fillMaxSize()
         )
       }
     }
