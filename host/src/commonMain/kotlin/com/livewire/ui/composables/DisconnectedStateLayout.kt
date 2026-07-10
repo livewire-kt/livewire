@@ -11,7 +11,6 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -385,7 +384,7 @@ private fun AppIcon(
 private fun AppIconPlaceholder(
   modifier: Modifier = Modifier,
   outlineColor: Color = MaterialTheme.colorScheme.outlineVariant,
-  shape: Shape = MaterialTheme.shapes.medium
+  shape: Shape = MaterialTheme.shapes.medium,
 ) {
   Box(
     modifier = modifier
@@ -402,8 +401,8 @@ private fun AppIconPlaceholder(
           cap = StrokeCap.Round,
           width = 2.dp.toPx(),
           pathEffect = PathEffect.dashPathEffect(
-            intervals = floatArrayOf(4.dp.toPx(), 4.dp.toPx())
-          )
+            intervals = floatArrayOf(4.dp.toPx(), 4.dp.toPx()),
+          ),
         )
 
         drawOutline(
@@ -418,7 +417,7 @@ private fun AppIconPlaceholder(
       QuestionMark,
       contentDescription = null,
       modifier = Modifier.size(18.dp),
-      tint = outlineColor
+      tint = outlineColor,
     )
   }
 }
