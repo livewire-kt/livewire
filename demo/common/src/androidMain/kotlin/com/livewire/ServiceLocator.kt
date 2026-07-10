@@ -26,6 +26,7 @@ object ServiceLocator {
       install(RecompositionPlugin())
 
       layoutNodeSerialization(LayoutNodeSerialization.Json)
+      debugLogging(true)
     }
   }
 

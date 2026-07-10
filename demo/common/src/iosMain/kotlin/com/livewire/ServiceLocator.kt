@@ -18,6 +18,7 @@ object ServiceLocator {
       install(NetworkPlugin())
       install(PlaygroundPlugin())
       install(RecompositionPlugin())
+      debugLogging(true)
     }
   }
 

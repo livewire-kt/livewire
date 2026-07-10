@@ -31,6 +31,8 @@ import kotlinx.coroutines.runBlocking
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 fun main() = application {
+  LivewireLog.debugEnabled = true
+
   val settings = rememberLivewireSettings()
 
   val windowState = rememberWindowState(

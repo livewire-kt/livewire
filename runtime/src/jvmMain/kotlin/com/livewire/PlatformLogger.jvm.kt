@@ -1,10 +1,10 @@
 package com.livewire
 
-actual fun logDebug(tag: String, message: String) {
+internal actual fun platformLogDebug(tag: String, message: String) {
   println("[$tag] $message")
 }
 
-actual fun logError(tag: String, message: String, throwable: Throwable?) {
+internal actual fun platformLogError(tag: String, message: String, throwable: Throwable?) {
   if (throwable != null) {
     println("[$tag] $message\n$throwable")
   } else {
