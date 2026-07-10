@@ -26,6 +26,7 @@ kotlin {
     jvmMain.dependencies {
       implementation(projects.runtime)
       implementation(projects.ui)
+      implementation(projects.hostUi)
 
       implementation(libs.compose.runtime)
       implementation(libs.compose.foundation)

@@ -19,7 +19,7 @@ internal fun Project.catalogVersionInt(alias: String): Int =
   libs.findVersion(alias).get().requiredVersion.toInt()
 
 internal fun Project.deriveNamespace(): String {
-  val suffix = path.removePrefix(":").replace(':', '.')
+  val suffix = path.removePrefix(":").replace(':', '.').replace('-', '.')
   return if (suffix.isEmpty()) BASE_PACKAGE else "$BASE_PACKAGE.$suffix"
 }
 

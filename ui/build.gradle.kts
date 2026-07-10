@@ -26,9 +26,6 @@ kotlin {
       api(libs.kotlinx.coroutines.core)
       api(libs.molecule.runtime)
       api(libs.okio)
-      api(libs.coil.compose)
-      api(libs.coil.network.ktor3)
-      implementation(libs.jsontree)
       api(libs.ktor.clientWebsockets)
       implementation(libs.stately.concurrent.collections)
     }

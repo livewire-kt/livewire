@@ -40,6 +40,7 @@ include(":demo:android")
 include(":demo:desktop")
 
 include(":host")
+include(":host-ui")
 include(":runtime")
 include(":client")
 include(":ui")

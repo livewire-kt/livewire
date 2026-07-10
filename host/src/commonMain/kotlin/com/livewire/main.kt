@@ -65,10 +65,10 @@ import com.livewire.ui.composables.DisconnectedStateLayout
 import com.livewire.ui.data.ClientManifest
 import com.livewire.ui.data.DarkModeChange
 import com.livewire.ui.data.PluginSelected
-import com.livewire.ui.host.DebugNodes
-import com.livewire.ui.host.LayoutNodeContent
-import com.livewire.ui.host.snackbar.LocalSnackDispatcher
-import com.livewire.ui.host.snackbar.rememberSnackbarDispatcher
+import com.livewire.host.ui.DebugNodes
+import com.livewire.host.ui.LayoutNodeContent
+import com.livewire.ui.snackbar.LocalSnackDispatcher
+import com.livewire.ui.snackbar.rememberSnackbarDispatcher
 import com.livewire.ui.icons.BugReport
 import com.livewire.ui.icons.DarkMode
 import com.livewire.ui.icons.LightMode

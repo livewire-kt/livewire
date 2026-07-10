@@ -211,7 +211,8 @@ fun LivewireModifier.clip(shape: Shape): LivewireModifier =
 - Shape values: use `com.livewire.ui.graphics.Shape` (Livewire's serializable shape types: `RectangleShape`, `CircleShape`, `RoundedCornerShape`)
 - The `toComposeUi` override must be annotated with both `@Composable` and `@Suppress("ModifierFactoryExtensionFunction")`
 - Scope-aware modifiers (like `weight`) override the scope-specific `toComposeUi` extensions from `ComposeUiMapper`
-- No host-side changes needed — `toComposeUi` is called polymorphically on the shared `:ui` module
+- No `:host-ui` changes needed — modifier classes live in the shared `:ui` module and the host renderers call `toComposeUi` polymorphically
+- Because modifier classes are shared, `toComposeUi` can only use what `:ui` provides. Host-side services must live in `:ui` too — e.g. `CopyClickableModifier` uses `LocalSnackDispatcher` from `com.livewire.ui.snackbar`, which stays in `:ui` for exactly this reason
 
 ## Existing serializable types available
 
