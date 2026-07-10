@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.launchMolecule
+import com.livewire.LivewireLog
 import com.livewire.logDebug
 import com.livewire.logError
 import com.livewire.transport.DefaultDecoders
@@ -79,6 +80,8 @@ class LivewireClient private constructor(
   )
 
   fun start() {
+    LivewireLog.debugEnabled = configuration.debugLogging
+
     server.onConnected = {
       val manifest: UiProtocol = ClientManifest(
         theme = configuration.theme,
@@ -183,9 +186,14 @@ class LivewireClientBuilder {
   private val plugins = mutableSetOf<Plugin>()
   private val decoders = mutableSetOf<PayloadDecoder<*>>()
   private var layoutNodeSerialization = Protobuf
+  private var debugLogging = false
 
   fun install(plugin: Plugin) {
     plugins.add(plugin)
+  }
+
+  fun debugLogging(enabled: Boolean = true) {
+    debugLogging = enabled
   }
 
   fun theme(theme: LivewireTheme) {
@@ -204,6 +212,7 @@ class LivewireClientBuilder {
       plugins = plugins,
       decoders = decoders,
       layoutNodeSerialization = layoutNodeSerialization,
+      debugLogging = debugLogging,
     )
   }
 }
@@ -213,6 +222,7 @@ class LivewireClientConfiguration(
   val plugins: Set<Plugin>,
   val decoders: Set<PayloadDecoder<*>>,
   val layoutNodeSerialization: LayoutNodeSerialization,
+  val debugLogging: Boolean,
 )
 
 @DslMarker

@@ -17,13 +17,14 @@ import com.livewire.theme.CustomLivewireTheme
 object ServiceLocator {
   val livewireClient by lazy {
     LivewireClient {
-//      theme(CustomLivewireTheme)
+      theme(CustomLivewireTheme)
       install(DatabasePlugin("."))
       install(NetworkPlugin())
       install(PlaygroundPlugin())
       install(RecompositionPlugin())
 
       layoutNodeSerialization(LayoutNodeSerialization.Json)
+      debugLogging(true)
     }
   }
 
