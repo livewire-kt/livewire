@@ -66,6 +66,9 @@ class RecompositionPlugin(
   )
 
   init {
+    // Ensure enableSourceInformation is called before the first composition on non-Android platforms
+    init()
+
     if (alwaysOnSampling) RecompositionTracker.start()
   }
 

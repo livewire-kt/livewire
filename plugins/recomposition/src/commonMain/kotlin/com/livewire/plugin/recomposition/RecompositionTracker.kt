@@ -19,7 +19,7 @@ import androidx.compose.runtime.tooling.CompositionObserverHandle
 import androidx.compose.runtime.tooling.CompositionRegistrationObserver
 import androidx.compose.runtime.tooling.ObservableComposition
 import co.touchlab.stately.collections.ConcurrentMutableMap
-import com.livewire.ui.composition.LivewireRecomposers
+import com.livewire.ui.composition.LivewireComposition
 import kotlin.concurrent.Volatile
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -152,7 +152,7 @@ object RecompositionTracker {
 
   private val registrationObserver = object : CompositionRegistrationObserver {
     override fun onCompositionRegistered(composition: ObservableComposition) {
-      if ((composition as? CompositionImpl)?.parent in LivewireRecomposers) return
+      if (composition.isLivewireOwned()) return
 
       val handle = composition.setObserver(compositionObserverFor(composition))
       compositionObserverHandles.block { it[composition] = handle }
@@ -296,6 +296,12 @@ object RecompositionTracker {
     roots = newRoots
     version.value++
   }
+}
+
+internal fun ObservableComposition.isLivewireOwned(): Boolean = try {
+  (this as? CompositionImpl)?.parent?.effectCoroutineContext?.get(LivewireComposition) != null
+} catch (_: Throwable) {
+  false
 }
 
 private sealed interface Command {

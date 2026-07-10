@@ -16,6 +16,7 @@ import com.livewire.transport.DefaultDecoders
 import com.livewire.transport.PayloadDecoder
 import com.livewire.ui.Plugin
 import com.livewire.ui.PluginInfo
+import com.livewire.ui.composition.LivewireComposition
 import com.livewire.ui.actions.LivewireAction
 import com.livewire.ui.actions.LocalLivewireActionObserver
 import com.livewire.ui.actions.rememberLivewireActionController
@@ -94,7 +95,7 @@ class LivewireClient private constructor(
       instanceId = connectionId,
     )
 
-    scope.launchMolecule(RecompositionMode.Immediate) {
+    scope.launchMolecule(RecompositionMode.Immediate, context = LivewireComposition) {
       val connectionState by server.connectionState.collectAsState()
       var activePluginInfo by remember { mutableStateOf<PluginInfo?>(null) }
 

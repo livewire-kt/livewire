@@ -140,12 +140,11 @@ internal fun CoroutineScope.launchLivewire(
     RecompositionMode.ContextClock -> EmptyCoroutineContext
     RecompositionMode.Immediate -> GatedFrameClock(this, context)
   }
-  val finalContext = coroutineContext + context + clockContext
+  val finalContext = coroutineContext + context + clockContext + LivewireComposition
 
   val livewireApplier = LivewireApplier(rootNode, onOutput = emitter, serializationStrategy = strategy)
 
   val recomposer = Recomposer(finalContext)
-  LivewireRecomposers.register(recomposer)
   val composition = Composition(livewireApplier, recomposer)
 
   var snapshotHandle: ObserverHandle? = null
@@ -155,7 +154,6 @@ internal fun CoroutineScope.launchLivewire(
     } finally {
       composition.dispose()
       snapshotHandle?.dispose()
-      LivewireRecomposers.unregister(recomposer)
     }
   }
 
