@@ -24,7 +24,7 @@ fun main() {
       state = rememberWindowState(
         size = DpSize(400.dp, 800.dp),
       ),
-      icon = painterResource("icon.webp")
+//      icon = painterResource("icon.webp")
     ) {
       LivewireApp(
         livewireClient = livewireClient,

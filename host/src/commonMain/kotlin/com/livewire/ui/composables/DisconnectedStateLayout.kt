@@ -10,6 +10,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,7 +48,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,6 +69,7 @@ import com.livewire.runtime.discoverymanager.IosDevice
 import com.livewire.theme.BlackHanSans
 import com.livewire.ui.icons.CloseIcon
 import com.livewire.ui.icons.DisconnectedIcon
+import com.livewire.ui.icons.QuestionMark
 import livewire.host.generated.resources.Res
 import livewire.host.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
@@ -310,12 +319,7 @@ private fun AppItem(
       horizontalArrangement = Arrangement.spacedBy(16.dp),
       verticalAlignment = Alignment.CenterVertically,
     ) {
-      Icon(
-        imageVector = app.device.platformIcon,
-        contentDescription = null,
-        modifier = Modifier.size(24.dp),
-        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-      )
+      AppIcon(app = app)
 
       Column(Modifier.weight(1f)) {
         Text(
@@ -341,10 +345,17 @@ private fun AppItem(
         )
       }
 
-      AppIcon(app = app)
+      Icon(
+        imageVector = app.device.platformIcon,
+        contentDescription = null,
+        modifier = Modifier.size(24.dp),
+        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+      )
     }
   }
 }
+
+private val AppIconSize = 40.dp
 
 @Composable
 private fun AppIcon(
@@ -364,8 +375,50 @@ private fun AppIcon(
       bitmap = bitmap,
       contentDescription = null,
       modifier = modifier
-        .size(40.dp)
+        .size(AppIconSize)
         .clip(MaterialTheme.shapes.medium),
+    )
+  } ?: AppIconPlaceholder()
+}
+
+@Composable
+private fun AppIconPlaceholder(
+  modifier: Modifier = Modifier,
+  outlineColor: Color = MaterialTheme.colorScheme.outlineVariant,
+  shape: Shape = MaterialTheme.shapes.medium
+) {
+  Box(
+    modifier = modifier
+      .size(AppIconSize)
+      .background(
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        shape = MaterialTheme.shapes.medium,
+      )
+      .drawWithContent {
+        drawContent()
+
+        val outline = shape.createOutline(size, layoutDirection, density = this)
+        val dashedStroke = Stroke(
+          cap = StrokeCap.Round,
+          width = 2.dp.toPx(),
+          pathEffect = PathEffect.dashPathEffect(
+            intervals = floatArrayOf(4.dp.toPx(), 4.dp.toPx())
+          )
+        )
+
+        drawOutline(
+          outline = outline,
+          style = dashedStroke,
+          color = outlineColor,
+        )
+      },
+    contentAlignment = Alignment.Center,
+  ) {
+    Icon(
+      QuestionMark,
+      contentDescription = null,
+      modifier = Modifier.size(18.dp),
+      tint = outlineColor
     )
   }
 }
