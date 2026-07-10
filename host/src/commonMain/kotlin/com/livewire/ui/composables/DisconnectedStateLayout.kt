@@ -58,6 +58,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.livewire.LivewireConstants
 import com.livewire.runtime.HostConnectionState
 import com.livewire.runtime.discoverymanager.AdbDevice
 import com.livewire.runtime.discoverymanager.AndroidApp
@@ -70,6 +71,7 @@ import com.livewire.theme.BlackHanSans
 import com.livewire.ui.icons.CloseIcon
 import com.livewire.ui.icons.DisconnectedIcon
 import com.livewire.ui.icons.QuestionMark
+import com.livewire.ui.icons.Warning
 import livewire.host.generated.resources.Res
 import livewire.host.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
@@ -104,7 +106,7 @@ internal fun DisconnectedStateLayout(
         Image(
           painterResource(Res.drawable.logo),
           contentDescription = null,
-          modifier = Modifier.height(128.dp)
+          modifier = Modifier.height(128.dp),
         )
 
         Spacer(Modifier.weight(1f))
@@ -114,7 +116,7 @@ internal fun DisconnectedStateLayout(
           style = MaterialTheme.typography.titleLarge,
           fontFamily = BlackHanSans,
           fontWeight = FontWeight.Medium,
-          color = MaterialTheme.colorScheme.onSurface
+          color = MaterialTheme.colorScheme.onSurface,
         )
       }
     }
@@ -255,7 +257,7 @@ private fun DeviceList(
       }
     }
       .thenBy { it.device.displayDetail }
-      .thenBy { it.displayName }
+      .thenBy { it.displayName },
   )
 
   Column(modifier.fillMaxWidth()) {
@@ -265,7 +267,7 @@ private fun DeviceList(
     ) {
       items(
         count = sortedApps.size,
-        key = { sortedApps[it].device.id + sortedApps[it].id }
+        key = { sortedApps[it].device.id + sortedApps[it].id },
       ) {
         val app = sortedApps[it]
 
@@ -320,6 +322,13 @@ private fun AppItem(
       verticalAlignment = Alignment.CenterVertically,
     ) {
       AppIcon(app = app)
+      val canConnect = app.protocolVersion == LivewireConstants.ProtocolVersion
+      Icon(
+        imageVector = if (canConnect) app.device.platformIcon else Warning,
+        contentDescription = null,
+        modifier = Modifier.size(24.dp),
+        tint = if (canConnect) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+      )
 
       Column(Modifier.weight(1f)) {
         Text(
@@ -455,13 +464,27 @@ private fun SelectedAppFooter(
           style = MaterialTheme.typography.titleMedium,
           color = if (selectedApp != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        if (selectedApp != null && selectedApp.protocolVersion != LivewireConstants.ProtocolVersion) {
+          val warningMessage = if (selectedApp.protocolVersion < LivewireConstants.ProtocolVersion) {
+            "The Livewire library in the select app is out of date. Update to connect."
+          } else {
+            "The Livewire host app is out of date. Update to connect."
+          }
+
+          Text(
+            text = warningMessage,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.error,
+          )
+        }
       }
 
       ConnectButton(
         state = state,
         onConnectClick = onConnectClick,
         onDisconnectClick = onDisconnectClick,
-        enabled = selectedApp != null,
+        enabled = selectedApp != null && selectedApp.protocolVersion == LivewireConstants.ProtocolVersion,
       )
     }
   }
@@ -488,7 +511,7 @@ fun ConnectButton(
               dampingRatio = Spring.DampingRatioMediumBouncy,
               stiffness = Spring.StiffnessMedium,
             )
-          }
+          },
         )
     },
     contentAlignment = Alignment.Center,

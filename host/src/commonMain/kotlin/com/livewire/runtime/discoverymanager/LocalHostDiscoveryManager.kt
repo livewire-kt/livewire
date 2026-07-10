@@ -131,6 +131,7 @@ private fun DiscoveryPacket.toHostApp(): HostApp = when (platform) {
     appName = appName,
     processId = processId,
     appIcon = appIcon,
+    protocolVersion = protocolVersion,
   )
   IosSimulator -> {
     IosApp(
@@ -145,6 +146,7 @@ private fun DiscoveryPacket.toHostApp(): HostApp = when (platform) {
         deviceType = Simulator,
         osVersion = osVersion,
       ),
+      protocolVersion = protocolVersion,
     )
   }
   else -> error("Unexpected platform: $platform")

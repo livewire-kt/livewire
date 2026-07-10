@@ -129,6 +129,7 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
           label = packet.appName,
           device = device,
           appIcon = packet.appIcon,
+          protocolVersion = packet.protocolVersion,
         )
       }
     }
