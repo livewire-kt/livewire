@@ -5,7 +5,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.kotlin.dsl.configure
 
-private const val LIVEWIRE_GROUP = "com.livewire-kt"
+private const val LIVEWIRE_GROUP = "com.livewire-kt.livewire"
 private const val VERSION_PROPERTY = "livewire.version"
 
 class LivewirePublishConventionPlugin : Plugin<Project> {
