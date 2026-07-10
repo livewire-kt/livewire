@@ -21,6 +21,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import com.livewire.host.ui.LayoutNodeContent
 import com.livewire.runtime.HostConnectionState
 import com.livewire.runtime.HostConnectionState.Connected
@@ -32,6 +33,7 @@ import com.livewire.theme.LivewireThemeContent
 import com.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.livewire.ui.composables.AppTopBar
 import com.livewire.ui.composables.DisconnectedStateLayout
+import com.livewire.ui.composables.EmptyPluginLayout
 import com.livewire.ui.data.ClientManifest
 import com.livewire.ui.data.DarkModeChange
 import com.livewire.ui.data.PluginCrashed
@@ -171,6 +173,14 @@ internal fun AppUi(
             selectedApp = null
             onDisconnect()
           },
+        )
+      } else if (selectedPlugin == null) {
+        val uriHandler = LocalUriHandler.current
+        EmptyPluginLayout(
+          onOpenUrl = { url ->
+            uriHandler.openUri(url)
+          },
+          modifier = Modifier.fillMaxSize(),
         )
       }
     }
