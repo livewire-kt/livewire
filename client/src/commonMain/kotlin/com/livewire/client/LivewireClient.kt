@@ -107,12 +107,6 @@ class LivewireClient private constructor(
         MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
       }
 
-//      LaunchedEffect(isDarkMode, connectionState) {
-//        if (connectionState == ConnectionState.Connected) {
-//          server.send(DarkModeChange(isDarkMode))
-//        }
-//      }
-
       LaunchedEffect(Unit) {
         server.incomingMessages.collect { message ->
           when (message) {
