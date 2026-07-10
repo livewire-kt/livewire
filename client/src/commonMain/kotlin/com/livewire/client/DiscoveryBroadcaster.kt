@@ -10,8 +10,7 @@ import io.ktor.network.sockets.ServerSocket
 import io.ktor.network.sockets.aSocket
 import io.ktor.network.sockets.openWriteChannel
 import io.ktor.utils.io.core.buildPacket
-import io.ktor.utils.io.core.writeText
-import io.ktor.utils.io.writeStringUtf8
+import io.ktor.utils.io.writeByteArray
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +18,6 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 
 expect fun createDiscoveryConfig(instanceId: String): DiscoveryConfig
 
@@ -31,15 +29,15 @@ class DiscoveryBroadcaster {
     instanceId: String,
   ) {
     val config = createDiscoveryConfig(instanceId)
-    val json = Json.encodeToString(config.packet)
+    val bytes = DiscoveryPacket.encode(config.packet)
 
     when (config.transport) {
-      Udp -> startUdpBroadcast(scope, json)
-      Tcp -> startTcpServer(scope, json)
+      Udp -> startUdpBroadcast(scope, bytes)
+      Tcp -> startTcpServer(scope, bytes)
     }
   }
 
-  private fun startUdpBroadcast(scope: CoroutineScope, json: String) {
+  private fun startUdpBroadcast(scope: CoroutineScope, bytes: ByteArray) {
     val target = InetSocketAddress("127.0.0.1", LivewireConstants.UdpDiscoveryPort)
 
     scope.launch(Dispatchers.IO) {
@@ -52,7 +50,7 @@ class DiscoveryBroadcaster {
           try {
             socket.send(
               Datagram(
-                packet = buildPacket { writeText(json) },
+                packet = buildPacket { write(bytes) },
                 address = target,
               ),
             )
@@ -71,7 +69,7 @@ class DiscoveryBroadcaster {
     }
   }
 
-  private fun startTcpServer(scope: CoroutineScope, json: String) {
+  private fun startTcpServer(scope: CoroutineScope, bytes: ByteArray) {
     scope.launch(Dispatchers.IO) {
       val selectorManager = SelectorManager(Dispatchers.IO)
       var boundSocket: ServerSocket? = null
@@ -100,9 +98,9 @@ class DiscoveryBroadcaster {
             val clientSocket = boundSocket.accept()
             launch {
               try {
-                clientSocket
-                  .openWriteChannel(autoFlush = true)
-                  .writeStringUtf8(json + "\n")
+                val channel = clientSocket.openWriteChannel(autoFlush = true)
+                channel.writeByteArray(bytes)
+                channel.flushAndClose()
               } catch (e: CancellationException) {
                 throw e
               } catch (e: Exception) {
@@ -138,3 +136,5 @@ data class DiscoveryConfig(
 }
 
 const val UnknownConfigField = "Unknown"
+const val MaxAppIconSizePx = 64
+

@@ -9,7 +9,7 @@ import com.livewire.logError
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
 import io.ktor.network.sockets.aSocket
-import io.ktor.utils.io.core.readText
+import kotlinx.io.readByteArray
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
@@ -56,9 +55,9 @@ object LocalHostDiscoveryManager : PlatformDiscoveryManager {
           .use { socket ->
             while (isActive) {
               try {
-                val json = socket.receive().packet.readText()
-                val packet = Json.decodeFromString<DiscoveryPacket>(json)
-
+                val bytes = socket.receive().packet.readByteArray()
+                // TODO: should this just be a continue?
+                val packet = DiscoveryPacket.decode(bytes) ?: continue
                 val app = packet.toHostApp()
 
                 synchronized(lock) {

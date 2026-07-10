@@ -76,7 +76,6 @@ import livewire.host.generated.resources.Res
 import livewire.host.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.skia.Image as SkiaImage
-import kotlin.io.encoding.Base64
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -374,7 +373,7 @@ private fun AppIcon(
   val iconBitmap = remember(app.appIcon) {
     app.appIcon?.let { encoded ->
       runCatching {
-        SkiaImage.makeFromEncoded(Base64.decode(encoded)).toComposeImageBitmap()
+        SkiaImage.makeFromEncoded(encoded).toComposeImageBitmap()
       }.getOrNull()
     }
   }

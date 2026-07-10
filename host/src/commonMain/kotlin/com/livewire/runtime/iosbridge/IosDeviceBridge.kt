@@ -15,7 +15,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.serialization.json.Json
 import java.io.BufferedReader
 import java.nio.channels.Channels
 import java.nio.file.Paths
@@ -207,7 +206,7 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
     }
 
     return try {
-      Channels.newInputStream(stream).bufferedReader().readLine()?.let { Json.decodeFromString<DiscoveryPacket>(it) }
+      DiscoveryPacket.decode(Channels.newInputStream(stream).readBytes())
     } catch (e: Exception) {
       logDebug("tcp discovery failed for deviceId=$deviceId: ${e.message}")
       null

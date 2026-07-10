@@ -10,7 +10,6 @@ import android.os.Process
 import com.livewire.ContextHolder
 import com.livewire.discovery.DiscoveryPacket
 import java.io.ByteArrayOutputStream
-import kotlin.io.encoding.Base64
 
 actual fun createDiscoveryConfig(instanceId: String): DiscoveryConfig {
   val context = ContextHolder.appContext
@@ -24,35 +23,32 @@ actual fun createDiscoveryConfig(instanceId: String): DiscoveryConfig {
       platform = Android,
       deviceName = Build.MODEL,
       osVersion = Build.VERSION.RELEASE,
-      appIcon = loadAppIconBase64(context),
+      appIcon = loadAppIcon(context),
     ),
     transport = Tcp,
   )
 }
 
 
-private fun loadAppIconBase64(context: Context): String? = runCatching {
+private fun loadAppIcon(context: Context): ByteArray? = runCatching {
   val drawable = context.packageManager.getApplicationIcon(context.applicationInfo)
   @SuppressLint("UseKtx")
-  val bitmap = Bitmap.createBitmap(AppIconSizePx, AppIconSizePx, Bitmap.Config.ARGB_8888)
+  val bitmap = Bitmap.createBitmap(MaxAppIconSizePx, MaxAppIconSizePx, Bitmap.Config.ARGB_8888)
   val canvas = Canvas(bitmap)
 
   if (drawable is AdaptiveIconDrawable) {
-    val overscan = AppIconSizePx / 4
+    val overscan = MaxAppIconSizePx / 4
     listOfNotNull(drawable.background, drawable.foreground).forEach { layer ->
-      layer.setBounds(-overscan, -overscan, AppIconSizePx + overscan, AppIconSizePx + overscan)
+      layer.setBounds(-overscan, -overscan, MaxAppIconSizePx + overscan, MaxAppIconSizePx + overscan)
       layer.draw(canvas)
     }
   } else {
-    drawable.setBounds(0, 0, AppIconSizePx, AppIconSizePx)
+    drawable.setBounds(0, 0, MaxAppIconSizePx, MaxAppIconSizePx)
     drawable.draw(canvas)
   }
 
   val stream = ByteArrayOutputStream()
   bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream)
   bitmap.recycle()
-
-  Base64.encode(stream.toByteArray())
+  stream.toByteArray()
 }.getOrNull()
-
-private const val AppIconSizePx = 128
