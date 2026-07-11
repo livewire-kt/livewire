@@ -1,0 +1,78 @@
+site_name: Livewire
+site_description: A real-time development bridge that streams live tooling UI from Android, iOS, and Desktop apps to a desktop host.
+site_url: https://livewire-kt.github.io/livewire/
+repo_url: https://github.com/livewire-kt/livewire
+repo_name: livewire-kt/livewire
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  logo: assets/icon.webp
+  favicon: assets/icon.webp
+  icon:
+    repo: fontawesome/brands/github
+  palette:
+    # Light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.tabs.link
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/livewire-kt/livewire
+
+nav:
+  - About: index.md
+  - Getting Started: getting-started.md
+  - Host App: host.md
+  - Connections: connections.md
+  - Plugins:
+      - Overview: plugins/index.md
+      - Existing Plugins: plugins/existing.md
+      - Building Plugins: plugins/building.md
+  - Reference:
+      - Widgets & Modifiers: reference/ui.md

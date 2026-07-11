@@ -12,7 +12,7 @@
 
 Livewire embeds a small client in your app that serves debugging tools — database browsing, network inspection, and more — as a stream of UI over an encrypted WebSocket. The desktop host app discovers running clients on connected devices, connects, and renders that UI live. Interactions in the host flow back to the device in real time.
 
-- **Client** — a library you add to your app. It runs an embedded server, broadcasts itself for discovery, and streams plugin UI to the host.
+- **Client** — a library you add to your app. It broadcasts itself for discovery and streams plugin UI to the host.
 - **Host** — a desktop app you run on your machine. It finds clients over ADB (Android), USB (iOS), or localhost (Desktop), and renders whatever they serve.
 
 ## Quick Start
@@ -24,7 +24,19 @@ Livewire embeds a small client in your app that serves debugging tools — datab
 ```kotlin
 // build.gradle.kts
 dependencies {
-  implementation("com.livewire-kt:client:<version>") // Coming soon
+  // Core SDK for integrating into your app
+  implementation("com.livewire-kt.livewire:client:<version>") // Coming soon
+
+  // SQLite Database Viewer
+  implementation("com.livewire-kt.livewire:plugin-database:<version>")
+
+  // Network Viewer
+  implementation("com.livewire-kt.livewire:plugin-network-core:<version>")
+  implementation("com.livewire-kt.livewire:plugin-network-ktor:<version>")
+  implementation("com.livewire-kt.livewire:plugin-network-okhttp:<version>")
+
+  // Jetpack Compose Recomposition Viewer
+  implementation("com.livewire-kt.livewire:plugin-recomposition:<version>")
 }
 ```
 
