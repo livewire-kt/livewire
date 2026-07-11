@@ -168,7 +168,7 @@ fun main() = application {
         reconnectTargetId = app.id
         scope.launch { host.connection.connect(app) }
       },
-      onNetworkMeterClick = { showNetworkMeter = true },
+      onNetworkMeterClick = { showNetworkMeter = !showNetworkMeter },
     )
   }
 
