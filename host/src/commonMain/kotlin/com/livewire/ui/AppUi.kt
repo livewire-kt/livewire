@@ -61,6 +61,7 @@ internal fun AppUi(
   onReloadPlugin: (pluginId: String) -> Unit,
   onDisconnect: () -> Unit,
   onConnect: (HostApp) -> Unit,
+  onNetworkMeterClick: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val isDarkMode: Boolean by remember {
@@ -113,6 +114,7 @@ internal fun AppUi(
           onNavigationItemClick = {
             settings.menuExpanded = !menuExpanded
           },
+          onNetworkMeterClick = onNetworkMeterClick,
         )
       },
       drawer = {
