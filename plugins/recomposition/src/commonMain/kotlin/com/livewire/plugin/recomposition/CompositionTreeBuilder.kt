@@ -3,6 +3,7 @@
 
 package com.livewire.plugin.recomposition
 
+import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.GapComposer
 import androidx.compose.runtime.LinkComposer
@@ -32,7 +33,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
     }
   }
 
-  // TODO: where's our visiblefortests annotation?
+  @VisibleForTesting
   fun build(
     groups: Iterable<CompositionGroup>,
     composedScopes: Set<RecomposeScope>,

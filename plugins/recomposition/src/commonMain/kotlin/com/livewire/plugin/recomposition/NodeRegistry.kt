@@ -1,5 +1,6 @@
 package com.livewire.plugin.recomposition
 
+import androidx.annotation.VisibleForTesting
 import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.RecomposeScope
 
@@ -43,6 +44,6 @@ internal class NodeRegistry {
     for (child in node.children) aggregateLiveKeys(child, aggregator)
   }
 
-  // TODO: where's our visiblefortesting?
+  @VisibleForTesting
   internal fun trackedIdentities(): Set<Any> = identityNodes.keys.toSet()
 }

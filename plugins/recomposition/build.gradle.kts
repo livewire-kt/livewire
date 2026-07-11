@@ -33,6 +33,7 @@ kotlin {
     commonMain {
       dependencies {
         api(projects.ui)
+        implementation(libs.androidx.annotation)
         api(libs.compose.runtime)
         api(libs.kotlinx.serialization.json)
         api(libs.kotlinx.coroutines.core)
