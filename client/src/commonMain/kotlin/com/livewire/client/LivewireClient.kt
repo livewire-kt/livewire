@@ -44,6 +44,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -59,11 +60,11 @@ class LivewireClient private constructor(
     LivewireClientBuilder().apply(configure).build(),
   )
 
-  private val scope = CoroutineScope(
-    context + SupervisorJob() + CoroutineExceptionHandler { _, throwable ->
-      logError("LivewireClient", "Uncaught error in Livewire scope", throwable)
-    },
-  )
+  private val baseContext: CoroutineContext = context
+  private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+    logError("LivewireClient", "Uncaught error in Livewire scope", throwable)
+  }
+  private var scope = CoroutineScope(baseContext + SupervisorJob() + exceptionHandler)
   private val darkMode = MutableStateFlow(true)
   private val discoveryBroadcaster = DiscoveryBroadcaster()
 
@@ -77,6 +78,10 @@ class LivewireClient private constructor(
 
   fun start() {
     LivewireLog.debugEnabled = configuration.debugLogging
+
+    if (!scope.isActive) {
+      scope = CoroutineScope(baseContext + SupervisorJob() + exceptionHandler)
+    }
 
     server.onConnected = {
       val manifest: UiProtocol = ClientManifest(

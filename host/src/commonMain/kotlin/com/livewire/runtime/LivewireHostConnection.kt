@@ -40,7 +40,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.runtime.toMutableStateList
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.NonCancellable
@@ -177,7 +176,7 @@ class LivewireHostConnection(
       return
     }
 
-    server = embeddedServer(CIO, port = LivewireConstants.Port, host = "127.0.0.1") {
+    val server = embeddedServer(CIO, port = LivewireConstants.Port, host = "127.0.0.1") {
       install(WebSockets) {
         pingPeriod = 15.seconds
         timeout = 15.seconds
@@ -269,12 +268,15 @@ class LivewireHostConnection(
           }
         }
       }
-    }.also {
-      it.start(wait = false)
-      it.engine.resolvedConnectors()
-      logDebug("server bound on port ${LivewireConstants.Port}")
-      connectionState.value = Listening
     }
+
+    this.server = server
+    withContext(NonCancellable) {
+      server.start(wait = false)
+      server.engine.resolvedConnectors()
+    }
+    logDebug("server bound on port ${LivewireConstants.Port}")
+    connectionState.value = Listening
   }
 
   private fun receiveFullTree(root: LayoutNode) {
