@@ -5,6 +5,26 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class CompositionTreeBuilderTest {
+  private val registry = NodeRegistry()
+  private val builder = CompositionTreeBuilder(registry)
+
+  private val appScope = FakeScope()
+  private val aScope = FakeScope()
+  private val bScope = FakeScope()
+
+  private val groups = listOf(
+    composable(
+      name = "App",
+      scope = appScope,
+      children = listOf(
+        composable("A", aScope),
+        composable("B", bScope),
+      ),
+    ),
+  )
+
+  private fun build(vararg composed: RecomposeScope) = builder.build(groups, composed.toSet())!!
+
   @Test
   fun `counts every reached node on initial composition`() {
     val roots = build(appScope, aScope, bScope)
@@ -100,23 +120,3 @@ class CompositionTreeBuilderTest {
     assertEquals(listOf("A", "B"), app.children.map { it.name })
   }
 }
-
-private val registry = NodeRegistry()
-private val builder = CompositionTreeBuilder(registry)
-
-private val appScope = FakeScope()
-private val aScope = FakeScope()
-private val bScope = FakeScope()
-
-private val groups = listOf(
-  composable(
-    name = "App",
-    scope = appScope,
-    children = listOf(
-      composable("A", aScope),
-      composable("B", bScope),
-    ),
-  ),
-)
-
-private fun build(vararg composed: RecomposeScope) = builder.build(groups, composed.toSet())!!
