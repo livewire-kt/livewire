@@ -1,0 +1,43 @@
+/* Livewire brand palette — pulled from the logo:
+   amber #FFAB00, signal red #E8281E, charcoal #2B2A2A */
+
+:root {
+  --lw-amber: #ffab00;
+  --lw-amber-dark: #e89100;
+  --lw-red: #e8281e;
+  --lw-charcoal: #2b2a2a;
+}
+
+/* Light scheme */
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: var(--lw-charcoal);
+  --md-primary-fg-color--light: #4a4848;
+  --md-primary-fg-color--dark: #1c1b1b;
+  --md-accent-fg-color: var(--lw-amber-dark);
+  --md-typeset-a-color: var(--lw-amber-dark);
+}
+
+/* Dark scheme */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: var(--lw-charcoal);
+  --md-primary-fg-color--light: #4a4848;
+  --md-primary-fg-color--dark: #1c1b1b;
+  --md-accent-fg-color: var(--lw-amber);
+  --md-typeset-a-color: var(--lw-amber);
+  --md-default-bg-color: #1e1d1d;
+}
+
+/* Amber hazard stripe under the header, like the logo's chevrons */
+.md-header {
+  border-bottom: 4px solid var(--lw-amber);
+}
+
+/* Round the logo a touch so the badge sits nicely in the header */
+.md-header__button.md-logo img {
+  border-radius: 4px;
+}
+
+/* Search highlight + selection in brand amber */
+.md-typeset mark {
+  background-color: color-mix(in srgb, var(--lw-amber) 40%, transparent);
+}
