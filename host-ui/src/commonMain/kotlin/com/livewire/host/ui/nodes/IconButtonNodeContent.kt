@@ -48,7 +48,7 @@ internal fun IconButtonNodeContent(
       }
     },
     style = node.style,
-    shapes = IconButtonDefaults.shapes(),
+    shapes = node.shapes.toComposeUi(),
     enabled = node.enabled,
     modifier = modifier
       .size(buttonSize)
