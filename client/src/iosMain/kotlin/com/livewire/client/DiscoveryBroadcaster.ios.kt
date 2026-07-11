@@ -4,11 +4,14 @@ import com.livewire.discovery.DiscoveryPacket
 import com.livewire.discovery.DiscoveryPlatform.IosPhysical
 import com.livewire.discovery.DiscoveryPlatform.IosSimulator
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.addressOf
+import kotlinx.cinterop.usePinned
 import platform.CoreGraphics.CGRectMake
 import platform.CoreGraphics.CGSizeMake
 import platform.Foundation.NSBundle
+import platform.Foundation.NSData
 import platform.Foundation.NSProcessInfo
-import platform.Foundation.base64EncodedStringWithOptions
+import platform.posix.memcpy
 import platform.UIKit.UIDevice
 import platform.UIKit.UIGraphicsBeginImageContextWithOptions
 import platform.UIKit.UIGraphicsEndImageContext
@@ -28,7 +31,7 @@ actual fun createDiscoveryConfig(instanceId: String): DiscoveryConfig {
     platform = if (isSimulator) IosSimulator else IosPhysical,
     deviceName = NSProcessInfo.processInfo.environment["SIMULATOR_DEVICE_NAME"] as? String ?: UIDevice.currentDevice.name,
     osVersion = UIDevice.currentDevice.systemVersion,
-    appIcon = loadAppIconBase64(),
+    appIcon = loadAppIcon(),
   )
 
   return DiscoveryConfig(
@@ -37,18 +40,27 @@ actual fun createDiscoveryConfig(instanceId: String): DiscoveryConfig {
   )
 }
 
-private fun loadAppIconBase64(): String? = runCatching {
+private fun loadAppIcon(): ByteArray? = runCatching {
   val icons = NSBundle.mainBundle.infoDictionary?.get("CFBundleIcons") as? Map<*, *> ?: return null
   val primaryIcon = icons["CFBundlePrimaryIcon"] as? Map<*, *> ?: return null
   val iconFiles = primaryIcon["CFBundleIconFiles"] as? List<*> ?: return null
   val iconName = iconFiles.lastOrNull() as? String ?: return null
   val image = UIImage.imageNamed(iconName) ?: return null
 
-  // Downscale and JPEG-encode (icons are opaque) so the discovery packet fits in a
-  // single UDP datagram — macOS rejects sends over ~9KB with EMSGSIZE.
   val data = UIImageJPEGRepresentation(image.scaledTo(AppIconSizePx), AppIconJpegQuality) ?: return null
-  data.base64EncodedStringWithOptions(0u).takeIf { it.length <= MaxAppIconBase64Length }
+  data.toByteArray()
 }.getOrNull()
+
+@OptIn(ExperimentalForeignApi::class)
+private fun NSData.toByteArray(): ByteArray {
+  val size = length.toInt()
+  if (size == 0) return ByteArray(0)
+  return ByteArray(size).apply {
+    usePinned { pinned ->
+      memcpy(pinned.addressOf(0), bytes, length)
+    }
+  }
+}
 
 @OptIn(ExperimentalForeignApi::class)
 private fun UIImage.scaledTo(size: Double): UIImage {
@@ -63,4 +75,3 @@ private fun UIImage.scaledTo(size: Double): UIImage {
 
 private const val AppIconSizePx = 64.0
 private const val AppIconJpegQuality = 0.8
-private const val MaxAppIconBase64Length = 8_000

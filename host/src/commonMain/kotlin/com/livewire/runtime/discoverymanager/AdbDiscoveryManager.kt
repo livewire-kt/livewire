@@ -16,7 +16,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.Json
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
@@ -129,6 +128,7 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
           label = packet.appName,
           device = device,
           appIcon = packet.appIcon,
+          protocolVersion = packet.protocolVersion,
         )
       }
     }
@@ -137,7 +137,7 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
   private fun tryTcpDiscovery(device: AdbDevice, port: Int): DiscoveryPacket? {
     return try {
       device.connection.open("tcp:$port").use { stream ->
-        stream.source.readUtf8Line()?.let { Json.decodeFromString<DiscoveryPacket>(it) }
+        DiscoveryPacket.decode(stream.source.readByteArray())
       }
     } catch (_: Exception) {
       null
