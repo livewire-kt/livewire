@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 enum class ConnectionState {
@@ -54,7 +55,8 @@ class LivewireServer(
     context = context,
   )
 
-  private val scope = CoroutineScope(context + SupervisorJob())
+  private val baseContext: CoroutineContext = context
+  private var scope = CoroutineScope(baseContext + SupervisorJob())
 
   val connectionState: StateFlow<ConnectionState>
     field = MutableStateFlow(Stopped)
@@ -70,7 +72,9 @@ class LivewireServer(
 
   var onConnected: (suspend LivewireServer.() -> Unit)? = null
 
-  private val httpClient = HttpClient(createPlatformEngine()) {
+  private var httpClient = buildHttpClient()
+
+  private fun buildHttpClient() = HttpClient(createPlatformEngine()) {
     install(WebSockets) {
       pingInterval = 15.seconds
     }
@@ -86,6 +90,11 @@ class LivewireServer(
 
   fun start() {
     if (connectionState.value != Stopped) return
+
+    if (!scope.isActive) {
+      scope = CoroutineScope(baseContext + SupervisorJob())
+      httpClient = buildHttpClient()
+    }
 
     logDebug("Livewire", "Starting client connection loop")
     scope.launch { connectionLoop() }
