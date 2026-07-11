@@ -1,10 +1,12 @@
-/* Livewire brand palette — pulled from the logo:
-   amber #FFAB00, signal red #E8281E, charcoal #2B2A2A */
+@import url("https://fonts.googleapis.com/css2?family=Black+Han+Sans&display=swap");
+
+/* Livewire brand palette:
+   yellow #FFA500, signal red #F40B0B, charcoal #2B2A2A */
 
 :root {
-  --lw-amber: #ffab00;
-  --lw-amber-dark: #e89100;
-  --lw-red: #e8281e;
+  --lw-amber: #ffa500;
+  --lw-amber-dark: #e08a00;
+  --lw-red: #f40b0b;
   --lw-charcoal: #2b2a2a;
 }
 
@@ -14,6 +16,7 @@
   --md-primary-fg-color--light: #4a4848;
   --md-primary-fg-color--dark: #1c1b1b;
   --md-accent-fg-color: var(--lw-amber-dark);
+  --md-accent-fg-color--transparent: color-mix(in srgb, var(--lw-amber-dark) 10%, transparent);
   --md-typeset-a-color: var(--lw-amber-dark);
 }
 
@@ -23,8 +26,15 @@
   --md-primary-fg-color--light: #4a4848;
   --md-primary-fg-color--dark: #1c1b1b;
   --md-accent-fg-color: var(--lw-amber);
+  --md-accent-fg-color--transparent: color-mix(in srgb, var(--lw-amber) 10%, transparent);
   --md-typeset-a-color: var(--lw-amber);
   --md-default-bg-color: #1e1d1d;
+}
+
+/* Current page in the navigation sidebar in brand red */
+.md-nav__link--active,
+.md-nav__item .md-nav__link--active code {
+  color: var(--lw-red);
 }
 
 /* Amber hazard stripe under the header, like the logo's chevrons */
@@ -32,12 +42,24 @@
   border-bottom: 4px solid var(--lw-amber);
 }
 
+/* Title bar in the brand display font */
+.md-header__title {
+  font-family: "Black Han Sans", sans-serif;
+  font-weight: 400;
+}
+
 /* Round the logo a touch so the badge sits nicely in the header */
 .md-header__button.md-logo img {
   border-radius: 4px;
 }
 
-/* Search highlight + selection in brand amber */
+/* Search highlight in brand amber */
 .md-typeset mark {
   background-color: color-mix(in srgb, var(--lw-amber) 40%, transparent);
+}
+
+/* Text selection in brand red */
+::selection {
+  background-color: var(--lw-red);
+  color: #fff;
 }

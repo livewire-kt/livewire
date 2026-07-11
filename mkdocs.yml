@@ -7,20 +7,24 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
-  logo: assets/logo.webp
-  favicon: assets/logo.webp
+  logo: assets/icon.webp
+  favicon: assets/icon.webp
   icon:
     repo: fontawesome/brands/github
   palette:
     # Light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-night
         name: Switch to dark mode
     # Dark mode
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
+      primary: custom
+      accent: custom
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
