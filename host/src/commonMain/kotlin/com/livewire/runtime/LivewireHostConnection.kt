@@ -85,6 +85,14 @@ class LivewireHostConnection(
   val incomingLayoutNodes: StateFlow<LayoutNode>
     field = MutableStateFlow<LayoutNode>(RootNode())
 
+  /** Size, in bytes, of the last layout frame (full tree or patches) received from the client. */
+  val incomingLayoutSize: StateFlow<Long>
+    field = MutableStateFlow(0L)
+
+  /** Total bytes of layout frames received from the client since the last connect. */
+  val incomingLayoutBytesTotal: StateFlow<Long>
+    field = MutableStateFlow(0L)
+
   private val nodeMap = mutableMapOf<Long, LayoutNode>()
   private val parentMap = mutableMapOf<Long, LayoutNode>()
   private var currentRoot: LayoutNode = RootNode()
@@ -241,7 +249,10 @@ class LivewireHostConnection(
                         if (message != null) incomingMessages.emit(message.payload)
                       }
                       is Frame.Binary -> {
-                        if (pendingLayout.trySend(plaintextFrame.readBytes()).isFailure) {
+                        val layoutBytes = plaintextFrame.readBytes()
+                        incomingLayoutSize.value = layoutBytes.size.toLong()
+                        incomingLayoutBytesTotal.value += layoutBytes.size
+                        if (pendingLayout.trySend(layoutBytes).isFailure) {
                           logDebug("layout queue overflow, requesting resync")
                           requestResync()
                         }
@@ -392,6 +403,8 @@ class LivewireHostConnection(
     activeConnection = null
 
     connectionState.value = Disconnected
+    incomingLayoutSize.value = 0L
+    incomingLayoutBytesTotal.value = 0L
     val emptyRoot = RootNode()
     currentRoot = emptyRoot
     nodeMap.clear()

@@ -25,6 +25,7 @@ import com.livewire.ui.icons.BugReport
 import com.livewire.ui.icons.DarkMode
 import com.livewire.ui.icons.LightMode
 import com.livewire.ui.icons.MenuOpen
+import com.livewire.ui.icons.NetworkCheck
 
 @Composable
 internal fun AppTopBar(
@@ -34,6 +35,7 @@ internal fun AppTopBar(
   selectedApp: HostApp?,
   onDisconnectClick: () -> Unit,
   onNavigationItemClick: () -> Unit,
+  onNetworkMeterClick: () -> Unit,
   modifier: Modifier = Modifier,
 ) {
   Surface(
@@ -65,6 +67,16 @@ internal fun AppTopBar(
       )
 
       Spacer(Modifier.weight(1f))
+
+      IconButton(onClick = onNetworkMeterClick) {
+        Icon(
+          NetworkCheck,
+          contentDescription = "Open network meter",
+          modifier = Modifier.size(18.dp),
+        )
+      }
+
+      Spacer(Modifier.width(8.dp))
 
       // TODO: Hide behind a 'Debug' build flag
       Switch(

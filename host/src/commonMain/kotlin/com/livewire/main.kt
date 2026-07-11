@@ -19,12 +19,15 @@ import com.livewire.runtime.HostConnectionState.Connected
 import com.livewire.runtime.LivewireHost
 import com.livewire.runtime.discoverymanager.CompositeDiscoveryManager
 import com.livewire.runtime.discoverymanager.HostApp
+import com.livewire.settings.observe
 import com.livewire.settings.rememberLivewireSettings
 import com.livewire.ui.AppUi
+import com.livewire.ui.NetworkMeterWindow
 import com.livewire.ui.PluginInfo
 import com.livewire.ui.data.ClientManifest
 import com.livewire.ui.data.DarkModeChange
 import com.livewire.ui.data.PluginSelected
+import com.livewire.ui.theme.LivewireTheme
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -85,6 +88,7 @@ fun main() = application {
 
   var clientManifest by remember { mutableStateOf<ClientManifest?>(null) }
   var selectedPlugin by remember { mutableStateOf<PluginInfo?>(null) }
+  var showNetworkMeter by remember { mutableStateOf(false) }
 
   var reconnectTargetId by remember { mutableStateOf<String?>(null) }
 
@@ -164,6 +168,17 @@ fun main() = application {
         reconnectTargetId = app.id
         scope.launch { host.connection.connect(app) }
       },
+      onNetworkMeterClick = { showNetworkMeter = !showNetworkMeter },
+    )
+  }
+
+  if (showNetworkMeter) {
+    val isDarkMode by remember { settings::darkMode.observe() }.collectAsState()
+    NetworkMeterWindow(
+      host = host,
+      theme = clientManifest?.theme ?: LivewireTheme(),
+      darkMode = isDarkMode,
+      onCloseRequest = { showNetworkMeter = false },
     )
   }
 }
