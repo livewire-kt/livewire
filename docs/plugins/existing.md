@@ -6,6 +6,7 @@ Livewire ships with a set of first-party plugins. All plugin artifacts are publi
 |---|---|---|
 | [Database](#database) | `plugin-database` | Browse SQLite databases on-device and run queries |
 | [Network](#network) | `plugin-network-core` (+ `-ktor` / `-okhttp`) | Inspect HTTP traffic from Ktor and OkHttp clients |
+| [Preferences](#preferences) | `plugin-preferences` | View and live-edit SharedPreferences, DataStore, NSUserDefaults, and java.util.prefs |
 | [Recomposition](#recomposition) | `plugin-recomposition` | Live recomposition counts and invalidation reasons |
 | [Playground](#playground) | *(not published)* | Widget catalog used for developing Livewire itself |
 
@@ -70,6 +71,60 @@ Then add an integration for each HTTP client your app uses:
     ```
 
 Both integrations feed the same collector, so requests from multiple clients appear in one unified timeline. Request and response bodies are captured up to `maxBodySize` (256 KiB by default).
+
+## Preferences
+
+A key/value store inspector — view and **live-edit** your app's preferences from the host. Edits are written through the real store APIs in your running app, and changes your app makes appear in the host immediately via each store's native change mechanism (`OnSharedPreferenceChangeListener`, `DataStore.data`, `NSUserDefaultsDidChangeNotification`, `PreferenceChangeListener`).
+
+The constructor is platform-specific, reflecting how stores are located on each platform:
+
+=== "Android"
+
+    ```kotlin
+    // Discovers SharedPreferences by scanning the app's shared_prefs/ directory
+    install(PreferencesPlugin(context))
+    ```
+
+=== "Desktop (JVM)"
+
+    ```kotlin
+    // Inspects the given java.util.prefs user-root node paths
+    install(PreferencesPlugin("/com/example/myapp"))
+    ```
+
+=== "iOS"
+
+    ```kotlin
+    // Always includes NSUserDefaults.standardUserDefaults; add app-group suites as needed
+    install(PreferencesPlugin(suiteNames = listOf("group.com.example.shared")))
+    ```
+
+`DataStore` enforces a single instance per file, so DataStores are never discovered — register the live instances your app already uses via the trailing lambda:
+
+```kotlin
+install(
+  PreferencesPlugin(context) {
+    // Full read/write inspection of a Preferences DataStore
+    dataStore("settings", settingsDataStore)
+
+    // Read-only view of any typed DataStore, rendered by the lambda
+    protoDataStore("session", sessionStore) { Json.encodeToString(it) }
+  }
+)
+```
+
+In the host: filter entries by key, toggle booleans with a switch, and edit everything else inline — commit with the check button or <kbd>Enter</kbd>, cancel with <kbd>Esc</kbd>. Edits are drafts until committed, so nothing is written while you type, and invalid input (e.g. `abc` for an Int) shows an inline error instead of writing. New entries can be added with any type the selected store supports; deleting a key or clearing a store uses a two-step confirm. String sets are edited one entry per line, byte arrays as Base64.
+
+| Store | Discovery | Types |
+|---|---|---|
+| SharedPreferences (Android) | Automatic | String, Int, Long, Float, Boolean, StringSet |
+| Preferences DataStore | Registered | String, Int, Long, Float, Double, Boolean, StringSet, Bytes |
+| NSUserDefaults (iOS) | Standard + registered suites | String, Long, Double, Boolean, StringSet, Bytes |
+| java.util.prefs (Desktop) | Registered node paths | String |
+| Proto DataStore | Registered | Read-only rendered view |
+
+!!! note "Platform quirks"
+    `NSUserDefaults` types are best-effort — `NSNumber` doesn't preserve the exact Kotlin type, so integers surface as Long and floating-point values as Double, and change notifications only fire for in-process writes. `java.util.prefs` values are string-typed on read-back, so everything there is presented as a String.
 
 ## Recomposition
 

@@ -19,3 +19,6 @@ captures
 node_modules/
 tools/ios-device-bridge/target
 livewire.db
+
+# Demo runtime artifacts
+demo.preferences_pb

@@ -1,5 +1,8 @@
 package com.livewire
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.Preferences
 import app.cash.sqldelight.async.coroutines.synchronous
 import app.cash.sqldelight.db.QueryResult
 import app.cash.sqldelight.db.SqlDriver
@@ -10,21 +13,45 @@ import com.livewire.client.LivewireClient
 import com.livewire.plugin.database.DatabasePlugin
 import com.livewire.plugin.network.NetworkPlugin
 import com.livewire.plugin.playground.PlaygroundPlugin
+import com.livewire.plugin.preferences.PreferencesPlugin
 import com.livewire.plugin.recomposition.RecompositionPlugin
 import com.livewire.ui.data.LayoutNodeSerialization
 import com.livewire.theme.CustomLivewireTheme
+import java.util.prefs.Preferences as JavaPreferences
+import okio.Path.Companion.toPath
 
 object ServiceLocator {
+
+  private const val DemoPrefsNode = "/com/livewire/demo"
+
+  val settingsDataStore: DataStore<Preferences> by lazy {
+    PreferenceDataStoreFactory.createWithPath {
+      "demo.preferences_pb".toPath()
+    }
+  }
+
   val livewireClient by lazy {
+    seedDemoPrefs()
     LivewireClient {
       theme(CustomLivewireTheme)
       install(DatabasePlugin("."))
       install(NetworkPlugin())
       install(PlaygroundPlugin())
+      install(PreferencesPlugin(DemoPrefsNode) { dataStore("settings", settingsDataStore) })
       install(RecompositionPlugin())
 
       layoutNodeSerialization(LayoutNodeSerialization.Json)
       debugLogging(true)
+    }
+  }
+
+  private fun seedDemoPrefs() {
+    val prefs = JavaPreferences.userRoot().node(DemoPrefsNode)
+    if (prefs.keys().isEmpty()) {
+      prefs.put("username", "rick.sanchez")
+      prefs.put("api_endpoint", "https://rickandmortyapi.com")
+      prefs.put("launch_count", "42")
+      prefs.flush()
     }
   }
 

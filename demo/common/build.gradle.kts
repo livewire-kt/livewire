@@ -40,7 +40,11 @@ kotlin {
       implementation(projects.plugins.playground)
       implementation(projects.plugins.network.core)
       implementation(projects.plugins.network.ktor)
+      implementation(projects.plugins.preferences)
       api(projects.runtime)
+
+      api(libs.androidx.datastore.preferences.core)
+      implementation(libs.okio)
 
       implementation(libs.compose.runtime)
       implementation(libs.compose.foundation)

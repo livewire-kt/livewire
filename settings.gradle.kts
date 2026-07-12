@@ -52,5 +52,6 @@ include(
   ":plugins:network:core",
   ":plugins:network:okhttp",
   ":plugins:network:ktor",
+  ":plugins:preferences",
   ":plugins:recomposition",
 )

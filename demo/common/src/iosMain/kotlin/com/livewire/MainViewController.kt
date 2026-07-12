@@ -32,6 +32,7 @@ fun MainViewController(): UIViewController {
     MaterialTheme {
       LivewireApp(
         livewireClient = ServiceLocator.livewireClient,
+        settings = ServiceLocator.settingsDataStore,
       )
     }
   }

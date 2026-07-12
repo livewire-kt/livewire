@@ -28,6 +28,7 @@ fun main() {
     ) {
       LivewireApp(
         livewireClient = livewireClient,
+        settings = ServiceLocator.settingsDataStore,
       )
     }
   }
