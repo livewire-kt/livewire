@@ -56,23 +56,49 @@ kotlin {
   }
 }
 
+// Version of the packaged host app. Overridable from CI on release, e.g.
+// `./gradlew :host:packageDmg -Plivewire.hostVersion=0.1.0`. jpackage requires a
+// numeric MAJOR[.MINOR][.PATCH] version, so release tags must be numeric (v0.1.0).
+// jpackage requires a numeric MAJOR[.MINOR][.PATCH] version, and on macOS the
+// first component must be >= 1. Ship starting at 1.0.0. Overridable from CI on
+// release, e.g. `./gradlew :host:packageDmg -Plivewire.hostVersion=1.2.0`.
+val hostVersion = (findProperty("livewire.hostVersion") as String?)
+  ?.removePrefix("v")
+  ?: "1.0.0"
+
 compose.desktop {
   application {
     mainClass = "com.livewire.MainKt"
 
     nativeDistributions {
       targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-      packageName = "com.livewire.host"
-      packageVersion = "1.0.0"
+
+      packageName = "Livewire"
+      packageVersion = hostVersion
+
+      linux {
+        packageName = "livewire"
+        iconFile.set(project.file("icons/linux/icon.png"))
+      }
 
       macOS {
+        dockName = "Livewire"
+        bundleID = "com.livewire.host"
         iconFile.set(project.file("icons/macos/icon.icns"))
+
+        signing {
+          sign.set(true)
+          identity.set(System.getenv("MACOS_SIGNING_IDENTITY"))
+        }
+        notarization {
+          appleID.set(System.getenv("MACOS_NOTARIZATION_APPLE_ID"))
+          password.set(System.getenv("MACOS_NOTARIZATION_PASSWORD"))
+          teamID.set(System.getenv("MACOS_NOTARIZATION_TEAM_ID"))
+        }
       }
+
       windows {
         iconFile.set(project.file("icons/windows/icon.ico"))
-      }
-      linux {
-        iconFile.set(project.file("icons/linux/icon.png"))
       }
     }
   }
