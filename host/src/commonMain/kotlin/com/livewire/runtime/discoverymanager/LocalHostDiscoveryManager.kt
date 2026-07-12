@@ -9,6 +9,14 @@ import com.livewire.logError
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
 import io.ktor.network.sockets.aSocket
+import io.ktor.server.cio.CIO
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.routing.routing
+import io.ktor.server.websocket.WebSockets
+import io.ktor.server.websocket.webSocket
+import io.ktor.server.application.install
+import io.ktor.websocket.Frame
+import io.ktor.websocket.readBytes
 import kotlinx.io.readByteArray
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -58,17 +66,7 @@ object LocalHostDiscoveryManager : PlatformDiscoveryManager {
                 val bytes = socket.receive().packet.readByteArray()
                 // TODO: should this just be a continue?
                 val packet = DiscoveryPacket.decode(bytes) ?: continue
-                val app = packet.toHostApp()
-
-                synchronized(lock) {
-                  val isNew = app.id !in knownApps
-                  lastSeen[app.id] = timeSource.markNow()
-                  knownApps[app.id] = app
-                  devices.value = knownApps.values.toList()
-                  if (isNew) {
-                    logDebug("discovered ${app.displayName} (${app.id})")
-                  }
-                }
+                registerApp(packet.toHostApp())
               } catch (e: CancellationException) {
                 throw e
               } catch (t: Throwable) {
@@ -82,6 +80,38 @@ object LocalHostDiscoveryManager : PlatformDiscoveryManager {
         logError("failed to start listener", e)
       } finally {
         selectorManager.close()
+      }
+    }
+
+    // WS announce listener for clients that can't open raw sockets (browsers). Sits on the
+    // UDP discovery port's TCP twin so no new port is claimed.
+    scope.launch {
+      try {
+        val announceServer = embeddedServer(CIO, port = LivewireConstants.UdpDiscoveryPort, host = "127.0.0.1") {
+          install(WebSockets)
+
+          routing {
+            webSocket(LivewireConstants.AnnouncePath) {
+              var announcedId: String? = null
+              try {
+                for (frame in incoming) {
+                  val bytes = (frame as? Frame.Binary)?.readBytes() ?: continue
+                  val packet = DiscoveryPacket.decode(bytes) ?: continue
+                  val app = packet.toHostApp()
+                  announcedId = app.id
+                  registerApp(app)
+                }
+              } finally {
+                announcedId?.let(::removeApp)
+              }
+            }
+          }
+        }
+        announceServer.start(wait = true)
+      } catch (e: CancellationException) {
+        throw e
+      } catch (e: Exception) {
+        logError("failed to start announce listener", e)
       }
     }
 
@@ -101,6 +131,28 @@ object LocalHostDiscoveryManager : PlatformDiscoveryManager {
             devices.value = knownApps.values.toList()
           }
         }
+      }
+    }
+  }
+
+  private fun registerApp(app: HostApp) {
+    synchronized(lock) {
+      val isNew = app.id !in knownApps
+      lastSeen[app.id] = timeSource.markNow()
+      knownApps[app.id] = app
+      devices.value = knownApps.values.toList()
+      if (isNew) {
+        logDebug("discovered ${app.displayName} (${app.id})")
+      }
+    }
+  }
+
+  private fun removeApp(id: String) {
+    synchronized(lock) {
+      lastSeen.remove(id)
+      if (knownApps.remove(id) != null) {
+        devices.value = knownApps.values.toList()
+        logDebug("removed $id")
       }
     }
   }
@@ -148,6 +200,14 @@ private fun DiscoveryPacket.toHostApp(): HostApp = when (platform) {
       protocolVersion = protocolVersion,
     )
   }
+  Web -> WebApp(
+    instanceId = instanceId,
+    appName = appName,
+    pageOrigin = packageName,
+    browser = deviceName,
+    appIcon = appIcon,
+    protocolVersion = protocolVersion,
+  )
   else -> error("Unexpected platform: $platform")
 }
 

@@ -10,6 +10,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import app.cash.molecule.RecompositionMode
 import app.cash.molecule.launchMolecule
+import com.livewire.LivewireIoDispatcher
 import com.livewire.LivewireLog
 import com.livewire.logDebug
 import com.livewire.logError
@@ -41,7 +42,6 @@ import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
@@ -53,7 +53,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 @OptIn(ExperimentalSerializationApi::class)
 class LivewireClient private constructor(
   val configuration: LivewireClientConfiguration,
-  context: CoroutineContext = Dispatchers.IO,
+  context: CoroutineContext = LivewireIoDispatcher,
 ) {
 
   constructor(configure: LivewireClientBuilder.() -> Unit) : this(

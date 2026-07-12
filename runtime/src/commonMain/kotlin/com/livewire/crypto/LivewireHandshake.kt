@@ -49,9 +49,9 @@ class LivewireHandshake {
 
     val isSender = publicKeyBytes.compareTo(peerMessage.publicKey) < 0
     return if (isSender) {
-      SecureSession(sendKey = key1, receiveKey = key2, sendNoncePrefix = nonce1, receiveNoncePrefix = nonce2)
+      SecureSession.create(sendKey = key1, receiveKey = key2, sendNoncePrefix = nonce1, receiveNoncePrefix = nonce2)
     } else {
-      SecureSession(sendKey = key2, receiveKey = key1, sendNoncePrefix = nonce2, receiveNoncePrefix = nonce1)
+      SecureSession.create(sendKey = key2, receiveKey = key1, sendNoncePrefix = nonce2, receiveNoncePrefix = nonce1)
     }
   }
 

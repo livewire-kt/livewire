@@ -9,6 +9,7 @@ import com.livewire.runtime.discoverymanager.AndroidApp
 import com.livewire.runtime.discoverymanager.DesktopApp
 import com.livewire.runtime.discoverymanager.HostApp
 import com.livewire.runtime.discoverymanager.IosApp
+import com.livewire.runtime.discoverymanager.WebApp
 import com.livewire.transport.PayloadDecoder
 import com.livewire.ui.data.RequestFullTree
 import com.livewire.ui.layout.LayoutNode
@@ -163,6 +164,11 @@ class LivewireHostConnection(
         }
         is DesktopApp -> {
           activeConnection = ActiveConnection.DesktopConnection
+          startServer()
+          connectionState.value = Listening
+        }
+        is WebApp -> {
+          activeConnection = ActiveConnection.WebConnection
           startServer()
           connectionState.value = Listening
         }
@@ -469,6 +475,10 @@ sealed interface ActiveConnection {
   }
 
   data object DesktopConnection : ActiveConnection {
+    override suspend fun close() = Unit
+  }
+
+  data object WebConnection : ActiveConnection {
     override suspend fun close() = Unit
   }
 }

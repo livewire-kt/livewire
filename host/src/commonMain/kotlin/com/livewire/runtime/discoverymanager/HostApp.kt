@@ -95,6 +95,50 @@ data class IosApp(
 
 }
 
+data class WebApp(
+  override val instanceId: String,
+  val appName: String,
+  val pageOrigin: String,
+  val browser: String,
+  override val appIcon: ByteArray? = null,
+  override val protocolVersion: Int,
+) : HostApp {
+  override val id: String = "web:$pageOrigin:$instanceId"
+  override val displayName: String = appName.ifEmpty { pageOrigin }
+  override val device: HostDevice = WebDevice(browser)
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as WebApp
+
+    if (instanceId != other.instanceId) return false
+    if (appName != other.appName) return false
+    if (pageOrigin != other.pageOrigin) return false
+    if (browser != other.browser) return false
+    if (!appIcon.contentEquals(other.appIcon)) return false
+    if (id != other.id) return false
+    if (displayName != other.displayName) return false
+    if (device != other.device) return false
+    if (protocolVersion != other.protocolVersion) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = instanceId.hashCode()
+    result = 31 * result + appName.hashCode()
+    result = 31 * result + pageOrigin.hashCode()
+    result = 31 * result + browser.hashCode()
+    result = 31 * result + (appIcon?.contentHashCode() ?: 0)
+    result = 31 * result + id.hashCode()
+    result = 31 * result + displayName.hashCode()
+    result = 31 * result + device.hashCode()
+    result = 31 * result + protocolVersion.hashCode()
+    return result
+  }
+}
+
 data class DesktopApp(
   override val instanceId: String,
   val appName: String,
