@@ -56,15 +56,11 @@ kotlin {
   }
 }
 
-// Version of the packaged host app. Overridable from CI on release, e.g.
-// `./gradlew :host:packageDmg -Plivewire.hostVersion=0.1.0`. jpackage requires a
-// numeric MAJOR[.MINOR][.PATCH] version, so release tags must be numeric (v0.1.0).
-// jpackage requires a numeric MAJOR[.MINOR][.PATCH] version, and on macOS the
-// first component must be >= 1. Ship starting at 1.0.0. Overridable from CI on
-// release, e.g. `./gradlew :host:packageDmg -Plivewire.hostVersion=1.2.0`.
 val hostVersion = (findProperty("livewire.hostVersion") as String?)
   ?.removePrefix("v")
   ?: "1.0.0"
+
+val signingIdentity = providers.environmentVariable("MACOS_SIGNING_IDENTITY")
 
 compose.desktop {
   application {
@@ -87,8 +83,8 @@ compose.desktop {
         iconFile.set(project.file("icons/macos/icon.icns"))
 
         signing {
-          sign.set(true)
-          identity.set(System.getenv("MACOS_SIGNING_IDENTITY"))
+          sign.set(signingIdentity.map { it.isNotBlank() }.orElse(false))
+          identity.set(signingIdentity.orElse(""))
         }
         notarization {
           appleID.set(System.getenv("MACOS_NOTARIZATION_APPLE_ID"))

@@ -4,6 +4,9 @@ on:
   release:
     types: [ released ]
 
+permissions:
+  contents: write
+
 jobs:
   publish:
     name: Test & publish
@@ -32,3 +35,138 @@ jobs:
 
       - name: Publish
         run: ./gradlew publishToMavenLocal -PRELEASE_SIGNING_ENABLED=false --stacktrace
+
+      - name: Resolve version
+        id: version
+        run: |
+          RAW="${{ github.event.release.tag_name }}"
+          VERSION="${RAW#v}"
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,2}$'; then
+            echo "::error::Release tag '$RAW' is not a numeric MAJOR[.MINOR][.PATCH] version (jpackage requirement)."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Packaging host version $VERSION"
+
+      - name: Set up macOS signing
+        id: signing
+        env:
+          MACOS_CERTIFICATE_P12: ${{ secrets.MACOS_CERTIFICATE_P12 }}
+          MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
+          SIGNING_IDENTITY: ${{ secrets.MACOS_SIGNING_IDENTITY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$MACOS_CERTIFICATE_P12" ]; then
+            echo "MACOS_CERTIFICATE_P12 not set — building an unsigned .dmg (no notarization)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          KEYCHAIN="$RUNNER_TEMP/livewire-signing.keychain-db"
+          KEYCHAIN_PW="$(openssl rand -base64 24)"
+          security create-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          security set-keychain-settings -lut 3600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PW" "$KEYCHAIN"
+          CERT="$RUNNER_TEMP/certificate.p12"
+          echo "$MACOS_CERTIFICATE_P12" | base64 --decode > "$CERT"
+          security import "$CERT" -k "$KEYCHAIN" -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PW" "$KEYCHAIN" >/dev/null
+          security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          rm -f "$CERT"
+          echo "MACOS_SIGNING_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+
+      - name: Build dmg
+        run: ./gradlew :host:packageDmg -Plivewire.hostVersion=${{ steps.version.outputs.version }} --stacktrace
+
+      - name: Notarize & staple
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          NOTARY_KEY_P8: ${{ secrets.MACOS_NOTARY_KEY_P8 }}
+          NOTARY_KEY_ID: ${{ secrets.MACOS_NOTARY_KEY_ID }}
+          NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          DMG=$(find host/build/compose/binaries -name '*.dmg' | head -1)
+          KEY="$RUNNER_TEMP/notary-key.p8"
+          echo "$NOTARY_KEY_P8" | base64 --decode > "$KEY"
+          xcrun notarytool submit "$DMG" \
+            --key "$KEY" \
+            --key-id "$NOTARY_KEY_ID" \
+            --issuer "$NOTARY_ISSUER_ID" \
+            --wait
+          xcrun stapler staple "$DMG"
+          rm -f "$KEY"
+
+      - name: Rename & checksum
+        id: asset
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.version.outputs.version }}"
+          SRC=$(find host/build/compose/binaries -name '*.dmg' | head -1)
+          if [ -z "$SRC" ]; then
+            echo "::error::No .dmg produced under host/build/compose/binaries"
+            find host/build/compose -type f || true
+            exit 1
+          fi
+          ASSET="Livewire-${VERSION}.dmg"
+          cp "$SRC" "$ASSET"
+          SHA=$(shasum -a 256 "$ASSET" | awk '{print $1}')
+          echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+          echo "sha256=$SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "## Homebrew cask values"
+            echo ""
+            echo "- **version:** \`$VERSION\`"
+            echo "- **sha256:** \`$SHA\`"
+            echo "- **asset:** \`$ASSET\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload dmg to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "${{ github.event.release.tag_name }}" "${{ steps.asset.outputs.asset }}" --clobber
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      sha256: ${{ steps.asset.outputs.sha256 }}
+
+  update-cask:
+    name: Bump Homebrew cask
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for tap deploy key
+        id: guard
+        env:
+          TAP_DEPLOY_KEY: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+        run: |
+          if [ -z "$TAP_DEPLOY_KEY" ]; then
+            echo "HOMEBREW_TAP_DEPLOY_KEY not set — skipping cask bump. Update the cask manually in livewire-kt/homebrew-tap (see its update-cask.sh)."
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout tap
+        if: steps.guard.outputs.enabled == 'true'
+        uses: actions/checkout@v6
+        with:
+          repository: livewire-kt/homebrew-tap
+          ssh-key: ${{ secrets.HOMEBREW_TAP_DEPLOY_KEY }}
+          path: tap
+
+      - name: Update cask
+        if: steps.guard.outputs.enabled == 'true'
+        working-directory: tap
+        run: |
+          set -euo pipefail
+          VERSION="${{ needs.publish.outputs.version }}"
+          SHA="${{ needs.publish.outputs.sha256 }}"
+          CASK="Casks/livewire.rb"
+          sed -i -E "s|^  version \".*\"|  version \"$VERSION\"|" "$CASK"
+          sed -i -E "s|^  sha256 \".*\"|  sha256 \"$SHA\"|" "$CASK"
+          git config user.name "livewire-bot"
+          git config user.email "bot@livewire.dev"
+          git add "$CASK"
+          git commit -m "livewire $VERSION" || { echo "No changes to commit"; exit 0; }
+          git push
