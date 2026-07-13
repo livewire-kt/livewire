@@ -38,7 +38,6 @@ import com.livewire.ui.widget.Image
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Surface
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
 
 @Composable
 internal fun RequestDetailPane(
@@ -64,7 +63,7 @@ internal fun RequestDetailPane(
       ) {
         Text(
           text = "Request Detail",
-          style = TextStyle.TitleSmall,
+          style = LivewireTheme.typography.titleSmall,
           modifier = LivewireModifier.weight(1f).padding(left = 8.dp),
         )
         IconButton(action = onClose) {
@@ -135,7 +134,7 @@ private fun Overview(event: NetworkEvent) {
     ) {
       Text(
         text = event.request.url,
-        style = TextStyle.LabelLarge,
+        style = LivewireTheme.typography.labelLarge,
         modifier = LivewireModifier.padding(
           horizontal = 12.dp,
           vertical = 8.dp,
@@ -185,7 +184,7 @@ private fun OverviewChip(
   ) {
     Text(
       text = text,
-      style = TextStyle.LabelSmall,
+      style = LivewireTheme.typography.labelSmall,
       fontWeight = FontWeight.Bold.weight,
       modifier = LivewireModifier.padding(
         horizontal = 16.dp,
@@ -315,20 +314,20 @@ private fun SectionHeader(
     Spacer(LivewireModifier.width(4.dp))
     Text(
       text = title,
-      style = TextStyle.TitleSmall,
+      style = LivewireTheme.typography.titleSmall,
       modifier = LivewireModifier.weight(1f),
     )
     if (meta != null) {
       Text(
         text = meta,
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         color = LivewireTheme.colorScheme.onSurfaceVariant,
       )
     }
     if (copyValue != null) {
       Text(
         text = "Copy",
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         color = LivewireTheme.colorScheme.primary,
         modifier = LivewireModifier
           .padding(left = 8.dp)
@@ -342,7 +341,7 @@ private fun SectionHeader(
 private fun EmptyValue(text: String) {
   Text(
     text = text,
-    style = TextStyle.BodySmall,
+    style = LivewireTheme.typography.bodySmall,
     color = LivewireTheme.colorScheme.onSurfaceVariant,
     modifier = LivewireModifier.padding(left = 20.dp, bottom = 4.dp),
   )
@@ -358,13 +357,13 @@ private fun DetailRow(label: String, value: String) {
   ) {
     Text(
       text = label,
-      style = TextStyle.LabelSmall,
+      style = LivewireTheme.typography.labelSmall,
       color = LivewireTheme.colorScheme.onSurfaceVariant,
       modifier = LivewireModifier.padding(right = 8.dp),
     )
     Text(
       text = value,
-      style = TextStyle.BodySmall,
+      style = LivewireTheme.typography.bodySmall,
     )
   }
 }

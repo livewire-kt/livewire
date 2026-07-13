@@ -12,6 +12,7 @@ import com.livewire.ui.graphics.ColorSerializer
 import com.livewire.ui.layout.LayoutNode
 import com.livewire.ui.layout.applier
 import com.livewire.ui.modifier.LivewireModifier
+import com.livewire.ui.text.LivewireTextStyle
 import kotlinx.serialization.Serializable
 
 @LivewireComposable
@@ -20,7 +21,7 @@ fun Text(
   text: String,
   modifier: LivewireModifier = LivewireModifier,
   color: Color = Color.Unspecified,
-  style: TextStyle? = null,
+  style: LivewireTextStyle? = null,
   fontWeight: Int? = null,
 ) {
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
@@ -30,7 +31,7 @@ fun Text(
       set(modifier, LayoutNode.SetModifier)
       init(compositeKeyHash, LayoutNode.SetCompositeKeyHash)
       set(color, TextNode.SetColor)
-      set(text, TextNode.SetText)
+      update(text, TextNode.SetText)
       set(style, TextNode.SetStyle)
       set(fontWeight, TextNode.SetFontWeight)
     },
@@ -43,32 +44,14 @@ class TextNode(
   var text: String,
   @Serializable(with = ColorSerializer::class)
   var color: Color = Color.Unspecified,
-  var style: TextStyle? = null,
+  var style: LivewireTextStyle? = null,
   var fontWeight: Int? = null,
 ) : LayoutNode() {
 
   companion object {
     val SetText: TextNode.(String) -> Unit = applier { text = it }
     val SetColor: TextNode.(Color) -> Unit = applier { color = it }
-    val SetStyle: TextNode.(TextStyle?) -> Unit = applier { style = it }
+    val SetStyle: TextNode.(LivewireTextStyle?) -> Unit = applier { style = it }
     val SetFontWeight: TextNode.(Int?) -> Unit = applier { fontWeight = it }
   }
-}
-
-enum class TextStyle {
-  DisplayLarge,
-  DisplayMedium,
-  DisplaySmall,
-  HeadlineLarge,
-  HeadlineMedium,
-  HeadlineSmall,
-  TitleLarge,
-  TitleMedium,
-  TitleSmall,
-  BodyLarge,
-  BodyMedium,
-  BodySmall,
-  LabelLarge,
-  LabelMedium,
-  LabelSmall,
 }
