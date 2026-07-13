@@ -8,9 +8,9 @@ import com.livewire.ui.graphics.RoundedCornerShape
 import com.livewire.ui.modifier.LivewireModifier
 import com.livewire.ui.modifier.fillMaxWidth
 import com.livewire.ui.modifier.padding
+import com.livewire.ui.theme.LivewireTheme
 import com.livewire.ui.widget.BasicTextField
 import com.livewire.ui.widget.Surface
-import com.livewire.ui.widget.TextStyle
 
 /**
  * The compact text field used across the plugin, matching the network
@@ -36,7 +36,7 @@ internal fun CompactTextField(
       onValueChange = onValueChange,
       placeholder = placeholder,
       singleLine = singleLine,
-      textStyle = TextStyle.BodyMedium,
+      textStyle = LivewireTheme.typography.bodyMedium,
       onSubmit = onSubmit,
       onCancel = onCancel,
       modifier = LivewireModifier

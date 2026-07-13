@@ -32,7 +32,6 @@ import com.livewire.ui.widget.IconButton
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Switch
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
 
 private const val MaxDisplayLength = 120
 
@@ -59,12 +58,12 @@ internal fun PreferenceEntryRow(
       ) {
         Text(
           text = entry.key,
-          style = TextStyle.TitleSmall,
+          style = LivewireTheme.typography.titleSmall,
           modifier = LivewireModifier.copyClickable(entry.key),
         )
         Text(
           text = entry.value.type?.name ?: "opaque",
-          style = TextStyle.LabelSmall,
+          style = LivewireTheme.typography.labelSmall,
           color = LivewireTheme.colorScheme.onSurfaceVariant,
         )
       }
@@ -113,7 +112,7 @@ internal fun PreferenceEntryRow(
         else -> {
           Text(
             text = value.render().toDisplayText(),
-            style = TextStyle.BodyMedium,
+            style = LivewireTheme.typography.bodyMedium,
             modifier = LivewireModifier
               .weight(2f)
               .copyClickable(value.render()),
@@ -144,7 +143,7 @@ internal fun PreferenceEntryRow(
     editing?.error?.let { error ->
       Text(
         text = error,
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         color = LivewireTheme.colorScheme.error,
       )
     }

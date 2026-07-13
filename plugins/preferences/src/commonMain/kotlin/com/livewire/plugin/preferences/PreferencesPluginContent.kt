@@ -22,7 +22,6 @@ import com.livewire.ui.theme.LivewireTheme
 import com.livewire.ui.widget.CodeBlock
 import com.livewire.ui.widget.HorizontalDivider
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
 
 @Composable
 internal fun PreferencesPluginContent(inspector: PreferencesInspector) {
@@ -106,7 +105,7 @@ private fun EmptyMessage(message: String) {
   ) {
     Text(
       text = message,
-      style = TextStyle.BodyMedium,
+      style = LivewireTheme.typography.bodyMedium,
       color = LivewireTheme.colorScheme.onSurfaceVariant,
     )
   }

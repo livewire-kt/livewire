@@ -36,7 +36,6 @@ import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Surface
 import com.livewire.ui.widget.Switch
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
 
 @Composable
 internal fun AddEntryPanel(
@@ -87,7 +86,7 @@ internal fun AddEntryPanel(
           ) {
             Text(
               text = state.type.name,
-              style = TextStyle.LabelLarge,
+              style = LivewireTheme.typography.labelLarge,
             )
             Spacer(LivewireModifier.width(8.dp))
             Icon(
@@ -132,7 +131,7 @@ internal fun AddEntryPanel(
           Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
               text = "Value",
-              style = TextStyle.LabelLarge,
+              style = LivewireTheme.typography.labelLarge,
             )
             Spacer(LivewireModifier.width(16.dp))
             Switch(
@@ -165,7 +164,7 @@ internal fun AddEntryPanel(
         Spacer(LivewireModifier.height(4.dp))
         Text(
           text = error,
-          style = TextStyle.LabelSmall,
+          style = LivewireTheme.typography.labelSmall,
           color = LivewireTheme.colorScheme.error,
         )
       }

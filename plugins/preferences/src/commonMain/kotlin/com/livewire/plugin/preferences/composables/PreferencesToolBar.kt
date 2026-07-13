@@ -25,6 +25,7 @@ import com.livewire.ui.modifier.fillMaxWidth
 import com.livewire.ui.modifier.padding
 import com.livewire.ui.modifier.size
 import com.livewire.ui.modifier.width
+import com.livewire.ui.theme.LivewireTheme
 import com.livewire.ui.widget.DropdownMenu
 import com.livewire.ui.widget.DropdownMenuItem
 import com.livewire.ui.widget.Icon
@@ -32,7 +33,6 @@ import com.livewire.ui.widget.IconButton
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Surface
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
 
 @Composable
 internal fun PreferencesToolBar(
@@ -67,7 +67,7 @@ internal fun PreferencesToolBar(
         ) {
           Text(
             text = selectedStore?.name ?: "<no stores>",
-            style = TextStyle.TitleMedium,
+            style = LivewireTheme.typography.titleMedium,
             modifier = LivewireModifier.padding(vertical = 6.dp),
           )
           Spacer(LivewireModifier.width(8.dp))
