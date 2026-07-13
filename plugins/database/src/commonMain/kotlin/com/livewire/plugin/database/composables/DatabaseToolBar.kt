@@ -30,7 +30,7 @@ import com.livewire.ui.widget.Icon
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Surface
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
+import com.livewire.ui.theme.LivewireTheme
 
 @Composable
 fun DatabaseToolBar(
@@ -66,7 +66,7 @@ fun DatabaseToolBar(
         ) {
           Text(
             text = selectedDatabase?.name ?: "<no database>",
-            style = TextStyle.TitleMedium,
+            style = LivewireTheme.typography.titleMedium,
             modifier = LivewireModifier
               .padding(
                 vertical = 6.dp,

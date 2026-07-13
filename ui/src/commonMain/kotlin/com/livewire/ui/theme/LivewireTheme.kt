@@ -34,6 +34,8 @@ data class LivewireTheme(
         LocalLivewireTheme.current.lightColorScheme
       }
 
+    val typography: LivewireTypography get() = LivewireTypography
+
   }
 }
 

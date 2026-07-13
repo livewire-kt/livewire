@@ -19,7 +19,6 @@ import com.livewire.ui.widget.ProgressIndicator
 import com.livewire.ui.widget.ProgressIndicatorStyle
 import com.livewire.ui.widget.Surface
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
 
 @Composable
 internal fun RequestListItem(
@@ -48,7 +47,7 @@ internal fun RequestListItem(
       // Timestamp
       Text(
         text = formatTimestamp(event.request.timestamp),
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         color = LivewireTheme.colorScheme.onSurfaceVariant,
         modifier = LivewireModifier.padding(right = 8.dp),
       )
@@ -63,13 +62,13 @@ internal fun RequestListItem(
           val statusCode = event.response.statusCode
           Text(
             text = statusCode.toString(),
-            style = TextStyle.LabelMedium,
+            style = LivewireTheme.typography.labelMedium,
             color = statusColor(statusCode),
           )
         } else if (event.error != null) {
           Text(
             text = "ERR",
-            style = TextStyle.LabelMedium,
+            style = LivewireTheme.typography.labelMedium,
             color = Color.Red,
           )
         } else {
@@ -83,7 +82,7 @@ internal fun RequestListItem(
       // Method
       Text(
         text = event.request.method,
-        style = TextStyle.LabelMedium,
+        style = LivewireTheme.typography.labelMedium,
         fontWeight = 700,
         modifier = LivewireModifier.width(60.dp),
       )
@@ -91,7 +90,7 @@ internal fun RequestListItem(
       // URL path
       Text(
         text = extractPath(event.request.url),
-        style = TextStyle.BodySmall,
+        style = LivewireTheme.typography.bodySmall,
         color = LivewireTheme.colorScheme.onSurfaceVariant,
         modifier = LivewireModifier.weight(1f),
       )
@@ -100,7 +99,7 @@ internal fun RequestListItem(
       if (event.durationMs != null) {
         Text(
           text = "${event.durationMs}ms",
-          style = TextStyle.LabelSmall,
+          style = LivewireTheme.typography.labelSmall,
           color = LivewireTheme.colorScheme.onSurfaceVariant,
           modifier = LivewireModifier.padding(left = 8.dp),
         )

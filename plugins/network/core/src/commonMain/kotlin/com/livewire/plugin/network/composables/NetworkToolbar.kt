@@ -27,7 +27,6 @@ import com.livewire.ui.widget.Surface
 import com.livewire.ui.widget.Text
 import com.livewire.ui.widget.TextField
 import com.livewire.ui.widget.TextFieldStyle
-import com.livewire.ui.widget.TextStyle
 
 @Composable
 internal fun NetworkToolbar(
@@ -58,7 +57,7 @@ internal fun NetworkToolbar(
         onValueChange = onFilterChange,
         placeholder = "Filter by URL, method, or status…",
         singleLine = true,
-        textStyle = TextStyle.BodyMedium,
+        textStyle = LivewireTheme.typography.bodyMedium,
         modifier = LivewireModifier
           .fillMaxWidth()
           .padding(12.dp),
