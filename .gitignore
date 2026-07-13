@@ -19,3 +19,4 @@ captures
 node_modules/
 tools/ios-device-bridge/target
 livewire.db
+.intellijPlatform/

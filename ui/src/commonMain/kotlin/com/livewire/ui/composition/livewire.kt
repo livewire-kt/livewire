@@ -37,7 +37,7 @@ sealed class LivewireOutput {
 fun livewireFlow(
   serializationStrategy: LayoutNodeSerializationStrategy,
   resyncRequests: Flow<Unit> = emptyFlow(),
-  body: @Composable () -> Unit,
+  body: @LivewireComposable @Composable () -> Unit,
 ): Flow<LivewireOutput> = flow {
   coroutineScope {
     // frames run while holding this mutex so a resync snapshot can't observe a mid-mutation tree

@@ -140,6 +140,11 @@ class LivewireClient private constructor(
                   }
                 }
 
+                // TODO: REMOVE TESTING
+                androidx.compose.material3.Text(
+                  text = "UI Composable Text Uh-oh!"
+                )
+
                 CompositionLocalProvider(
                   LocalLivewireActionObserver provides actionController,
                 ) {
