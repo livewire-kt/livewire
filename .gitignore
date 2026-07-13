@@ -22,3 +22,4 @@ livewire.db
 
 # Demo runtime artifacts
 demo.preferences_pb
+.intellijPlatform/

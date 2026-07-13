@@ -32,7 +32,6 @@ import com.livewire.ui.widget.IconButton
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Surface
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
 
 
 @Composable
@@ -57,7 +56,7 @@ internal fun TableList(
       ) {
         Text(
           text = "Schema",
-          style = TextStyle.TitleMedium,
+          style = LivewireTheme.typography.titleMedium,
           color = LivewireTheme.colorScheme.onSurface,
           modifier = LivewireModifier
             .padding(horizontal = 16.dp)
@@ -141,7 +140,7 @@ private fun TableRootListItem(
       Text(
         text = name,
         color = contentColor,
-        style = TextStyle.LabelLarge,
+        style = LivewireTheme.typography.labelLarge,
         fontWeight = FontWeight.Bold.weight,
         modifier = LivewireModifier.weight(1f),
       )
@@ -166,12 +165,12 @@ private fun ColumnListItem(
   ) {
     Text(
       text = column.name,
-      style = TextStyle.LabelSmall,
+      style = LivewireTheme.typography.labelSmall,
     )
     Spacer(LivewireModifier.width(2.dp))
     Text(
       text = column.type,
-      style = TextStyle.LabelSmall,
+      style = LivewireTheme.typography.labelSmall,
       fontWeight = FontWeight.SemiBold.weight,
       color = LivewireTheme.colorScheme.primary,
     )
@@ -179,7 +178,7 @@ private fun ColumnListItem(
       Spacer(LivewireModifier.width(2.dp))
       Text(
         text = "NOT NULL",
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         fontWeight = FontWeight.SemiBold.weight,
         color = LivewireTheme.colorScheme.primary,
       )
@@ -188,7 +187,7 @@ private fun ColumnListItem(
       Spacer(LivewireModifier.width(2.dp))
       Text(
         text = "DEFAULT $defaultValue",
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         fontWeight = FontWeight.SemiBold.weight,
         color = LivewireTheme.colorScheme.primary,
       )
@@ -197,7 +196,7 @@ private fun ColumnListItem(
       Spacer(LivewireModifier.width(2.dp))
       Text(
         text = "PRIMARY KEY",
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         fontWeight = FontWeight.SemiBold.weight,
         color = LivewireTheme.colorScheme.primary,
       )

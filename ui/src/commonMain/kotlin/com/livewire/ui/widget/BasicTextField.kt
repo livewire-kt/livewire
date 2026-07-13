@@ -14,6 +14,7 @@ import com.livewire.ui.graphics.ColorSerializer
 import com.livewire.ui.layout.LayoutNode
 import com.livewire.ui.layout.applier
 import com.livewire.ui.modifier.LivewireModifier
+import com.livewire.ui.text.LivewireTextStyle
 import kotlinx.serialization.Serializable
 
 @LivewireComposable
@@ -30,7 +31,7 @@ fun BasicTextField(
   modifier: LivewireModifier = LivewireModifier,
   enabled: Boolean = true,
   readOnly: Boolean = false,
-  textStyle: TextStyle? = null,
+  textStyle: LivewireTextStyle? = null,
   textColor: Color = Color.Unspecified,
   fontWeight: Int? = null,
   cursorColor: Color = Color.Unspecified,
@@ -72,7 +73,7 @@ class BasicTextFieldNode(
   var onValueChange: ValueChangeAction,
   var enabled: Boolean = true,
   var readOnly: Boolean = false,
-  var textStyle: TextStyle? = null,
+  var textStyle: LivewireTextStyle? = null,
   @Serializable(with = ColorSerializer::class)
   var textColor: Color = Color.Unspecified,
   var fontWeight: Int? = null,
@@ -91,7 +92,7 @@ class BasicTextFieldNode(
     val SetOnValueChange: BasicTextFieldNode.(ValueChangeAction) -> Unit = applier { onValueChange = it }
     val SetEnabled: BasicTextFieldNode.(Boolean) -> Unit = applier { enabled = it }
     val SetReadOnly: BasicTextFieldNode.(Boolean) -> Unit = applier { readOnly = it }
-    val SetTextStyle: BasicTextFieldNode.(TextStyle?) -> Unit = applier { textStyle = it }
+    val SetTextStyle: BasicTextFieldNode.(LivewireTextStyle?) -> Unit = applier { textStyle = it }
     val SetTextColor: BasicTextFieldNode.(Color) -> Unit = applier { textColor = it }
     val SetFontWeight: BasicTextFieldNode.(Int?) -> Unit = applier { fontWeight = it }
     val SetCursorColor: BasicTextFieldNode.(Color) -> Unit = applier { cursorColor = it }

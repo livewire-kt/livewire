@@ -57,7 +57,7 @@ import com.livewire.ui.widget.Table
 import com.livewire.ui.widget.Text
 import com.livewire.ui.widget.TextField
 import com.livewire.ui.widget.TextFieldStyle
-import com.livewire.ui.widget.TextStyle
+import com.livewire.ui.theme.LivewireTheme
 import com.livewire.ui.widget.ToggleButton
 import com.livewire.ui.widget.VerticalDivider
 
@@ -347,7 +347,7 @@ class PlaygroundPlugin : Plugin {
             onValueChange = valueChangeAction { },
             placeholder = "Search…",
             singleLine = true,
-            textStyle = TextStyle.BodyMedium,
+            textStyle = LivewireTheme.typography.bodyMedium,
             modifier = LivewireModifier
               .fillMaxWidth()
               .padding(12.dp),
@@ -358,7 +358,7 @@ class PlaygroundPlugin : Plugin {
           initialValue = "Read-only, styled",
           onValueChange = valueChangeAction { },
           readOnly = true,
-          textStyle = TextStyle.TitleMedium,
+          textStyle = LivewireTheme.typography.titleMedium,
           fontWeight = 700,
           modifier = LivewireModifier
             .weight(1f)

@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.livewire.ui.composition.LivewireComposable
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -33,14 +34,17 @@ data class LivewireTheme(
         LocalLivewireTheme.current.lightColorScheme
       }
 
+    val typography: LivewireTypography get() = LivewireTypography
+
   }
 }
 
+@LivewireComposable
 @Composable
 fun LivewireTheme(
   theme: LivewireTheme,
   darkMode: Boolean = false,
-  content: @Composable () -> Unit,
+  content: @LivewireComposable @Composable () -> Unit,
 ) {
   CompositionLocalProvider(
     LocalLivewireTheme provides theme,

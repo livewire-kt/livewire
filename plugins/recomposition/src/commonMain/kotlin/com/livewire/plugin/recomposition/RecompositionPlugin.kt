@@ -49,7 +49,6 @@ import com.livewire.ui.widget.ResizableSurface
 import com.livewire.ui.widget.ResizeAnchor
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Text
-import com.livewire.ui.widget.TextStyle
 import kotlinx.coroutines.FlowPreview
 import kotlin.math.roundToInt
 import kotlinx.coroutines.MainScope
@@ -159,7 +158,7 @@ class RecompositionPlugin(
         Text(
           text = "Composable",
           modifier = LivewireModifier.weight(1f),
-          style = TextStyle.LabelSmall,
+          style = LivewireTheme.typography.labelSmall,
           color = LivewireTheme.colorScheme.onSurfaceVariant,
         )
         MetricHeader("Recomps")
@@ -250,18 +249,18 @@ class RecompositionPlugin(
                         )
                         .background(LivewireTheme.colorScheme.surfaceContainerHigh)
                         .padding(horizontal = 8.dp, vertical = 2.dp),
-                      style = TextStyle.BodySmall,
+                      style = LivewireTheme.typography.bodySmall,
                       color = LivewireTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                       " > ",
-                      style = TextStyle.BodySmall,
+                      style = LivewireTheme.typography.bodySmall,
                       color = LivewireTheme.colorScheme.onSurfaceVariant,
                     )
                   }
                   Text(
                     row.name,
-                    style = TextStyle.BodySmall,
+                    style = LivewireTheme.typography.bodySmall,
                     color = LivewireTheme.colorScheme.onSurfaceVariant,
                   )
                 } else if (row.breadcrumbs.isNotEmpty()) {
@@ -278,24 +277,24 @@ class RecompositionPlugin(
                         )
                         .background(LivewireTheme.colorScheme.surfaceContainerHigh)
                         .padding(horizontal = 8.dp, vertical = 2.dp),
-                      style = TextStyle.BodySmall,
+                      style = LivewireTheme.typography.bodySmall,
                       color = LivewireTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                       " > ",
-                      style = TextStyle.BodySmall,
+                      style = LivewireTheme.typography.bodySmall,
                       color = LivewireTheme.colorScheme.onSurfaceVariant,
                     )
                   }
                   Text(
                     row.name,
-                    style = TextStyle.BodySmall,
+                    style = LivewireTheme.typography.bodySmall,
                     color = LivewireTheme.colorScheme.onSurfaceVariant,
                   )
                 } else {
                   Text(
                     row.name,
-                    style = TextStyle.BodySmall,
+                    style = LivewireTheme.typography.bodySmall,
                     color = LivewireTheme.colorScheme.onSurfaceVariant,
                   )
                 }
@@ -338,7 +337,7 @@ class RecompositionPlugin(
       modifier = modifier
         .width(MetricColumnWidth)
         .padding(horizontal = 8.dp),
-      style = TextStyle.LabelSmall,
+      style = LivewireTheme.typography.labelSmall,
       color = LivewireTheme.colorScheme.onSurfaceVariant,
     )
   }
@@ -361,7 +360,7 @@ class RecompositionPlugin(
           .clip(RoundedCornerShape(4.dp))
           .background(backgroundColor)
           .padding(horizontal = 6.dp, vertical = 1.dp),
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         color = color,
       )
     }
@@ -404,18 +403,18 @@ class RecompositionPlugin(
         if (row.breadcrumbs.isNotEmpty()) {
           Text(
             row.breadcrumbs.joinToString(" > "),
-            style = TextStyle.LabelSmall,
+            style = LivewireTheme.typography.labelSmall,
             color = LivewireTheme.colorScheme.onSurfaceVariant,
           )
         }
         Text(
           row.name,
-          style = TextStyle.TitleSmall,
+          style = LivewireTheme.typography.titleSmall,
         )
         if (row.isBreadcrumbRow) {
           Text(
             "collapsed container",
-            style = TextStyle.LabelSmall,
+            style = LivewireTheme.typography.labelSmall,
             color = DetailValueText,
           )
         }
@@ -470,7 +469,7 @@ class RecompositionPlugin(
                     Text(
                       text = reason.label,
                       modifier = LivewireModifier.weight(1f),
-                      style = TextStyle.LabelSmall,
+                      style = LivewireTheme.typography.labelSmall,
                       color = InvalidationStateColor,
                     )
                     Text(
@@ -479,7 +478,7 @@ class RecompositionPlugin(
                         elapsed < 60000 -> "${elapsed / 1000}s ago"
                         else -> "${elapsed / 60000}m ago"
                       },
-                      style = TextStyle.LabelSmall,
+                      style = LivewireTheme.typography.labelSmall,
                       color = TimestampText,
                     )
                   }
@@ -495,7 +494,7 @@ class RecompositionPlugin(
                     ) {
                       Text(
                         reason.value,
-                        style = TextStyle.BodySmall,
+                        style = LivewireTheme.typography.bodySmall,
                         color = DetailValueText,
                       )
                     }
@@ -506,7 +505,7 @@ class RecompositionPlugin(
           } else {
             Text(
               "No invalidations recorded",
-              style = TextStyle.BodySmall,
+              style = LivewireTheme.typography.bodySmall,
               color = DetailValueText,
             )
           }
@@ -532,7 +531,7 @@ class RecompositionPlugin(
               ) {
                 Text(
                   param.name,
-                  style = TextStyle.LabelSmall,
+                  style = LivewireTheme.typography.labelSmall,
                   color = ParamNameColor,
                 )
               }
@@ -557,7 +556,7 @@ class RecompositionPlugin(
                     }
                     Text(
                       value.displayValue,
-                      style = TextStyle.BodySmall,
+                      style = LivewireTheme.typography.bodySmall,
                       color = DetailValueText,
                     )
                   }
@@ -575,7 +574,7 @@ class RecompositionPlugin(
                   ) {
                     Text(
                       displayText,
-                      style = TextStyle.BodySmall,
+                      style = LivewireTheme.typography.bodySmall,
                       color = DetailValueText,
                     )
                   }
@@ -586,7 +585,7 @@ class RecompositionPlugin(
         } else {
           Text(
             text = "No parameters captured",
-            style = TextStyle.BodySmall,
+            style = LivewireTheme.typography.bodySmall,
             color = DetailValueText,
           )
         }
@@ -606,7 +605,7 @@ class RecompositionPlugin(
     ) {
       Text(
         title,
-        style = TextStyle.LabelSmall,
+        style = LivewireTheme.typography.labelSmall,
         color = DetailSectionTitle,
       )
       Spacer(modifier = LivewireModifier.padding(top = 2.dp))
@@ -625,12 +624,12 @@ class RecompositionPlugin(
       Text(
         label,
         modifier = LivewireModifier.weight(1f),
-        style = TextStyle.BodySmall,
+        style = LivewireTheme.typography.bodySmall,
         color = DetailValueText,
       )
       Text(
         value,
-        style = TextStyle.BodySmall,
+        style = LivewireTheme.typography.bodySmall,
       )
     }
   }
