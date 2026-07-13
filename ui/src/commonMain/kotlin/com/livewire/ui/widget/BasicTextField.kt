@@ -7,6 +7,7 @@ import androidx.compose.runtime.currentCompositeKeyHashCode
 import androidx.compose.runtime.toLong
 import androidx.compose.ui.graphics.Color
 import com.livewire.annotations.LivewireSerializer
+import com.livewire.ui.actions.ClickAction
 import com.livewire.ui.actions.ValueChangeAction
 import com.livewire.ui.composition.LivewireComposable
 import com.livewire.ui.graphics.ColorSerializer
@@ -18,6 +19,12 @@ import kotlinx.serialization.Serializable
 
 @LivewireComposable
 @Composable
+/**
+ * @param onSubmit Dispatched when the user presses Enter (single-line
+ * fields) or Cmd/Ctrl+Enter (multi-line fields, where plain Enter inserts
+ * a newline).
+ * @param onCancel Dispatched when the user presses Escape.
+ */
 fun BasicTextField(
   initialValue: String,
   onValueChange: ValueChangeAction,
@@ -32,6 +39,8 @@ fun BasicTextField(
   singleLine: Boolean = false,
   minLines: Int = 1,
   maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
+  onSubmit: ClickAction? = null,
+  onCancel: ClickAction? = null,
 ) {
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<BasicTextFieldNode, Applier<LayoutNode>>(
@@ -51,6 +60,8 @@ fun BasicTextField(
       set(singleLine, BasicTextFieldNode.SetSingleLine)
       set(minLines, BasicTextFieldNode.SetMinLines)
       set(maxLines, BasicTextFieldNode.SetMaxLines)
+      set(onSubmit, BasicTextFieldNode.SetOnSubmit)
+      set(onCancel, BasicTextFieldNode.SetOnCancel)
     },
   )
 }
@@ -72,6 +83,8 @@ class BasicTextFieldNode(
   var singleLine: Boolean = false,
   var minLines: Int = 1,
   var maxLines: Int = Int.MAX_VALUE,
+  var onSubmit: ClickAction? = null,
+  var onCancel: ClickAction? = null,
 ) : LayoutNode() {
 
   companion object {
@@ -87,5 +100,7 @@ class BasicTextFieldNode(
     val SetSingleLine: BasicTextFieldNode.(Boolean) -> Unit = applier { singleLine = it }
     val SetMinLines: BasicTextFieldNode.(Int) -> Unit = applier { minLines = it }
     val SetMaxLines: BasicTextFieldNode.(Int) -> Unit = applier { maxLines = it }
+    val SetOnSubmit: BasicTextFieldNode.(ClickAction?) -> Unit = applier { onSubmit = it }
+    val SetOnCancel: BasicTextFieldNode.(ClickAction?) -> Unit = applier { onCancel = it }
   }
 }

@@ -37,6 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import com.livewire.client.ConnectionState
 import com.livewire.client.LivewireClient
 import com.livewire.overview.OverviewScreen
@@ -51,6 +55,8 @@ import com.livewire.ui.icons.HomeOutlined
 import com.livewire.ui.icons.LightMode
 import com.livewire.theme.CustomLivewireTheme
 import com.livewire.ui.util.asReadableBytes
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -58,7 +64,8 @@ import kotlinx.coroutines.launch
 fun LivewireApp(
   livewireClient: LivewireClient,
   modifier: Modifier = Modifier,
-  isSystemDarkMode: Boolean = isSystemInDarkTheme()
+  isSystemDarkMode: Boolean = isSystemInDarkTheme(),
+  settings: DataStore<Preferences>? = null,
 ) {
   DisposableEffect(livewireClient) {
     livewireClient.start()
@@ -68,7 +75,14 @@ fun LivewireApp(
   }
 
   val connectionState by livewireClient.server.connectionState.collectAsState()
-  var isDarkMode by remember { mutableStateOf(isSystemDarkMode) }
+
+  // When a settings DataStore is provided, dark mode is persisted there so
+  // the Livewire preferences plugin can flip it live from the host.
+  var localDarkMode by remember { mutableStateOf(isSystemDarkMode) }
+  val storedDarkMode by remember(settings) {
+    settings?.data?.map { it[DarkModeKey] } ?: flowOf(null)
+  }.collectAsState(initial = null)
+  val isDarkMode = storedDarkMode ?: localDarkMode
 
   CustomLivewireTheme(
     darkTheme = isDarkMode,
@@ -123,7 +137,12 @@ fun LivewireApp(
           actions = {
             Switch(
               checked = isDarkMode,
-              onCheckedChange = { isDarkMode = it },
+              onCheckedChange = { checked ->
+                localDarkMode = checked
+                settings?.let { store ->
+                  scope.launch { store.edit { it[DarkModeKey] = checked } }
+                }
+              },
               thumbContent = {
                 Icon(
                   if (isDarkMode) DarkMode else LightMode,
@@ -205,3 +224,5 @@ fun LivewireApp(
 
 private const val MAX_DATA_POINTS = 50
 private const val MAX_MESSAGE_HISTORY = 100
+
+private val DarkModeKey = booleanPreferencesKey("dark_mode")

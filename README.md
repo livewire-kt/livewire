@@ -35,6 +35,9 @@ dependencies {
   implementation("com.livewire-kt.livewire:plugin-network-ktor:<version>")
   implementation("com.livewire-kt.livewire:plugin-network-okhttp:<version>")
 
+  // Preferences Viewer (SharedPreferences, DataStore, NSUserDefaults)
+  implementation("com.livewire-kt.livewire:plugin-preferences:<version>")
+
   // Jetpack Compose Recomposition Viewer
   implementation("com.livewire-kt.livewire:plugin-recomposition:<version>")
 }
@@ -46,6 +49,7 @@ Create a client, install the plugins you want, and start it:
 val livewireClient = LivewireClient {
   install(DatabasePlugin(context))
   install(NetworkPlugin())
+  install(PreferencesPlugin(context))
 }
 
 livewireClient.start()

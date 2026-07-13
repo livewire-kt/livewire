@@ -21,6 +21,7 @@ class MainActivity : ComponentActivity() {
       MaterialTheme {
         LivewireApp(
           livewireClient = livewireClient,
+          settings = ServiceLocator.settingsDataStore,
         )
       }
     }
