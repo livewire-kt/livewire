@@ -22,3 +22,6 @@
 }
 -keep,includedescriptorclasses class com.livewire.**$$serializer { *; }
 -keepnames @kotlinx.serialization.Serializable class com.livewire.**
+
+# crypto stuff
+-keep class dev.whyoleg.cryptography.** { *; }
