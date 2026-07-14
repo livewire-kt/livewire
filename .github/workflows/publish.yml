@@ -76,7 +76,7 @@ jobs:
           echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - name: Build dmg
-        run: ./gradlew :host:packageDmg -Plivewire.hostVersion=${{ steps.version.outputs.version }} --stacktrace
+        run: ./gradlew :host:packageReleaseDmg -Plivewire.hostVersion=${{ steps.version.outputs.version }} --stacktrace
 
       - name: Notarize & staple
         if: steps.signing.outputs.enabled == 'true'
