@@ -86,7 +86,7 @@ jobs:
           NOTARY_ISSUER_ID: ${{ secrets.MACOS_NOTARY_ISSUER_ID }}
         run: |
           set -euo pipefail
-          DMG=$(find host/build/compose/binaries -name '*.dmg' | head -1)
+          DMG=$(find host/build/compose/binaries/main-release -name '*.dmg' | head -1)
           KEY="$RUNNER_TEMP/notary-key.p8"
           echo "$NOTARY_KEY_P8" | base64 --decode > "$KEY"
           xcrun notarytool submit "$DMG" \
@@ -102,9 +102,9 @@ jobs:
         run: |
           set -euo pipefail
           VERSION="${{ steps.version.outputs.version }}"
-          SRC=$(find host/build/compose/binaries -name '*.dmg' | head -1)
+          SRC=$(find host/build/compose/binaries/main-release -name '*.dmg' | head -1)
           if [ -z "$SRC" ]; then
-            echo "::error::No .dmg produced under host/build/compose/binaries"
+            echo "::error::No .dmg produced under host/build/compose/binaries/main-release"
             find host/build/compose -type f || true
             exit 1
           fi
