@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="2048"
+   height="2048"
+   viewBox="0 0 2048 2048"
+   fill="none"
+   version="1.1"
+   id="svg9"
+   sodipodi:docname="Icon-v1.svg"
+   inkscape:export-filename="Icon-512.webp"
+   inkscape:export-xdpi="24"
+   inkscape:export-ydpi="24"
+   inkscape:version="1.4.4 (dcaf3e7, 2026-05-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview9"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:zoom="0.21865594"
+     inkscape:cx="1015.2937"
+     inkscape:cy="1408.6057"
+     inkscape:window-width="1689"
+     inkscape:window-height="1097"
+     inkscape:window-x="0"
+     inkscape:window-y="45"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="svg9" />
+  <g
+     clip-path="url(#clip0_12_136)"
+     id="g8">
+    <rect
+       width="2048"
+       height="2048"
+       rx="512"
+       fill="#FFA500"
+       id="rect1" />
+    <path
+       d="M1963.92 559.506L1345.33 992H1704.47H1741.4L2360 559.506L1741.4 127H1704.47H1345.33L1963.92 559.506Z"
+       fill="#262626"
+       id="path1" />
+    <path
+       d="M1135.75 559.506L517.165 992H876.305H925.242L1543.84 559.506L925.242 127H876.305H517.165L1135.75 559.506Z"
+       fill="#262626"
+       id="path2" />
+    <path
+       d="M307.586 559.506L-311 992H108.148H145.083L763.679 559.506L145.083 127H108.148H-311L307.586 559.506Z"
+       fill="#262626"
+       id="path3" />
+    <path
+       d="M303.085 1472.51L921.67 1953H562.531H525.596L-93.0002 1472.51L525.596 992H562.531H921.67L303.085 1472.51Z"
+       fill="#262626"
+       id="path4" />
+    <path
+       d="M1131.25 1472.51L1749.83 1953H1390.7H1341.76L723.163 1472.51L1341.76 992H1390.7H1749.83L1131.25 1472.51Z"
+       fill="#262626"
+       id="path5" />
+    <path
+       d="M1959.41 1472.51L2578 1953H2158.85H2121.92L1503.32 1472.51L2121.92 992H2158.85H2578L1959.41 1472.51Z"
+       fill="#262626"
+       id="path6" />
+    <path
+       d="M2048 960H0V1088H2048V960Z"
+       fill="#262626"
+       id="path7" />
+    <path
+       d="M1474 891.026H1135V204L575 1109.03H920.5V1843.5L1474 891.026Z"
+       fill="#F40B0B"
+       stroke="#262626"
+       stroke-width="88"
+       stroke-linecap="round"
+       stroke-linejoin="round"
+       id="path8" />
+  </g>
+  <rect
+     x="64"
+     y="64"
+     width="1920"
+     height="1920"
+     rx="448"
+     stroke="#262626"
+     stroke-width="128"
+     id="rect8" />
+  <defs
+     id="defs9">
+    <clipPath
+       id="clip0_12_136">
+      <rect
+         width="2048"
+         height="2048"
+         rx="512"
+         fill="white"
+         id="rect9" />
+    </clipPath>
+  </defs>
+</svg>

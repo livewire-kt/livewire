@@ -32,6 +32,9 @@ import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import livewire.host.generated.resources.Res
+import livewire.host.generated.resources.icon
+import org.jetbrains.compose.resources.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class, ExperimentalMaterial3ExpressiveApi::class)
 fun main() = application {
@@ -134,7 +137,8 @@ fun main() = application {
       }
       exitApplication()
     },
-    title = "Livewire Host",
+    title = "Livewire",
+    icon = painterResource(Res.drawable.icon),
     state = windowState,
   ) {
     AppUi(

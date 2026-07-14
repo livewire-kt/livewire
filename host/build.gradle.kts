@@ -64,6 +64,16 @@ compose.desktop {
       targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
       packageName = "com.livewire.host"
       packageVersion = "1.0.0"
+
+      macOS {
+        iconFile.set(project.file("icons/macos/icon.icns"))
+      }
+      windows {
+        iconFile.set(project.file("icons/windows/icon.ico"))
+      }
+      linux {
+        iconFile.set(project.file("icons/linux/icon.png"))
+      }
     }
   }
 }
