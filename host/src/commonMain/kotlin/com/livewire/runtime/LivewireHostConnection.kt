@@ -234,7 +234,9 @@ class LivewireHostConnection(
                         is LivewireIncoming.Patches -> if (!awaitingResync && !receivePatches(incoming.patches)) requestResync()
                         else -> Unit
                       }
-                    } catch (e: Exception) {
+                    } catch (e: CancellationException) {
+                      throw e
+                    } catch (e: Throwable) {
                       logDebug("failed to decode layout: ${e.message}")
                       requestResync()
                     }
@@ -259,7 +261,9 @@ class LivewireHostConnection(
                       }
                       else -> Unit
                     }
-                  } catch (e: Exception) {
+                  } catch (e: CancellationException) {
+                    throw e
+                  } catch (e: Throwable) {
                     logDebug("failed to process frame: ${e.message}")
                     e.printStackTrace()
                   }

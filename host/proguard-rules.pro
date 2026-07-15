@@ -2,7 +2,7 @@
 -dontwarn org.bouncycastle.**
 
 # kotlinx serialization stuff
--keepattributes RuntimeVisibleAnnotations,AnnotationDefault
+-keepattributes RuntimeVisibleAnnotations,AnnotationDefault,PermittedSubclasses
 -if @kotlinx.serialization.Serializable class **
 -keepclassmembers class <1> {
     static <1>$Companion Companion;
@@ -21,7 +21,8 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 -keep,includedescriptorclasses class com.livewire.**$$serializer { *; }
--keepnames @kotlinx.serialization.Serializable class com.livewire.**
+-keep @kotlinx.serialization.Serializable class com.livewire.**
 
 # crypto stuff
 -keep class dev.whyoleg.cryptography.** { *; }
+
