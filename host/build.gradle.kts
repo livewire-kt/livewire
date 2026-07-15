@@ -56,23 +56,50 @@ kotlin {
   }
 }
 
+val hostVersion = (findProperty("livewire.hostVersion") as String?)
+  ?.removePrefix("v")
+  ?: (findProperty("livewire.version") as String)
+
+val signingIdentity = providers.environmentVariable("MACOS_SIGNING_IDENTITY")
+
 compose.desktop {
   application {
     mainClass = "com.livewire.MainKt"
 
+    buildTypes.release.proguard {
+      configurationFiles.from(project.file("proguard-rules.pro"))
+      obfuscate.set(false)
+    }
+
     nativeDistributions {
       targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-      packageName = "com.livewire.host"
-      packageVersion = "1.0.0"
+
+      packageName = "Livewire"
+      packageVersion = hostVersion
+
+      linux {
+        packageName = "livewire"
+        iconFile.set(project.file("icons/linux/icon.png"))
+      }
 
       macOS {
+        dockName = "Livewire"
+        bundleID = "com.livewire.host"
         iconFile.set(project.file("icons/macos/icon.icns"))
+
+        signing {
+          sign.set(signingIdentity.map { it.isNotBlank() }.orElse(false))
+          identity.set(signingIdentity.orElse(""))
+        }
+        notarization {
+          appleID.set(System.getenv("MACOS_NOTARIZATION_APPLE_ID"))
+          password.set(System.getenv("MACOS_NOTARIZATION_PASSWORD"))
+          teamID.set(System.getenv("MACOS_NOTARIZATION_TEAM_ID"))
+        }
       }
+
       windows {
         iconFile.set(project.file("icons/windows/icon.ico"))
-      }
-      linux {
-        iconFile.set(project.file("icons/linux/icon.png"))
       }
     }
   }
