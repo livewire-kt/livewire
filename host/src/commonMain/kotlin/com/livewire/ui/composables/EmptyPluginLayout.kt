@@ -35,9 +35,8 @@ import livewire.host.generated.resources.Res
 import livewire.host.generated.resources.logo
 import org.jetbrains.compose.resources.painterResource
 
-// FIXME: Update these with actual docsite urls when published
-private const val SETUP_PLUGINS_DOC_URL = "https://github.com/livewire-kt/livewire"
-private const val CREATE_PLUGINS_DOC_URL = "https://github.com/livewire-kt/livewire"
+private const val SETUP_PLUGINS_DOC_URL = "https://livewire-kt.github.io/livewire/plugins/"
+private const val CREATE_PLUGINS_DOC_URL = "https://livewire-kt.github.io/livewire/plugins/building/"
 private const val FEEDBACK_URL = "https://github.com/livewire-kt/livewire/issues"
 
 @Composable

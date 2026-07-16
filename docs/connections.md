@@ -37,6 +37,27 @@ Perhaps counterintuitively, **the host runs the WebSocket server** and the clien
 2. The client's connection loop (which retries every 3 seconds whenever it's disconnected) reaches the host and connects to `ws://127.0.0.1:38301/livewire`, identifying itself with its instance id — the host only accepts the app you selected.
 3. Both sides perform the encryption handshake, the client sends its manifest (theme, serialization format, installed plugins), and the host UI goes live.
 
+The full sequence, from a running app to live plugin UI:
+
+```mermaid
+sequenceDiagram
+    participant Client as Your app (client)
+    participant Host as Livewire host
+
+    Client--)Host: discovery packet
+    Note over Host: App appears in the device list
+    Note over Client,Host: You select the app — transport set up<br/>(adb reverse / USB bridge / loopback)
+    Client->>Host: connect ws://127.0.0.1:38301/livewire
+    Note over Client,Host: Encryption handshake — everything after is encrypted
+    Client->>Host: manifest (theme, installed plugins)
+
+    Note over Client,Host: You open a plugin
+    Host->>Client: plugin selected
+    Client->>Host: full layout tree
+    Host->>Client: interaction (LivewireAction)
+    Client->>Host: layout patches
+```
+
 ### Connection state
 
 - The **host** moves through `Disconnected → Forwarding → Listening → Connected` (with `Error` on failure), surfaced as a status chip in the top bar. If the client drops, the host returns to `Listening` and waits.

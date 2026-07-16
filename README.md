@@ -2,15 +2,13 @@
   <img src=".github/art/logo.webp" width="200" alt="Livewire logo" />
 </p>
 
-<h1 align="center">Livewire</h1>
-
 <p align="center">
-  A real-time development bridge that streams live tooling UI from Android, iOS, and Desktop apps to a desktop host over ADB, USB, or localhost.
+  A app-driven remote compose framework for driving a side-car / companion desktop app for debugging your Android application.
 </p>
 
 ---
 
-Livewire embeds a small client in your app that serves debugging tools — database browsing, network inspection, and more — as a stream of UI over an encrypted WebSocket. The desktop host app discovers running clients on connected devices, connects, and renders that UI live. Interactions in the host flow back to the device in real time.
+Livewire embeds a small client in your app that serves remote compose driven debugging tools — database browsing, network inspection, and more — as a stream of UI over the wire. The desktop host app discovers running clients on connected devices, connects, and renders that UI live.
 
 - **Client** — a library you add to your app. It broadcasts itself for discovery and streams plugin UI to the host.
 - **Host** — a desktop app you run on your machine. It finds clients over ADB (Android), USB (iOS), or localhost (Desktop), and renders whatever they serve.
