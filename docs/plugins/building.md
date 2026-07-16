@@ -1,6 +1,6 @@
 # Building Plugins
 
-A Livewire plugin is ordinary Compose code — real `@Composable` functions, real state, real coroutines — that composes Livewire's serializable widget set instead of Material/Foundation. Your code runs entirely inside the client app; only the resulting UI tree crosses the wire.
+A Livewire plugin is ordinary Compose code that composes Livewire's serializable widget set instead of Material/Foundation. Your code runs entirely inside the client app, and only the resulting UI tree crosses the wire.
 
 ## Project setup
 
@@ -153,5 +153,5 @@ Text("Warning", color = LivewireTheme.colorScheme.error)
 ## Tips
 
 - **Look at the Playground.** [`plugins/playground`](https://github.com/livewire-kt/livewire/tree/main/plugins/playground) exercises every widget and is the best living reference.
-- **Crashes are contained.** If `Content()` throws, the client reports it to the host and your app keeps running — the host offers a Reload action.
-- **Keep trees reasonable.** Every recomposition diffs and streams the tree. `Table` paginates for you; prefer it over emitting thousands of rows.
+- **Crashes are contained.** If `Content()` throws, the client reports it to the host and your app keeps running. The host will offer a Reload action if this happens.
+- **Keep trees reasonable.** Every recomposition diffs and streams the tree. `Table` paginates for you, so you should prefer it over emitting thousands of rows.

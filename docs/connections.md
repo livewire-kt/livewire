@@ -1,6 +1,6 @@
 # Connections
 
-You don't need anything on this page to *use* Livewire — discovery and connection are automatic. It documents how the pieces fit together, what's on the wire, and the security model.
+You don't need anything on this page to *use* Livewire. Discovery and connection are automatic. This page documents how the pieces fit together, what's on the wire, and the security model.
 
 ## Ports
 
@@ -24,7 +24,7 @@ A running client periodically announces itself with a compact binary **discovery
 | iOS (simulator) | UDP packet to `127.0.0.1:38303` every 2 seconds (the simulator shares the Mac's loopback) |
 | Desktop | Same UDP packet to `127.0.0.1:38303` |
 
-The host merges all three sources into one device list, pruning apps that haven't been seen for a few seconds. Discovery packets carry the **protocol version**; on a mismatch the host disables the Connect button and tells you which side is out of date.
+The host merges all four sources into one device list, pruning apps that haven't been seen for a few seconds. Discovery packets carry the **protocol version**. On a mismatch, the host disables the Connect button and tells you which side is out of date.
 
 ## Connection
 
@@ -34,8 +34,29 @@ Perhaps counterintuitively, **the host runs the WebSocket server** and the clien
     - **Android** — an `adb reverse` forward, so the device's `127.0.0.1:38301` tunnels to the host
     - **iOS physical** — a USB bridge through `usbmuxd` (the client app runs a small port forwarder on-device)
     - **iOS simulator / Desktop** — plain loopback, nothing to forward
-2. The client's connection loop (which retries every 3 seconds whenever it's disconnected) reaches the host and connects to `ws://127.0.0.1:38301/livewire`, identifying itself with its instance id — the host only accepts the app you selected.
+2. The client's connection loop (which retries every 3 seconds whenever it's disconnected) reaches the host and connects to `ws://127.0.0.1:38301/livewire`, identifying itself with its instance id so that the host will only accept the app you selected.
 3. Both sides perform the encryption handshake, the client sends its manifest (theme, serialization format, installed plugins), and the host UI goes live.
+
+The full sequence, from a running app to live plugin UI:
+
+```mermaid
+sequenceDiagram
+    participant Client as Your app (client)
+    participant Host as Livewire host
+
+    Client--)Host: discovery packet
+    Note over Host: App appears in the device list
+    Note over Client,Host: You select the app — transport set up<br/>(adb reverse / USB bridge / loopback)
+    Client->>Host: connect ws://127.0.0.1:38301/livewire
+    Note over Client,Host: Encryption handshake — everything after is encrypted
+    Client->>Host: manifest (theme, installed plugins)
+
+    Note over Client,Host: You open a plugin
+    Host->>Client: plugin selected
+    Client->>Host: full layout tree
+    Host->>Client: interaction (LivewireAction)
+    Client->>Host: layout patches
+```
 
 ### Connection state
 
@@ -52,7 +73,7 @@ The host's **network meter window** (toggle in the top bar) visualizes all of th
 
 ## Security
 
-Every connection is encrypted, with no configuration and no way to turn it off:
+Every connection is encrypted:
 
 - During the handshake, both sides exchange **ephemeral ECDH P-256** public keys and derive **AES-256-GCM** session keys via HKDF-SHA256 — one key per direction, fresh on every connection, never persisted.
 - After the handshake, **every frame is encrypted** — control messages and layout data alike. Nonces are counter-based and the receiver rejects replayed or out-of-order frames.
@@ -63,4 +84,4 @@ Every connection is encrypted, with no configuration and no way to turn it off:
 The threat model is *local machine and USB cable*, not the open network:
 
 - Nothing ever binds to a LAN interface. The host's server listens on `127.0.0.1` only; clients dial `127.0.0.1`; discovery is loopback- or cable-scoped (ADB / usbmux). Livewire is invisible on shared Wi-Fi.
-- The key exchange is unauthenticated (no certificates or pinning). It protects against passive observation on the local machine, but is not a substitute for network-grade authentication — which is fine for its localhost/USB scope, and a reason not to expose the ports beyond it.
+- The key exchange is meant to protect against passive observation on the local machine, but is not a substitute for network-grade authentication. This is fine for its localhost/USB scope, and we never expose the ports beyond it.

@@ -4,38 +4,41 @@
   <img src="assets/logo.webp" width="220" alt="Livewire logo" />
 </p>
 
-**Livewire** is a real-time development bridge for Kotlin Multiplatform apps. It embeds a small client in your Android, iOS, or Desktop app that serves debugging tools — database browsing, network inspection, and more — as a stream of UI over an encrypted WebSocket. A desktop **host** app discovers running clients on connected devices, connects, and renders that tooling UI live. Interactions in the host flow back to the device in real time.
+**Livewire** is a real-time development bridge for Kotlin Multiplatform apps powered by a custom Compose composition. It embeds a small client in your Android, iOS, or Desktop app that serves built-in and custom debugging tools (database browsing, network inspection, and anything else you can think of) as a stream of UI over an encrypted socket. A desktop **host** app discovers running clients on connected devices, connects, and renders that tooling UI remotely.
 
 ## Why Livewire?
 
-Most on-device debugging tools force a trade-off: either you bundle a heavyweight inspector UI into your app, or you tether yourself to IDE-specific tooling. Livewire takes a different approach:
+Debuggers just show you your app's _memory_ and not its _meaning_. Out of the box tools like logcat, layout inspector, network profilers, and so on lack your app's domain knowledge. Other side-car debugging tools have brittle communication layers and require multiple codebases just to extend meaning to them. Livewire takes a different approach:
 
-- **The app owns the tools, the host owns the screen.** Plugins run inside your app with full access to its runtime — its databases, its HTTP clients, its state. Only the *UI* is streamed to the desktop, as a lightweight tree of layout nodes rendered by the host with Compose.
-- **No screen real estate stolen.** Your app's UI stays untouched. All tooling lives in the host window on your desk.
-- **Multiplatform by design.** One plugin, written once in Kotlin, works across Android, iOS, and Desktop targets.
-- **Encrypted by default.** Every connection performs an ECDH key exchange during its handshake; all frames are encrypted with derived session keys.
+- **Single source of truth.** Livewire is driven entirely from within your own application. No separate plugin codebases to be updated.
+- **Compose over the wire.** Plugin and debugging UI is written in the same framework that powers your applications UI.
+- **Built to be extended.** Adding new plugins can be done next to the code that you want to debug. Shipped in your codebase so your fellow developers have immediate access without extra setup and installation.
+- **Multiplatform by design.** Built to work with all KMP applications and targets.
 
 ## How it works
 
-```
-┌─────────────────────┐                      ┌─────────────────────┐
-│   Your app (client) │                      │  Livewire host app  │
-│                     │   discovery packet   │                     │
-│  LivewireClient     │ ───────────────────► │  Device list        │
-│   ├─ DatabasePlugin │                      │                     │
-│   ├─ NetworkPlugin  │   encrypted ws       │  Rendered plugin UI │
-│   └─ your plugin    │ ◄──────────────────► │  (live Compose)     │
-└─────────────────────┘  ADB / USB / local   └─────────────────────┘
+```mermaid
+flowchart LR
+    subgraph client["Your app (client)"]
+        lc["LivewireClient"]
+
+        lc <--- db["DatabasePlugin"]
+        lc <--- net["NetworkPlugin"]
+        lc <--- custom["[Custom plugin]"]
+    end
+
+    subgraph host["Host app"]
+        devices["Device list"]
+        ui["Rendered plugin UI<br/>(live Compose)"]
+    end
+
+    lc -- "discovery packet" --> devices
+    lc <-- "encrypted ws<br/>ADB / USB / local" --> ui
 ```
 
 1. Your app creates a `LivewireClient`, installs plugins, and starts it. The client broadcasts a discovery packet announcing itself.
-2. The host scans for clients over **ADB** (Android devices), **USB** (iOS devices), and **localhost** (desktop apps on the same machine).
+2. The host scans for clients over **ADB** (Android devices), **USB** (iOS devices), and **localhost** (iOS simulators, desktop apps on the same machine).
 3. When you connect, the two sides perform an encrypted handshake, then plugin UI streams to the host and your interactions stream back.
-
-## Project status
-
-!!! warning "Work in progress"
-    Livewire is under active development. Published artifacts and host app downloads are not available yet — for now, everything runs from source. APIs may change without notice.
 
 ## License
 

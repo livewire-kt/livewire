@@ -1,6 +1,6 @@
 # Widgets & Modifiers
 
-The complete catalog of composables and modifiers available to plugin authors, all under `com.livewire.ui`. Names and parameters intentionally mirror Compose Material 3 — if you know Compose, you know these.
+The complete catalog of composables and modifiers available to plugin authors, all under `com.livewire.ui`. Names and parameters intentionally mirror Compose Material 3.
 
 ## Layout
 
@@ -81,7 +81,7 @@ The five action types that carry interactions from the host back to your plugin,
 
 ## Theming
 
-`LivewireTheme(lightColorScheme, darkColorScheme)` carries two full Material 3 `ColorScheme`s from the client app to the host, so rendered plugin UI wears your app's brand. Inside a plugin, read colors from `LivewireTheme.colorScheme` — it resolves light vs. dark automatically, following the host's toggle.
+`LivewireTheme(lightColorScheme, darkColorScheme)` carries two full Material 3 `ColorScheme`s from the client app to the host, so rendered plugin UI wears your app's brand. Inside a plugin, read colors from `LivewireTheme.colorScheme`. It resolves light vs. dark automatically, following the host's toggle.
 
 ```kotlin
 LivewireClient {

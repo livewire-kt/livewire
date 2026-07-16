@@ -31,6 +31,46 @@
   --md-default-bg-color: #1e1d1d;
 }
 
+/* Mermaid diagrams — pin explicit brand colors; the derived defaults
+   lose contrast against the custom charcoal palette */
+[data-md-color-scheme="default"] {
+  --md-mermaid-edge-color: #4a4848;
+  --md-mermaid-node-bg-color: color-mix(in srgb, var(--lw-amber) 12%, white);
+  --md-mermaid-node-fg-color: var(--lw-amber-dark);
+  --md-mermaid-label-bg-color: #ffffff;
+  --md-mermaid-label-fg-color: var(--lw-charcoal);
+  --md-mermaid-sequence-actor-bg-color: #ffffff;
+  --md-mermaid-sequence-actor-border-color: var(--lw-amber-dark);
+  --md-mermaid-sequence-actor-fg-color: var(--lw-charcoal);
+  --md-mermaid-sequence-actor-line-color: #b5b1ab;
+  --md-mermaid-sequence-message-line-color: #4a4848;
+  --md-mermaid-sequence-message-fg-color: var(--lw-charcoal);
+  --md-mermaid-sequence-note-bg-color: color-mix(in srgb, var(--lw-amber) 15%, white);
+  --md-mermaid-sequence-note-border-color: var(--lw-amber-dark);
+  --md-mermaid-sequence-note-fg-color: var(--lw-charcoal);
+  --md-mermaid-sequence-loop-border-color: var(--lw-amber-dark);
+  --md-mermaid-sequence-loop-fg-color: var(--lw-charcoal);
+}
+
+[data-md-color-scheme="slate"] {
+  --md-mermaid-edge-color: #c8c4bf;
+  --md-mermaid-node-bg-color: color-mix(in srgb, var(--lw-amber) 20%, #1e1d1d);
+  --md-mermaid-node-fg-color: var(--lw-amber);
+  --md-mermaid-label-bg-color: #1e1d1d;
+  --md-mermaid-label-fg-color: #eceae7;
+  --md-mermaid-sequence-actor-bg-color: var(--lw-charcoal);
+  --md-mermaid-sequence-actor-border-color: var(--lw-amber);
+  --md-mermaid-sequence-actor-fg-color: #eceae7;
+  --md-mermaid-sequence-actor-line-color: #7a766f;
+  --md-mermaid-sequence-message-line-color: #c8c4bf;
+  --md-mermaid-sequence-message-fg-color: #eceae7;
+  --md-mermaid-sequence-note-bg-color: #33312e;
+  --md-mermaid-sequence-note-border-color: var(--lw-amber);
+  --md-mermaid-sequence-note-fg-color: #eceae7;
+  --md-mermaid-sequence-loop-border-color: var(--lw-amber);
+  --md-mermaid-sequence-loop-fg-color: #eceae7;
+}
+
 /* Current page in the navigation sidebar in brand red */
 .md-nav__link--active,
 .md-nav__item .md-nav__link--active code {

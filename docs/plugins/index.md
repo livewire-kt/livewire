@@ -1,6 +1,6 @@
 # Plugins
 
-Everything you see in the host is a **plugin**. A plugin is a small piece of tooling that runs *inside your app* — with full access to its runtime, databases, and HTTP clients — and describes its UI with Livewire's Compose-based widget set. That UI is streamed to the host and rendered there; nothing is drawn on the device.
+Everything you see in the host is a **plugin**. A plugin is a small piece of tooling that runs *inside your app*. This means they have full access to its runtime, databases, and HTTP clients. Plugins describe their UI with Livewire's Compose-based widget set. That UI is streamed to the host and rendered there, not on the device.
 
 ## The `Plugin` interface
 
@@ -8,10 +8,10 @@ A plugin is two things: an identity, and a composable.
 
 ```kotlin
 interface Plugin {
-  /** How this plugin appears in the host application */
+  // How this plugin's selector appears in the host application
   val info: PluginInfo
 
-  /** Custom composition to build UI to be remotely rendered */
+  // Custom composition to build UI to be remotely rendered
   @LivewireComposable
   @Composable
   fun Content()
@@ -22,8 +22,8 @@ interface Plugin {
 
 ```kotlin
 PluginInfo(
-  pluginId = "database",     // stable, unique id
-  title = "Database",        // display name in the host
+  pluginId = "database",        // stable, unique id
+  title = "Database",           // display name in the host
   icon = Icons.Rounded.Storage, // optional — any Compose ImageVector
 )
 ```
@@ -40,11 +40,11 @@ val livewireClient = LivewireClient {
 }
 ```
 
-When the host connects, the client sends a manifest enumerating every installed plugin — the host lists them by `title` and `icon`, no host-side registration needed.
+When the host connects, the client sends a manifest enumerating every installed plugin. The host then lists them by `title` and `icon`. There is no host-side registration needed.
 
 ## Lifecycle
 
-There are no explicit lifecycle hooks — a plugin's lifecycle *is* its composition:
+There are no explicit lifecycle hooks outside of the standard Compose lifecycle:
 
 1. When you select a plugin in the host, the client launches `Content()` in a headless composition (powered by [Molecule](https://github.com/cashapp/molecule)) wrapped in the client's `LivewireTheme`.
 2. Every recomposition emits an updated `LayoutNode` tree, which is diffed and streamed to the host as a full tree or a patch list.
@@ -54,9 +54,9 @@ There are no explicit lifecycle hooks — a plugin's lifecycle *is* its composit
 Because it's a real composition, ordinary Compose idioms just work: `remember`, `mutableStateOf`, `collectAsState()`, `LaunchedEffect`, and `DisposableEffect` for setup/teardown that should follow the plugin's visibility.
 
 !!! info "Crash isolation"
-    If `Content()` throws, the client reports `PluginCrashed` to the host and clears the active plugin — your app keeps running, and the host shows the failure instead of the plugin panel.
+    If `Content()` throws, the client reports `PluginCrashed` to the host and clears the active plugin. Your app keeps running, and the host shows the failure within the plugin panel.
 
 ## What's next
 
 - Browse the [existing plugins](existing.md) that ship with Livewire
-- Write your own — see [Building Plugins](building.md)
+- Write your own: see [Building Plugins](building.md)
