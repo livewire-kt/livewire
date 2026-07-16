@@ -12,7 +12,7 @@ Livewire ships with a set of first-party plugins. All plugin artifacts are publi
 
 ## Database
 
-A raw **SQLite** inspector — it works with any SQLite database file, regardless of what created it (SQLDelight, Room, raw SQLite). Browse databases and tables, view schemas, and run SQL queries; `SELECT` / `PRAGMA` / `EXPLAIN` statements are detected and run read-only.
+A raw **SQLite** inspector. It works with any SQLite database file, regardless of what created it (SQLDelight, Room, raw SQLite, etc). Browse databases and tables, view schemas, and run SQL queries; `SELECT` / `PRAGMA` / `EXPLAIN` statements are detected and run read-only.
 
 The constructor is platform-specific, reflecting how databases are located on each platform:
 
@@ -74,7 +74,7 @@ Both integrations feed the same collector, so requests from multiple clients app
 
 ## Preferences
 
-A key/value store inspector — view and **live-edit** your app's preferences from the host. Edits are written through the real store APIs in your running app, and changes your app makes appear in the host immediately via each store's native change mechanism (`OnSharedPreferenceChangeListener`, `DataStore.data`, `NSUserDefaultsDidChangeNotification`, `PreferenceChangeListener`).
+A key/value store inspector. View and **live-edit** your app's preferences from the host. Edits are written through the real store APIs in your running app, and changes your app makes appear in the host immediately via each store's native change mechanism (`OnSharedPreferenceChangeListener`, `DataStore.data`, `NSUserDefaultsDidChangeNotification`, `PreferenceChangeListener`).
 
 The constructor is platform-specific, reflecting how stores are located on each platform:
 
@@ -144,8 +144,11 @@ RecompositionPlugin(
 ```
 
 !!! note "Initialization"
-    Recomposition tracking hooks Compose source information, which must be enabled before the first composition. On Android this happens automatically via `androidx.startup`; on other platforms it's handled when the plugin is constructed — just construct it early (before your first frame).
+    Recomposition tracking hooks Compose source information, which must be enabled before the first composition. On Android this happens automatically via `androidx.startup`; on other platforms it's handled when the plugin is constructed. Just construct it early (before your first frame).
+
+!!! note "iOS Details"
+    Due to the lack of reflection in Kotlin/Native, a bit less detail is available when using the recomposition plugin on the iOS platform.
 
 ## Playground
 
-An internal widget catalog exercising every Livewire widget — buttons, chips, text fields, sliders, tabs, tables, animations, and a crash-test button. It isn't published as an artifact, but it's the best reference for what the UI system can do and a good template for your own plugin: [`plugins/playground`](https://github.com/livewire-kt/livewire/tree/main/plugins/playground).
+An internal widget catalog exercising every Livewire widget: buttons, chips, text fields, sliders, tabs, tables, animations, and a crash-test button. It isn't published as an artifact, but it's the best reference for what the UI system can do and a good template for your own plugin: [`plugins/playground`](https://github.com/livewire-kt/livewire/tree/main/plugins/playground).

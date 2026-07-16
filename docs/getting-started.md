@@ -2,9 +2,6 @@
 
 Livewire has two halves: a **client** library you add to your app, and a **host** app you run on your desktop. This guide walks through both.
 
-!!! warning "Work in progress"
-    Published artifacts and host app downloads are not available yet. Until then, dependency coordinates are placeholders and the host runs from source.
-
 ## 1. Add the client to your app
 
 Add the client library to your app's dependencies:
@@ -12,15 +9,15 @@ Add the client library to your app's dependencies:
 ```kotlin title="build.gradle.kts"
 dependencies {
   // Core SDK for integrating into your app
-  implementation("com.livewire-kt.livewire:client:<version>") // Coming soon
+  implementation("com.livewire-kt.livewire:client:<version>")
 
   // SQLite Database Viewer
   implementation("com.livewire-kt.livewire:plugin-database:<version>")
 
   // Network Viewer
   implementation("com.livewire-kt.livewire:plugin-network-core:<version>")
-  implementation("com.livewire-kt.livewire:plugin-network-ktor:<version>")
-  implementation("com.livewire-kt.livewire:plugin-network-okhttp:<version>")
+  implementation("com.livewire-kt.livewire:plugin-network-ktor:<version>") // if using ktor
+  implementation("com.livewire-kt.livewire:plugin-network-okhttp:<version>") // if using okhttp
 
   // Preferences Viewer (SharedPreferences, DataStore, NSUserDefaults)
   implementation("com.livewire-kt.livewire:plugin-preferences:<version>")
@@ -41,6 +38,7 @@ val livewireClient = LivewireClient {
   install(DatabasePlugin(context))
   install(NetworkPlugin())
   install(PreferencesPlugin(context))
+  install(MyCustomPlugin())
 }
 
 livewireClient.start()
@@ -48,12 +46,25 @@ livewireClient.start()
 
 `start()` begins broadcasting a discovery packet so the host can find your app, and connects to the host once one is listening. Call `stop()` to shut it down.
 
-!!! tip "Debug builds only"
+!!! tip "Recommendation: debug builds only"
     Livewire is a development tool. Gate it behind a debug source set or a build-type check so the server never ships in a release build.
 
 ## 3. Run the host
 
-Download the host app for your platform (coming soon), or run it from source:
+macOS:
+
+```bash
+brew install --cask livewire-kt/tap/livewire
+```
+
+or
+
+```bash
+brew tap livewire-kt/tap
+brew install --cask livewire
+```
+
+Until publishing is configured for other platforms, you may run the host app from source:
 
 ```bash
 ./gradlew :host:run
@@ -64,7 +75,7 @@ Download the host app for your platform (coming soon), or run it from source:
 With your app running on a connected device, emulator, or the same machine, the host discovers it automatically:
 
 - **Android** — devices and emulators visible to `adb devices`
-- **iOS** — devices connected over USB
+- **iOS** — devices connected over USB, simulators connected through localhost
 - **Desktop** — Livewire apps running on the same machine
 
 Select your app in the host's device list to connect. The host performs an encrypted handshake and your installed plugins appear as panels, live.
