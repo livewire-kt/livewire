@@ -1,5 +1,7 @@
 package com.livewire.buildlogic
 
+import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -21,6 +23,7 @@ class LivewirePublishConventionPlugin : Plugin<Project> {
     extensions.configure<MavenPublishBaseExtension> {
       publishToMavenCentral()
       signAllPublications()
+      configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty()))
       coordinates(LIVEWIRE_GROUP, artifactId, version)
       pom {
         name.set(artifactName)

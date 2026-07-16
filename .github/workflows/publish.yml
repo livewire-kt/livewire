@@ -34,7 +34,13 @@ jobs:
         run: ./gradlew allTests testDebugUnitTest --stacktrace
 
       - name: Publish
-        run: ./gradlew publishToMavenCentral -PRELEASE_SIGNING_ENABLED=false --stacktrace
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_IN_MEMORY_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+        run: ./gradlew publishAndReleaseToMavenCentral --stacktrace
 
       - name: Resolve version
         id: version
@@ -71,8 +77,23 @@ jobs:
           security import "$CERT" -k "$KEYCHAIN" -P "$MACOS_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PW" "$KEYCHAIN" >/dev/null
           security list-keychains -d user -s "$KEYCHAIN" login.keychain-db
+          security default-keychain -s "$KEYCHAIN"
           rm -f "$CERT"
-          echo "MACOS_SIGNING_IDENTITY=$SIGNING_IDENTITY" >> "$GITHUB_ENV"
+          echo "Codesigning identities available in the signing keychain:"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+          IDENTITY=$(security find-identity -v -p codesigning "$KEYCHAIN" \
+            | grep "Developer ID Application" \
+            | head -1 \
+            | sed -nE 's/.*"(.*)".*/\1/p' || true)
+          if [ -z "$IDENTITY" ]; then
+            echo "No 'Developer ID Application' identity found in the keychain; falling back to MACOS_SIGNING_IDENTITY secret."
+            IDENTITY="$SIGNING_IDENTITY"
+          fi
+          # Whyyyyy are we getting leading whitespace that we have to strip??
+          IDENTITY="$(printf '%s' "$IDENTITY" | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//')"
+          echo "Signing with identity: [$IDENTITY]"
+          echo "MACOS_SIGNING_IDENTITY=$IDENTITY" >> "$GITHUB_ENV"
+          echo "MACOS_SIGNING_KEYCHAIN=$KEYCHAIN" >> "$GITHUB_ENV"
           echo "enabled=true" >> "$GITHUB_OUTPUT"
 
       - name: Build dmg

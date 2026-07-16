@@ -61,6 +61,7 @@ val hostVersion = (findProperty("livewire.hostVersion") as String?)
   ?: (findProperty("livewire.version") as String)
 
 val signingIdentity = providers.environmentVariable("MACOS_SIGNING_IDENTITY")
+val signingKeychain = providers.environmentVariable("MACOS_SIGNING_KEYCHAIN")
 
 compose.desktop {
   application {
@@ -90,6 +91,7 @@ compose.desktop {
         signing {
           sign.set(signingIdentity.map { it.isNotBlank() }.orElse(false))
           identity.set(signingIdentity.orElse(""))
+          signingKeychain.orNull?.takeIf(String::isNotBlank)?.let(keychain::set)
         }
         notarization {
           appleID.set(System.getenv("MACOS_NOTARIZATION_APPLE_ID"))

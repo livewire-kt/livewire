@@ -26,3 +26,7 @@
 # crypto stuff
 -keep class dev.whyoleg.cryptography.** { *; }
 
+# coil3
+-keep class * implements coil3.util.FetcherServiceLoaderTarget { *; }
+-keep class * implements coil3.util.DecoderServiceLoaderTarget { *; }
+
