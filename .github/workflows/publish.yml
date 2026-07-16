@@ -34,7 +34,7 @@ jobs:
         run: ./gradlew allTests testDebugUnitTest --stacktrace
 
       - name: Publish
-        run: ./gradlew publishToMavenLocal -PRELEASE_SIGNING_ENABLED=false --stacktrace
+        run: ./gradlew publishToMavenCentral -PRELEASE_SIGNING_ENABLED=false --stacktrace
 
       - name: Resolve version
         id: version
