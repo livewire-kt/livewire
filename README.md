@@ -6,6 +6,10 @@
   A app-driven remote compose framework for driving a side-car / companion desktop app for debugging your Android application.
 </p>
 
+<p align="center">
+  <img src=".github/art/screenshot_demo_picker.webp" width="700" alt="App/device picker" />
+</p>
+
 ---
 
 Livewire embeds a small client in your app that serves remote compose driven debugging tools — database browsing, network inspection, and more — as a stream of UI over the wire. The desktop host app discovers running clients on connected devices, connects, and renders that UI live.
@@ -81,6 +85,60 @@ Native installers can also be built with Compose Desktop packaging:
 ```
 
 With your app running on a connected device, emulator, or the same machine, the host discovers it automatically, just select it to connect.
+
+## First-Party Plugins
+
+### SQLite
+```kotlin
+// build.gradle.kts
+dependencies {
+  implementation("com.livewire-kt.livewire:plugin-database:<version>")
+}
+```
+<p align="center">
+  <img src=".github/art/screenshot_demo_sqlite.webp" width="700" alt="SQLite plugin" />
+</p>
+
+### Network Viewer
+```kotlin
+// build.gradle.kts
+dependencies {
+  implementation("com.livewire-kt.livewire:plugin-network-core:<version>")
+
+  // Plus…
+  implementation("com.livewire-kt.livewire:plugin-network-ktor:<version>")
+  // or…
+  implementation("com.livewire-kt.livewire:plugin-network-okhttp:<version>")
+}
+```
+<p align="center">
+  <img src=".github/art/screenshot_demo_recomposition.webp" width="700" alt="Network plugin" />
+</p>
+
+### Preferences (SharedPreferences, DataStore, NSUserDefaults)
+```kotlin
+// build.gradle.kts
+dependencies {
+  implementation("com.livewire-kt.livewire:plugin-preferences:<version>")
+}
+```
+<p align="center">
+  <img src=".github/art/screenshot_demo_prefs.webp" width="700" alt="Preferences plugin" />
+</p>
+
+### Recomposition Viewer
+```kotlin
+// build.gradle.kts
+dependencies {
+  implementation("com.livewire-kt.livewire:plugin-recomposition:<version>")
+}
+```
+<p align="center">
+  <img src=".github/art/screenshot_demo_recomposition.webp" width="700" alt="Recomposition plugin" />
+</p>
+
+## Building a New Plugin
+Making it easy to build custom plugins was the driving factor for developing Livewire. Read about how to build your own [in the docs](https://livewire-kt.github.io/livewire/plugins/building/).
 
 ## License
 
