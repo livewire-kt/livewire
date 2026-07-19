@@ -112,7 +112,7 @@ dependencies {
 }
 ```
 <p align="center">
-  <img src=".github/art/screenshot_demo_recomposition.webp" width="700" alt="Network plugin" />
+  <img src=".github/art/screenshot_demo_network.webp" width="700" alt="Network plugin" />
 </p>
 
 ### Preferences (SharedPreferences, DataStore, NSUserDefaults)
