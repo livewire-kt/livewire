@@ -10,8 +10,8 @@
 
 Livewire embeds a small client in your app that serves remote compose driven debugging tools — database browsing, network inspection, and more — as a stream of UI over the wire. The desktop host app discovers running clients on connected devices, connects, and renders that UI live.
 
-- **Client** — a library you add to your app. It broadcasts itself for discovery and streams plugin UI to the host.
-- **Host** — a desktop app you run on your machine. It finds clients over ADB (Android), USB (iOS), or localhost (Desktop), and renders whatever they serve.
+- **Client**: a library you add to your app. It broadcasts itself for discovery and streams plugin UI to the host.
+- **Host**: a desktop app you run on your machine. It finds clients over ADB (Android), USB (iOS), or localhost (Desktop), and renders whatever they serve.
 
 ## Quick Start
 
@@ -23,7 +23,7 @@ Livewire embeds a small client in your app that serves remote compose driven deb
 // build.gradle.kts
 dependencies {
   // Core SDK for integrating into your app
-  implementation("com.livewire-kt.livewire:client:<version>") // Coming soon
+  implementation("com.livewire-kt.livewire:client:<version>")
 
   // SQLite Database Viewer
   implementation("com.livewire-kt.livewire:plugin-database:<version>")
@@ -55,13 +55,32 @@ livewireClient.start()
 
 ### 2. Run the host
 
-Download the host app for your platform (coming soon), or run it from source:
+macOS:
+
+```bash
+brew install --cask livewire-kt/tap/livewire
+```
+
+or
+
+```bash
+brew tap livewire-kt/tap
+brew install --cask livewire
+```
+
+Until publishing is configured for other platforms, you may run the host app from source:
 
 ```bash
 ./gradlew :host:run
 ```
 
-With your app running on a connected device, emulator, or the same machine, the host discovers it automatically — select it to connect.
+Native installers can also be built with Compose Desktop packaging:
+
+```bash
+./gradlew :host:packageDistributionForCurrentOS # .dmg / .msi / .deb
+```
+
+With your app running on a connected device, emulator, or the same machine, the host discovers it automatically, just select it to connect.
 
 ## License
 
