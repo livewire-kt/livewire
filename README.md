@@ -86,6 +86,13 @@ Native installers can also be built with Compose Desktop packaging:
 
 With your app running on a connected device, emulator, or the same machine, the host discovers it automatically, just select it to connect.
 
+## Demo
+Check it out in-action here!
+
+<p align="center">
+  <img src=".github/art/livewire-demo.gif" width="700" alt="App/device picker" />
+</p>
+
 ## First-Party Plugins
 
 ### SQLite
