@@ -12,7 +12,7 @@
 
 ---
 
-Livewire embeds a small client in your app that serves remote compose driven debugging tools — database browsing, network inspection, and more — as a stream of UI over the wire. The desktop host app discovers running clients on connected devices, connects, and renders that UI live.
+Livewire embeds a small client in your app that serves remote compose driven debugging tools such as database browsing, network inspection, and more, as a stream of UI over the wire. The desktop host app discovers running clients on connected devices, connects, and renders that UI live.
 
 - **Client**: a library you add to your app. It broadcasts itself for discovery and streams plugin UI to the host.
 - **Host**: a desktop app you run on your machine. It finds clients over ADB (Android), USB (iOS), or localhost (Desktop), and renders whatever they serve.
