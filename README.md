@@ -19,8 +19,6 @@ Livewire embeds a small client in your app that serves remote compose driven deb
 
 ## Quick Start
 
-> 🚧 Livewire is a work in progress — published artifacts and host app downloads are not available yet.
-
 ### 1. Add the client to your app
 
 ```kotlin
@@ -40,7 +38,7 @@ dependencies {
   // Preferences Viewer (SharedPreferences, DataStore, NSUserDefaults)
   implementation("com.livewire-kt.livewire:plugin-preferences:<version>")
 
-  // Jetpack Compose Recomposition Viewer
+  // Compose Recomposition Viewer
   implementation("com.livewire-kt.livewire:plugin-recomposition:<version>")
 }
 ```
