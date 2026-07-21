@@ -7,19 +7,23 @@ import com.livewire.discovery.DiscoveryPacket
 import com.livewire.logDebug
 import com.livewire.logError
 import dadb.adbserver.AdbServer
+import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlin.concurrent.atomics.AtomicBoolean
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
-import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.TimeSource
+import kotlinx.coroutines.withTimeoutOrNull
 
 object AdbDiscoveryManager : PlatformDiscoveryManager {
 
@@ -86,7 +90,7 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
     }
   }
 
-  private fun discoverApps(): List<AndroidApp> {
+  private suspend fun discoverApps(): List<AndroidApp> {
     val serials = AdbServer.listDadbs().map { it.toString() }
 
     (deviceCache.keys - serials.toSet()).forEach { serial ->
@@ -96,7 +100,7 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
     return serials.flatMap { serial ->
       try {
         val device = deviceCache.getOrPut(serial) { createDevice(serial) }
-        findLivewireApps(device)
+        findLivewireApps(serial, device)
       } catch (e: Exception) {
         logError("AdbDeviceManager", "error querying device $serial: ${e.message}", e)
         deviceCache.remove(serial)?.connection?.close()
@@ -119,29 +123,37 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
     )
   }
 
-  private fun findLivewireApps(device: AdbDevice): List<AndroidApp> {
-    return LivewireConstants.TcpDiscoveryPorts.mapNotNull { port ->
-      tryTcpDiscovery(device, port)?.let { packet ->
-        AndroidApp(
-          instanceId = packet.instanceId,
-          packageName = packet.packageName,
-          label = packet.appName,
-          device = device,
-          appIcon = packet.appIcon,
-          protocolVersion = packet.protocolVersion,
-        )
+  private suspend fun findLivewireApps(serial: String, device: AdbDevice): List<AndroidApp> = coroutineScope {
+    LivewireConstants.TcpDiscoveryPorts.map { port ->
+      async(Dispatchers.IO) {
+        tryTcpDiscovery(serial, port)?.let { packet ->
+          AndroidApp(
+            instanceId = packet.instanceId,
+            packageName = packet.packageName,
+            label = packet.appName,
+            device = device,
+            appIcon = packet.appIcon,
+            protocolVersion = packet.protocolVersion,
+          )
+        }
       }
     }
+      .awaitAll()
+      .filterNotNull()
   }
 
-  private fun tryTcpDiscovery(device: AdbDevice, port: Int): DiscoveryPacket? {
-    return try {
-      device.connection.open("tcp:$port").use { stream ->
-        DiscoveryPacket.decode(stream.source.readByteArray())
+  private suspend fun tryTcpDiscovery(serial: String, port: Int): DiscoveryPacket? = withTimeoutOrNull(ProbeTimeoutMs) {
+    runCatching {
+      AdbServer.createDadb(
+        deviceQuery = "host:transport:$serial",
+        connectTimeout = ProbeTimeoutMs.toInt(),
+        socketTimeout = ProbeTimeoutMs.toInt(),
+      ).use { probe ->
+        probe.open("tcp:$port").use { stream ->
+          DiscoveryPacket.decode(stream.source.readByteArray())
+        }
       }
-    } catch (_: Exception) {
-      null
-    }
+    }.getOrNull()
   }
 
   override fun shutdown() {
@@ -159,4 +171,5 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
 private const val RefreshRateMs = 2000L
 private const val PruneInterval = 2000L
 private const val SocketTimeoutMs = 1000
+private const val ProbeTimeoutMs = 500L
 private val StaleDeviceThreshold = 5000.milliseconds
