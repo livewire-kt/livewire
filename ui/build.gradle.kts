@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
   id("livewire.kmp.library")
   id("livewire.publish")
@@ -7,6 +9,11 @@ plugins {
 }
 
 kotlin {
+  @OptIn(ExperimentalWasmDsl::class)
+  wasmJs {
+    browser()
+  }
+
   compilerOptions {
     freeCompilerArgs.add("-Xexpect-actual-classes")
   }
@@ -44,4 +51,5 @@ dependencies {
   add("kspAndroid", projects.compiler)
   add("kspIosArm64", projects.compiler)
   add("kspIosSimulatorArm64", projects.compiler)
+  add("kspWasmJs", projects.compiler)
 }

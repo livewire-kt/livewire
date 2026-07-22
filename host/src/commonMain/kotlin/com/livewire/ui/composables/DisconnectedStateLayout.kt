@@ -66,6 +66,8 @@ import com.livewire.runtime.discoverymanager.DesktopDevice
 import com.livewire.runtime.discoverymanager.HostApp
 import com.livewire.runtime.discoverymanager.IosApp
 import com.livewire.runtime.discoverymanager.IosDevice
+import com.livewire.runtime.discoverymanager.WebApp
+import com.livewire.runtime.discoverymanager.WebDevice
 import com.livewire.theme.BlackHanSans
 import com.livewire.ui.icons.CloseIcon
 import com.livewire.ui.icons.DisconnectedIcon
@@ -252,6 +254,7 @@ private fun DeviceList(
         is AdbDevice -> 0
         is IosDevice -> 1
         is DesktopDevice -> 2
+        is WebDevice -> 3
       }
     }
       .thenBy { it.device.displayDetail }
@@ -333,6 +336,7 @@ private fun AppItem(
             is AndroidApp -> app.packageName
             is IosApp -> app.bundleId
             is DesktopApp -> "PID: ${app.processId}"
+            is WebApp -> app.pageOrigin
           },
           style = MaterialTheme.typography.bodySmall,
           color = MaterialTheme.colorScheme.onSurfaceVariant,

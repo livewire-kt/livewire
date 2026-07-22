@@ -3,33 +3,27 @@ package com.livewire.crypto
 import dev.whyoleg.cryptography.CryptographyProvider
 import dev.whyoleg.cryptography.DelicateCryptographyApi
 import dev.whyoleg.cryptography.algorithms.AES
+import dev.whyoleg.cryptography.operations.IvAuthenticatedCipher
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
+// Crypto operations are suspend (not *Blocking) throughout: the WebCrypto provider used on
+// web targets rejects blocking calls.
 @OptIn(DelicateCryptographyApi::class, ExperimentalAtomicApi::class)
-class SecureSession(
-  sendKey: ByteArray,
-  receiveKey: ByteArray,
+class SecureSession private constructor(
+  private val sendCipher: IvAuthenticatedCipher,
+  private val receiveCipher: IvAuthenticatedCipher,
   private val sendNoncePrefix: ByteArray,
   private val receiveNoncePrefix: ByteArray,
 ) {
   private val sendCounter = AtomicLong(0L)
   private val lastReceivedCounter = AtomicLong(-1L)
-  private val aesGcm = CryptographyProvider.Default.get(AES.GCM)
-  private val sendCipher = aesGcm
-    .keyDecoder()
-    .decodeFromByteArrayBlocking(AES.Key.Format.RAW, sendKey)
-    .cipher()
-  private val receiveCipher = aesGcm
-    .keyDecoder()
-    .decodeFromByteArrayBlocking(AES.Key.Format.RAW, receiveKey)
-    .cipher()
 
-  fun encryptText(plaintext: ByteArray): ByteArray = encryptFrame(TagText, plaintext)
+  suspend fun encryptText(plaintext: ByteArray): ByteArray = encryptFrame(TagText, plaintext)
 
-  fun encryptBinary(plaintext: ByteArray): ByteArray = encryptFrame(TagBinary, plaintext)
+  suspend fun encryptBinary(plaintext: ByteArray): ByteArray = encryptFrame(TagBinary, plaintext)
 
-  fun decrypt(encrypted: ByteArray): Pair<Byte, ByteArray> {
+  suspend fun decrypt(encrypted: ByteArray): Pair<Byte, ByteArray> {
     require(encrypted.size >= HeaderSize) { "Encrypted frame too short" }
 
     val frameTypeTag = encrypted[0]
@@ -44,7 +38,7 @@ class SecureSession(
       }
     }
 
-    val plaintext = receiveCipher.decryptWithIvBlocking(nonce, ciphertext, null)
+    val plaintext = receiveCipher.decryptWithIv(nonce, ciphertext, null)
 
     val counter = readCounter(nonce)
     val previous = lastReceivedCounter.load()
@@ -56,9 +50,9 @@ class SecureSession(
     return frameTypeTag to plaintext
   }
 
-  private fun encryptFrame(frameTypeTag: Byte, plaintext: ByteArray): ByteArray {
+  private suspend fun encryptFrame(frameTypeTag: Byte, plaintext: ByteArray): ByteArray {
     val nonce = buildNonce(sendNoncePrefix, sendCounter.fetchAndAdd(1))
-    val ciphertext = sendCipher.encryptWithIvBlocking(nonce, plaintext, null)
+    val ciphertext = sendCipher.encryptWithIv(nonce, plaintext, null)
 
     val encryptedFrame = ByteArray(HeaderSize + ciphertext.size)
     encryptedFrame[0] = frameTypeTag
@@ -88,6 +82,27 @@ class SecureSession(
   companion object {
     const val TagText: Byte = 0x01
     const val TagBinary: Byte = 0x02
+
+    suspend fun create(
+      sendKey: ByteArray,
+      receiveKey: ByteArray,
+      sendNoncePrefix: ByteArray,
+      receiveNoncePrefix: ByteArray,
+    ): SecureSession {
+      val aesGcm = CryptographyProvider.Default.get(AES.GCM)
+      return SecureSession(
+        sendCipher = aesGcm
+          .keyDecoder()
+          .decodeFromByteArray(AES.Key.Format.RAW, sendKey)
+          .cipher(),
+        receiveCipher = aesGcm
+          .keyDecoder()
+          .decodeFromByteArray(AES.Key.Format.RAW, receiveKey)
+          .cipher(),
+        sendNoncePrefix = sendNoncePrefix,
+        receiveNoncePrefix = receiveNoncePrefix,
+      )
+    }
   }
 }
 

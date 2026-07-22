@@ -1,28 +1,31 @@
 package com.livewire.client
 
+import com.livewire.LivewireIoDispatcher
 import com.livewire.LivewireConstants
 import com.livewire.discovery.DiscoveryPacket
 import com.livewire.logDebug
-import io.ktor.network.selector.SelectorManager
-import io.ktor.network.sockets.Datagram
-import io.ktor.network.sockets.InetSocketAddress
-import io.ktor.network.sockets.ServerSocket
-import io.ktor.network.sockets.aSocket
-import io.ktor.network.sockets.openWriteChannel
-import io.ktor.utils.io.core.buildPacket
-import io.ktor.utils.io.writeByteArray
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.websocket.WebSockets
+import io.ktor.client.plugins.websocket.webSocket
+import io.ktor.websocket.Frame
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 expect fun createDiscoveryConfig(instanceId: String): DiscoveryConfig
 
+/**
+ * Raw-socket discovery transports. Implemented in the `socketMain` source set for platforms
+ * with socket APIs; web has no sockets, so its actuals only log — browsers use
+ * [DiscoveryConfig.Transport.Announce] instead.
+ */
+internal expect fun startUdpBroadcast(scope: CoroutineScope, bytes: ByteArray)
+
+internal expect fun startTcpDiscoveryServer(scope: CoroutineScope, bytes: ByteArray)
+
 class DiscoveryBroadcaster {
-  private var tcpServer: ServerSocket? = null
 
   fun start(
     scope: CoroutineScope,
@@ -33,92 +36,42 @@ class DiscoveryBroadcaster {
 
     when (config.transport) {
       Udp -> startUdpBroadcast(scope, bytes)
-      Tcp -> startTcpServer(scope, bytes)
+      Tcp -> startTcpDiscoveryServer(scope, bytes)
+      Announce -> startAnnounceLoop(scope, bytes)
     }
   }
 
-  private fun startUdpBroadcast(scope: CoroutineScope, bytes: ByteArray) {
-    val target = InetSocketAddress("127.0.0.1", LivewireConstants.UdpDiscoveryPort)
-
-    scope.launch(Dispatchers.IO) {
-      logDebug("DiscoveryBroadcaster", "started UDP broadcasting on port ${LivewireConstants.UdpDiscoveryPort}")
-      val selectorManager = SelectorManager(Dispatchers.IO)
-      val socket = aSocket(selectorManager).udp().bind()
-
-      try {
-        while (isActive) {
-          try {
-            socket.send(
-              Datagram(
-                packet = buildPacket { write(bytes) },
-                address = target,
-              ),
-            )
-          } catch (e: CancellationException) {
-            throw e
-          } catch (e: Exception) {
-            logDebug("DiscoveryBroadcaster", "UDP send failed: ${e.message}")
-          }
-
-          delay(2000)
-        }
-      } finally {
-        socket.close()
-        selectorManager.close()
+  /**
+   * Announces over a WebSocket to the host's discovery listener. Used on platforms that can't
+   * open raw sockets (browsers) — the host treats each packet like a UDP announcement and prunes
+   * the app the moment the socket closes.
+   */
+  private fun startAnnounceLoop(scope: CoroutineScope, bytes: ByteArray) {
+    scope.launch(LivewireIoDispatcher) {
+      val client = HttpClient(createPlatformEngine()) {
+        install(WebSockets)
       }
-    }
-  }
 
-  private fun startTcpServer(scope: CoroutineScope, bytes: ByteArray) {
-    scope.launch(Dispatchers.IO) {
-      val selectorManager = SelectorManager(Dispatchers.IO)
-      var boundSocket: ServerSocket? = null
-
-      for (port in LivewireConstants.TcpDiscoveryPorts) {
+      logDebug("started WS announce loop to port ${LivewireConstants.UdpDiscoveryPort}")
+      while (isActive) {
         try {
-          boundSocket = aSocket(selectorManager).tcp().bind("127.0.0.1", port)
-          logDebug("tcp discovery server bound on port $port")
-          break
-        } catch (_: Exception) {
-          logDebug("port $port in use, trying next")
-        }
-      }
-
-      if (boundSocket == null) {
-        logDebug("failed to bind TCP discovery on any port in range")
-        selectorManager.close()
-        return@launch
-      }
-
-      tcpServer = boundSocket
-
-      try {
-        while (isActive) {
-          try {
-            val clientSocket = boundSocket.accept()
-            launch {
-              try {
-                val channel = clientSocket.openWriteChannel(autoFlush = true)
-                channel.writeByteArray(bytes)
-                channel.flushAndClose()
-              } catch (e: CancellationException) {
-                throw e
-              } catch (e: Exception) {
-                logDebug("tcp send failed: ${e.message}")
-              } finally {
-                clientSocket.close()
-              }
+          client.webSocket(
+            host = "127.0.0.1",
+            port = LivewireConstants.UdpDiscoveryPort,
+            path = LivewireConstants.AnnouncePath,
+          ) {
+            while (isActive) {
+              send(Frame.Binary(true, bytes))
+              delay(2000)
             }
-          } catch (e: CancellationException) {
-            throw e
-          } catch (e: Exception) {
-            logDebug("tcp accept failed: ${e.message}")
           }
+        } catch (e: CancellationException) {
+          throw e
+        } catch (e: Exception) {
+          logDebug("announce failed: ${e.message}")
         }
-      } finally {
-        boundSocket.close()
-        selectorManager.close()
-        tcpServer = null
+
+        delay(2000)
       }
     }
   }
@@ -132,9 +85,8 @@ data class DiscoveryConfig(
   val packet: DiscoveryPacket,
   val transport: Transport,
 ) {
-  enum class Transport { Udp, Tcp }
+  enum class Transport { Udp, Tcp, Announce }
 }
 
 const val UnknownConfigField = "Unknown"
 const val MaxAppIconSizePx = 64
-
