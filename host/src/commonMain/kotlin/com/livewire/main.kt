@@ -89,7 +89,7 @@ fun main() = application {
     devicesReady = true
   }
 
-  var clientManifest by remember { mutableStateOf<ClientManifest?>(null) }
+  val clientManifest by host.connection.clientManifest.collectAsState()
   var selectedPlugin by remember { mutableStateOf<PluginInfo?>(null) }
   var showNetworkMeter by remember { mutableStateOf(false) }
 
@@ -98,29 +98,20 @@ fun main() = application {
   LaunchedEffect(state) {
     if (state != Connected) {
       selectedPlugin = null
-      clientManifest = null
     }
   }
 
   LaunchedEffect(reconnectTargetId, apps, state) {
     val targetId = reconnectTargetId ?: return@LaunchedEffect
-    if (state != Listening) return@LaunchedEffect
-    val matchingApp = apps.firstOrNull { it.id == targetId }
-    if (matchingApp != null) {
-      logDebug("auto-reconnect", "reconnecting to ${matchingApp.id} (instanceId=${matchingApp.instanceId})")
-      host.connection.connect(matchingApp)
-    }
+    val matchingApp = apps.firstOrNull { it.id == targetId } ?: return@LaunchedEffect
+    logDebug("auto-reconnect", "ensuring connection to ${matchingApp.id} (instanceId=${matchingApp.instanceId})")
+    host.connection.connect(matchingApp)
   }
 
   LaunchedEffect(host.connection) {
     host.connection.incomingMessages
       .filterIsInstance<ClientManifest>()
       .collect {
-        // TODO: There's gotta be a better way to do this.
-        //  Switch out the layoutNode parsing based on what the client is reporting.
-        host.connection.codec.serializationStrategy = it.layoutNodeSerialization.toStrategy()
-        clientManifest = it
-
         // Tell the newly connected client what our current dark mode setting is
         host.connection.send(DarkModeChange(settings.darkMode))
       }

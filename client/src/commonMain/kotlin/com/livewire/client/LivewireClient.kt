@@ -3,6 +3,7 @@ package com.livewire.client
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,6 +49,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.serialization.ExperimentalSerializationApi
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -102,7 +104,6 @@ class LivewireClient private constructor(
     )
 
     scope.launchMolecule(RecompositionMode.Immediate, context = LivewireComposition) {
-      val connectionState by server.connectionState.collectAsState()
       var activePluginInfo by remember { mutableStateOf<PluginInfo?>(null) }
 
       val actionController = rememberLivewireActionController()
@@ -124,47 +125,43 @@ class LivewireClient private constructor(
         }
       }
 
-      LaunchedEffect(activePluginInfo, connectionState) {
-        if (activePluginInfo != null && connectionState == ConnectionState.Connected) {
-          val plugin = configuration.plugins.find { plugin ->
-            plugin.info.pluginId == activePluginInfo?.pluginId
-          }
+      LaunchedEffect(activePluginInfo) {
+        val plugin = activePluginInfo?.let { info ->
+          configuration.plugins.find { it.info.pluginId == info.pluginId }
+        } ?: return@LaunchedEffect
 
-          if (plugin != null) {
-            try {
-              livewireFlow(server.codec.serializationStrategy, resyncRequests) {
-                DisposableEffect(Unit) {
-                  logDebug("LivewireCompose", "Plugin Entered Composition: ${plugin.info.pluginId}")
-                  onDispose {
-                    logDebug("LivewireCompose", "Plugin Exited Composition: ${plugin.info.pluginId}")
-                  }
+        server.connectionState.collectLatest { state ->
+          if (state != ConnectionState.Connected) return@collectLatest
+          try {
+            livewireFlow(server.codec.serializationStrategy, resyncRequests) {
+              DisposableEffect(Unit) {
+                logDebug("LivewireCompose", "Plugin Entered Composition: ${plugin.info.pluginId}")
+                onDispose {
+                  logDebug("LivewireCompose", "Plugin Exited Composition: ${plugin.info.pluginId}")
                 }
-
-                CompositionLocalProvider(
-                  LocalLivewireActionObserver provides actionController,
-                ) {
-                  LivewireTheme(
-                    theme = configuration.theme,
-                    darkMode = isDarkMode,
-                  ) {
-                    plugin.Content()
-                  }
-                }
-              }.collect { output ->
-                server.sendLayout(output)
               }
-            } catch (e: CancellationException) {
-              throw e
-            } catch (e: Throwable) {
-              // if we're here, the plugin's composition is disposed and can't be recovered. tell the host so it can offer to reload
-              logError("LivewireClient", "Plugin '${plugin.info.pluginId}' crashed", e)
-              server.send(PluginCrashed(plugin.info.pluginId, e.message))
-              activePluginInfo = null
+
+              CompositionLocalProvider(
+                LocalLivewireActionObserver provides actionController,
+              ) {
+                LivewireTheme(
+                  theme = configuration.theme,
+                  darkMode = isDarkMode,
+                ) {
+                  plugin.Content()
+                }
+              }
+            }.collect { output ->
+              server.sendLayout(output)
             }
+          } catch (e: CancellationException) {
+            throw e
+          } catch (e: Throwable) {
+            // if we're here, the plugin's composition is disposed and can't be recovered. tell the host so it can offer to reload
+            logError("LivewireClient", "Plugin '${plugin.info.pluginId}' crashed", e)
+            server.send(PluginCrashed(plugin.info.pluginId, e.message))
+            activePluginInfo = null
           }
-        } else if (activePluginInfo != null) {
-          // If we disconnect, be sure to clear the active plugin state
-          activePluginInfo = null
         }
       }
     }
