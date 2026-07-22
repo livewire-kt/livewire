@@ -258,7 +258,9 @@ class LivewireHostConnection(
                             codec.serializationStrategy = payload.layoutNodeSerialization.toStrategy()
                             clientManifest.value = payload
                           }
-                          incomingMessages.emit(payload)
+                          if (!incomingMessages.tryEmit(payload)) {
+                            logDebug("dropping message; subscribers are backed up")
+                          }
                         }
                       }
                       is Frame.Binary -> {
