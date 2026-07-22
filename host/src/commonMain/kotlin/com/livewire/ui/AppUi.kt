@@ -110,7 +110,7 @@ internal fun AppUi(
           },
           hostConnectionState = state,
           selectedApp = selectedApp,
-          onDisconnectClick = { scope.launch { host.connection.disconnect() } },
+          onDisconnectClick = onDisconnect,
           onNavigationItemClick = {
             settings.menuExpanded = !menuExpanded
           },

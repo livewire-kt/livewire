@@ -10,6 +10,7 @@ import com.livewire.runtime.discoverymanager.DesktopApp
 import com.livewire.runtime.discoverymanager.HostApp
 import com.livewire.runtime.discoverymanager.IosApp
 import com.livewire.transport.PayloadDecoder
+import com.livewire.ui.data.ClientManifest
 import com.livewire.ui.data.RequestFullTree
 import com.livewire.ui.layout.LayoutNode
 import com.livewire.ui.layout.LayoutNodePatch
@@ -81,6 +82,9 @@ class LivewireHostConnection(
 
   val incomingMessages: SharedFlow<Any>
     field = MutableSharedFlow<Any>(extraBufferCapacity = 64)
+
+  val clientManifest: StateFlow<ClientManifest?>
+    field = MutableStateFlow<ClientManifest?>(null)
 
   val incomingLayoutNodes: StateFlow<LayoutNode>
     field = MutableStateFlow<LayoutNode>(RootNode())
@@ -248,7 +252,14 @@ class LivewireHostConnection(
                     when (val plaintextFrame = codec.decryptFrame(frame) ?: continue) {
                       is Frame.Text -> {
                         val message = codec.decodeTextPayload(plaintextFrame)
-                        if (message != null) incomingMessages.emit(message.payload)
+                        if (message != null) {
+                          val payload = message.payload
+                          if (payload is ClientManifest) {
+                            codec.serializationStrategy = payload.layoutNodeSerialization.toStrategy()
+                            clientManifest.value = payload
+                          }
+                          incomingMessages.emit(payload)
+                        }
                       }
                       is Frame.Binary -> {
                         val layoutBytes = plaintextFrame.readBytes()
@@ -274,6 +285,7 @@ class LivewireHostConnection(
                 if (session == this@webSocket) {
                   codec.secureSession = null
                   session = null
+                  clientManifest.value = null
                   connectionState.value = Listening
                   incomingLayoutNodes.value = RootNode()
                   logDebug("client disconnected, waiting for reconnection…")
@@ -402,6 +414,7 @@ class LivewireHostConnection(
 
     session?.close()
     session = null
+    clientManifest.value = null
 
     activeConnection?.close()
     activeConnection = null
