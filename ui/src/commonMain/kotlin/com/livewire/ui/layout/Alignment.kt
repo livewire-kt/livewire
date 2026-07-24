@@ -32,7 +32,7 @@ sealed interface Alignment {
 
   @Immutable
   @Serializable
-  data object Center : Alignment, Horizontal, Vertical
+  data object Center : Alignment
 
   @Immutable
   @Serializable
