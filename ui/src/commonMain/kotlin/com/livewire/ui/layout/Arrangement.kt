@@ -56,11 +56,18 @@ sealed interface Arrangement {
 
   @Immutable
   @Serializable
+  @Deprecated("Use spacedBy instead.", replaceWith = ReplaceWith("spacedBy(space)", "com.livewire.ui.layout.Arrangement.spacedBy"))
   data class SpacedBy(
     @Serializable(with = DpSerializer::class) val space: Dp,
   ) : HorizontalOrVertical
+
+  companion object {
+    @Suppress("DEPRECATION")
+    fun spacedBy(space: Dp): HorizontalOrVertical = SpacedBy(space)
+  }
 }
 
+@Suppress("DEPRECATION")
 fun Arrangement.Horizontal.toComposeUi(): ComposeArrangement.Horizontal = when (this) {
   Arrangement.Start -> ComposeArrangement.Start
   Arrangement.End -> ComposeArrangement.End
@@ -71,6 +78,7 @@ fun Arrangement.Horizontal.toComposeUi(): ComposeArrangement.Horizontal = when (
   is Arrangement.SpacedBy -> ComposeArrangement.spacedBy(space)
 }
 
+@Suppress("DEPRECATION")
 fun Arrangement.Vertical.toComposeUi(): ComposeArrangement.Vertical = when (this) {
   Arrangement.Top -> ComposeArrangement.Top
   Arrangement.Bottom -> ComposeArrangement.Bottom
