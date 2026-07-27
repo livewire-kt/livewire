@@ -80,6 +80,9 @@ class LivewireHostConnection(
   val connectionState: StateFlow<HostConnectionState>
     field = MutableStateFlow(Disconnected)
 
+  val connectionError: StateFlow<ConnectionError?>
+    field = MutableStateFlow<ConnectionError?>(null)
+
   val incomingMessages: SharedFlow<Any>
     field = MutableSharedFlow<Any>(extraBufferCapacity = 64)
 
@@ -140,6 +143,7 @@ class LivewireHostConnection(
   }
 
   private suspend fun runConnect(app: HostApp) {
+    connectionError.value = null
     try {
       when (app) {
         is AndroidApp -> {
@@ -174,7 +178,12 @@ class LivewireHostConnection(
     } catch (e: CancellationException) {
       throw e
     } catch (e: Exception) {
+      logDebug("failed to connect to ${app.id}: ${e.describe()}")
       e.printStackTrace()
+      // this is the fallback. startServer can send something more specific before rethrowing
+      if (connectionError.value == null) {
+        connectionError.value = ConnectionError.ConnectionFailed(app.displayName, e.describe())
+      }
       connectionState.value = Error
     }
   }
@@ -300,9 +309,22 @@ class LivewireHostConnection(
     }
 
     this.server = server
-    withContext(NonCancellable) {
-      server.start(wait = false)
-      server.engine.resolvedConnectors()
+    try {
+      withContext(NonCancellable) {
+        server.start(wait = false)
+        server.engine.resolvedConnectors()
+      }
+    } catch (e: CancellationException) {
+      throw e
+    } catch (e: Exception) {
+      this.server = null
+      withContext(NonCancellable) { runCatching { server.stop(0, 0) } }
+      connectionError.value = if (e.isPortInUse()) {
+        ConnectionError.PortInUse(LivewireConstants.Port)
+      } else {
+        ConnectionError.ConnectionFailed(appName = null, cause = e.describe())
+      }
+      throw e
     }
     logDebug("server bound on port ${LivewireConstants.Port}")
     connectionState.value = Listening

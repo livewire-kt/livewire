@@ -23,6 +23,10 @@
 -keep,includedescriptorclasses class com.livewire.**$$serializer { *; }
 -keep @kotlinx.serialization.Serializable class com.livewire.**
 
+# okio
+-keep class okio.** { *; }
+-dontwarn okio.**
+
 # crypto stuff
 -keep class dev.whyoleg.cryptography.** { *; }
 

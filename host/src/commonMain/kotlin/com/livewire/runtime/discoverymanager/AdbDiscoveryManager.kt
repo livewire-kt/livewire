@@ -6,11 +6,14 @@ import com.livewire.LivewireConstants
 import com.livewire.discovery.DiscoveryPacket
 import com.livewire.logDebug
 import com.livewire.logError
+import com.livewire.runtime.describe
+import com.livewire.runtime.discoverymanager.DiscoverySource.Adb
 import dadb.adbserver.AdbServer
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.TimeSource
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -33,6 +36,9 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
   override val isReady: StateFlow<Boolean>
     field = MutableStateFlow(false)
 
+  override val error: StateFlow<DiscoveryError?>
+    field = MutableStateFlow<DiscoveryError?>(null)
+
   private val timeSource = TimeSource.Monotonic
   private val lastSeen = mutableMapOf<String, TimeSource.Monotonic.ValueTimeMark>()
   private val knownApps = mutableMapOf<String, AndroidApp>()
@@ -45,22 +51,27 @@ object AdbDiscoveryManager : PlatformDiscoveryManager {
     if (started.compareAndSet(expectedValue = false, newValue = true)) {
       scope.launch {
         while (true) {
-          val result = runCatching { discoverApps() }
-
-          result.getOrNull()?.let { discoveredApps ->
-            synchronized(lock) {
-              val now = timeSource.markNow()
-              for (app in discoveredApps) {
-                val isNew = app.id !in knownApps
-                lastSeen[app.id] = now
-                knownApps[app.id] = app
-                if (isNew) {
-                  logDebug("AdbDeviceManager", "discovered ${app.displayName} (${app.id})")
+          runCatching { discoverApps() }
+            .onSuccess { discoveredApps ->
+              synchronized(lock) {
+                val now = timeSource.markNow()
+                for (app in discoveredApps) {
+                  val isNew = app.id !in knownApps
+                  lastSeen[app.id] = now
+                  knownApps[app.id] = app
+                  if (isNew) {
+                    logDebug("AdbDeviceManager", "discovered ${app.displayName} (${app.id})")
+                  }
                 }
+                devices.value = knownApps.values.toList()
               }
-              devices.value = knownApps.values.toList()
+              error.value = null
             }
-          }
+            .onFailure { t ->
+              if (t is CancellationException) throw t
+              logError("AdbDeviceManager", "device scan failed: ${t.describe()}", t)
+              error.value = DiscoveryError.ScanFailed(Adb, t.describe())
+            }
           isReady.value = true
           delay(RefreshRateMs)
         }

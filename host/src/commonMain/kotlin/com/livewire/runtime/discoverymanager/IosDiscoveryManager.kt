@@ -6,6 +6,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
 object IosDiscoveryManager : PlatformDiscoveryManager {
@@ -14,6 +15,9 @@ object IosDiscoveryManager : PlatformDiscoveryManager {
 
   override val devices: Flow<List<IosApp>> = bridge.devices
   override val isReady: StateFlow<Boolean> = bridge.isReady
+
+  // The usbmuxd bridge retries indefinitely and has no ability to surface errors atm
+  override val error: StateFlow<DiscoveryError?> = MutableStateFlow(null)
 
   override suspend fun ensureStarted() {
     bridge.ensureStarted()
