@@ -16,6 +16,10 @@ object CompositeDiscoveryManager {
     readyStates.all { it }
   }
 
+  fun errors(): Flow<List<DiscoveryError>> = combine(DiscoveryManagers.map { it.error }) { errors ->
+    errors.filterNotNull()
+  }
+
   fun shutdown() {
     DiscoveryManagers.forEach { it.shutdown() }
   }

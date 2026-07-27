@@ -3,10 +3,10 @@ package com.livewire.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Snackbar
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
@@ -26,11 +26,12 @@ import com.livewire.host.ui.LayoutNodeContent
 import com.livewire.runtime.HostConnectionState
 import com.livewire.runtime.HostConnectionState.Connected
 import com.livewire.runtime.LivewireHost
+import com.livewire.runtime.discoverymanager.CompositeDiscoveryManager
+import com.livewire.runtime.discoverymanager.DiscoveryError
 import com.livewire.runtime.discoverymanager.HostApp
 import com.livewire.settings.LivewireSettings
 import com.livewire.settings.observe
 import com.livewire.theme.LivewireThemeContent
-import com.livewire.ui.actions.LivewireAction
 import com.livewire.ui.actions.LocalLivewireActionDispatcher
 import com.livewire.ui.composables.AppTopBar
 import com.livewire.ui.composables.DisconnectedStateLayout
@@ -81,6 +82,30 @@ internal fun AppUi(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarDispatcher = rememberSnackbarDispatcher(snackbarHostState)
+
+    LaunchedEffect(snackbarDispatcher) {
+      var announced = emptySet<DiscoveryError>()
+      CompositeDiscoveryManager.errors().collect { errors ->
+        (errors - announced).forEach { error ->
+          snackbarDispatcher.showSnackbar(
+            message = error.message,
+            withDismissAction = true,
+            duration = SnackbarDuration.Indefinite,
+          )
+        }
+        announced = errors.toSet()
+      }
+    }
+
+    val connectionError by host.connection.connectionError.collectAsState()
+    LaunchedEffect(connectionError, snackbarDispatcher) {
+      val error = connectionError ?: return@LaunchedEffect
+      snackbarDispatcher.showSnackbar(
+        message = error.message,
+        withDismissAction = true,
+        duration = SnackbarDuration.Indefinite,
+      )
+    }
 
     val currentManifest by rememberUpdatedState(clientManifest)
     LaunchedEffect(host.connection, snackbarDispatcher) {

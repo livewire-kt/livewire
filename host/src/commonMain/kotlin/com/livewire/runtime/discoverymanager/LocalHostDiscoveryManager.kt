@@ -6,6 +6,9 @@ import com.livewire.LivewireConstants
 import com.livewire.discovery.DiscoveryPacket
 import com.livewire.logDebug
 import com.livewire.logError
+import com.livewire.runtime.describe
+import com.livewire.runtime.discoverymanager.DiscoverySource.Local
+import com.livewire.runtime.isPortInUse
 import io.ktor.network.selector.SelectorManager
 import io.ktor.network.sockets.InetSocketAddress
 import io.ktor.network.sockets.aSocket
@@ -35,6 +38,9 @@ object LocalHostDiscoveryManager : PlatformDiscoveryManager {
 
   final override val isReady: StateFlow<Boolean>
     field = MutableStateFlow(true)
+
+  final override val error: StateFlow<DiscoveryError?>
+    field = MutableStateFlow<DiscoveryError?>(null)
 
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -80,6 +86,11 @@ object LocalHostDiscoveryManager : PlatformDiscoveryManager {
         throw e
       } catch (e: Exception) {
         logError("failed to start listener", e)
+        error.value = if (e.isPortInUse()) {
+          DiscoveryError.PortInUse(Local, LivewireConstants.UdpDiscoveryPort)
+        } else {
+          DiscoveryError.ScanFailed(Local, e.describe())
+        }
       } finally {
         selectorManager.close()
       }
