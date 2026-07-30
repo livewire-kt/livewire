@@ -24,9 +24,11 @@ import kotlinx.cinterop.CPointerVar
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.alloc
 import kotlinx.cinterop.memScoped
+import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.ptr
 import kotlinx.cinterop.reinterpret
 import kotlinx.cinterop.toKString
+import kotlinx.cinterop.usePinned
 import kotlinx.cinterop.value
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -36,6 +38,10 @@ import platform.Foundation.NSFileSize
 import platform.Foundation.NSLibraryDirectory
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSUserDomainMask
+import platform.posix.O_RDONLY
+import platform.posix.close
+import platform.posix.open
+import platform.posix.read
 
 class IosDatabaseInspector : DatabaseInspector {
   override suspend fun discoverDatabases(): Result<List<DatabaseInfo>> = withContext(Dispatchers.IO) {
@@ -66,7 +72,10 @@ class IosDatabaseInspector : DatabaseInspector {
 
       if (!fileManager.fileExistsAtPath(fullPath)) continue
 
-      if (name.endsWith(".db")) {
+      val subContents = fileManager.contentsOfDirectoryAtPath(fullPath, error = null)
+      if (subContents != null) {
+        collectDatabases(fileManager, fullPath, out)
+      } else if (isSqliteFile(fullPath)) {
         val attrs = fileManager.attributesOfItemAtPath(fullPath, error = null)
         out += DatabaseInfo(
           name = name,
@@ -74,11 +83,20 @@ class IosDatabaseInspector : DatabaseInspector {
           sizeBytes = (attrs?.get(NSFileSize) as? Number)?.toLong() ?: 0L,
         )
       }
+    }
+  }
 
-      val subContents = fileManager.contentsOfDirectoryAtPath(fullPath, error = null)
-      if (subContents != null && !name.endsWith(".db")) {
-        collectDatabases(fileManager, fullPath, out)
+  private fun isSqliteFile(path: String): Boolean {
+    val fd = open(path, O_RDONLY)
+    if (fd < 0) return false
+    return try {
+      val header = ByteArray(SQLITE_MAGIC.size)
+      val bytesRead = header.usePinned { pinned ->
+        read(fd, pinned.addressOf(0), header.size.toULong())
       }
+      bytesRead.toInt() >= header.size && isSqliteHeader(header)
+    } finally {
+      close(fd)
     }
   }
 
