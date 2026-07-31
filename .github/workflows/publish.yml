@@ -18,13 +18,14 @@ jobs:
       - name: Resolve version
         id: version
         run: |
-          VERSION="${{ github.event.release.tag_name }}"
-          if ! echo "$VERSION" | grep -Eq '^[0-9]+(\.[0-9]+){0,2}$'; then
-            echo "::error::Release tag '$VERSION' must be a plain numeric MAJOR[.MINOR][.PATCH] version with no 'v' prefix (jpackage requirement)."
+          TAG="${{ github.event.release.tag_name }}"
+          if ! echo "$TAG" | grep -Eq '^v[0-9]+(\.[0-9]+){0,2}$'; then
+            echo "::error::Release tag '$TAG' must be a 'v'-prefixed numeric version, e.g. v1.0.4 (jpackage requires plain MAJOR[.MINOR][.PATCH])."
             exit 1
           fi
+          VERSION="${TAG#v}"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Releasing version $VERSION"
+          echo "Releasing version $VERSION from tag $TAG"
 
       - name: Validate wrapper
         uses: gradle/actions/wrapper-validation@v6
