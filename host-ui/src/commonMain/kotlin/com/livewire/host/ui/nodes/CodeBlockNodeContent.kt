@@ -54,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import com.livewire.host.ui.debugFrame
 import com.livewire.ui.widget.CodeBlockNode
 import com.livewire.ui.widget.CodeLanguage
+import com.livewire.ui.widget.CodeTreeState
 import com.sebastianneubauer.jsontree.JsonTree
 import com.sebastianneubauer.jsontree.TreeColors
 import com.sebastianneubauer.jsontree.TreeState
@@ -73,6 +74,7 @@ internal fun CodeBlockNodeContent(
     language == CodeLanguage.Json && !jsonParseFailed -> JsonContent(
       json = node.content,
       searchable = node.searchable,
+      initialState = node.initialTreeState.asTreeState,
       onError = { jsonParseFailed = true },
       modifier = modifier.debugFrame(),
     )
@@ -100,6 +102,7 @@ private fun detectLanguage(content: String): CodeLanguage {
 private fun JsonContent(
   json: String,
   searchable: Boolean,
+  initialState: TreeState,
   onError: (Throwable) -> Unit,
   modifier: Modifier = Modifier,
 ) {
@@ -148,7 +151,7 @@ private fun JsonContent(
         }
       },
       colors = MaterialTheme.colorScheme.asTreeColors,
-      initialState = TreeState.FIRST_ITEM_EXPANDED,
+      initialState = initialState,
       textStyle = codeTextStyle(),
       showItemCount = true,
       searchState = searchState,
@@ -321,6 +324,13 @@ private fun ScrollableCode(
 @Composable
 private fun codeTextStyle(): TextStyle =
   MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+
+private val CodeTreeState.asTreeState: TreeState
+  get() = when (this) {
+    CodeTreeState.Collapsed -> TreeState.COLLAPSED
+    CodeTreeState.FirstItemExpanded -> TreeState.FIRST_ITEM_EXPANDED
+    CodeTreeState.Expanded -> TreeState.EXPANDED
+  }
 
 private val ColorScheme.asTreeColors: TreeColors
   get() = TreeColors(

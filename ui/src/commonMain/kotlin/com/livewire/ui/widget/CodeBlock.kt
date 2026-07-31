@@ -22,6 +22,9 @@ import kotlinx.serialization.Serializable
  * @param searchable Shows a host-rendered search bar above the content.
  * Search runs entirely on the host — the query never round-trips to the
  * guest. Currently supported for JSON content only.
+ * @param initialTreeState How the tree starts out expanded when the host
+ * renders the content as a collapsible tree. Currently supported for JSON
+ * content only.
  */
 @LivewireComposable
 @Composable
@@ -30,6 +33,7 @@ fun CodeBlock(
   modifier: LivewireModifier = LivewireModifier,
   language: CodeLanguage? = null,
   searchable: Boolean = false,
+  initialTreeState: CodeTreeState = CodeTreeState.FirstItemExpanded,
 ) {
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<CodeBlockNode, Applier<LayoutNode>>(
@@ -40,6 +44,7 @@ fun CodeBlock(
       set(content, CodeBlockNode.SetContent)
       set(language, CodeBlockNode.SetLanguage)
       set(searchable, CodeBlockNode.SetSearchable)
+      set(initialTreeState, CodeBlockNode.SetInitialTreeState)
     },
   )
 }
@@ -50,13 +55,29 @@ class CodeBlockNode(
   var content: String,
   var language: CodeLanguage? = null,
   var searchable: Boolean = false,
+  var initialTreeState: CodeTreeState = CodeTreeState.FirstItemExpanded,
 ) : LayoutNode() {
 
   companion object {
     val SetContent: CodeBlockNode.(String) -> Unit = applier { content = it }
     val SetLanguage: CodeBlockNode.(CodeLanguage?) -> Unit = applier { language = it }
     val SetSearchable: CodeBlockNode.(Boolean) -> Unit = applier { searchable = it }
+    val SetInitialTreeState: CodeBlockNode.(CodeTreeState) -> Unit = applier { initialTreeState = it }
   }
+}
+
+/**
+ * The initial expansion state of tree-rendered content (e.g. JSON).
+ */
+enum class CodeTreeState {
+  /** Only the root item is visible, collapsed. */
+  Collapsed,
+
+  /** The root item is expanded one level; everything below is collapsed. */
+  FirstItemExpanded,
+
+  /** The entire tree is expanded. */
+  Expanded,
 }
 
 enum class CodeLanguage {
