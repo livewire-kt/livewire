@@ -58,7 +58,7 @@ kotlin {
 
 val hostVersion = (findProperty("livewire.hostVersion") as String?)
   ?.removePrefix("v")
-  ?: (findProperty("livewire.version") as String)
+  ?: (findProperty("livewire.version") as String).removeSuffix("-SNAPSHOT")
 
 val signingIdentity = providers.environmentVariable("MACOS_SIGNING_IDENTITY")
 val signingKeychain = providers.environmentVariable("MACOS_SIGNING_KEYCHAIN")
