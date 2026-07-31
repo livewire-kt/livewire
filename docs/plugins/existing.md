@@ -46,6 +46,16 @@ Install the plugin:
 install(NetworkPlugin())
 ```
 
+The constructor takes an optional configuration lambda:
+
+```kotlin
+install(
+  NetworkPlugin {
+    requestPathMaxLines = 3 // default — lines the request path can wrap to in the list
+  }
+)
+```
+
 Then add an integration for each HTTP client your app uses:
 
 === "Ktor"

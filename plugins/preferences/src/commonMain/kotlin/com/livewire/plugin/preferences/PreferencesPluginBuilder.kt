@@ -5,16 +5,14 @@ import androidx.datastore.preferences.core.Preferences
 import com.livewire.plugin.preferences.data.PreferenceStore
 import com.livewire.plugin.preferences.data.PreferencesDataStoreStore
 import com.livewire.plugin.preferences.data.ProtoDataStoreStore
-
-@DslMarker
-annotation class PreferencesPluginDsl
+import com.livewire.ui.PluginBuilderDsl
 
 /**
  * Registers stores the inspector cannot discover on its own. DataStore
  * enforces a single instance per file, so the app hands the inspector its
  * live instances rather than the inspector opening files itself.
  */
-@PreferencesPluginDsl
+@PluginBuilderDsl
 class PreferencesPluginBuilder internal constructor() {
 
   internal val stores = mutableListOf<PreferenceStore>()

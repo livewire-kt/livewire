@@ -27,7 +27,11 @@ import com.livewire.ui.widget.ResizableSurface
 import com.livewire.ui.widget.ResizeAnchor
 import com.livewire.ui.widget.Spacer
 
-class NetworkPlugin : Plugin {
+class NetworkPlugin(
+  configure: NetworkPluginBuilder.() -> Unit = {},
+) : Plugin {
+
+  private val config = NetworkPluginBuilder().apply(configure)
 
   private val presenter = NetworkPresenter()
 
@@ -73,6 +77,7 @@ class NetworkPlugin : Plugin {
             RequestListItem(
               event = event,
               isSelected = state.selectedEvent?.id == event.id,
+              maxLines = config.requestPathMaxLines,
               onClick = clickAction {
                 state.eventSink(NetworkUiEvent.SelectEvent(event))
               },

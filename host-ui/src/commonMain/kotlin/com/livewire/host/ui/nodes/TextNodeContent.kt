@@ -18,5 +18,7 @@ internal fun TextNodeContent(
     style = node.style.asComposeTextStyle,
     fontWeight = node.fontWeight?.let { FontWeight(it) },
     modifier = modifier.debugFrame(),
+    minLines = node.minLines,
+    maxLines = node.maxLines,
   )
 }

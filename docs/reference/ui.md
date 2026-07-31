@@ -42,7 +42,7 @@ The complete catalog of composables and modifiers available to plugin authors, a
 
 | Composable | Signature highlights |
 |---|---|
-| `Text` | `text`, `color`, `style` (full M3 type scale: `DisplayLarge` … `LabelSmall`), `fontWeight` |
+| `Text` | `text`, `color`, `style` (full M3 type scale: `DisplayLarge` … `LabelSmall`), `fontWeight`, `minLines`/`maxLines` |
 | `Icon` | any Compose `ImageVector` — vectors serialize across the wire |
 | `Image` | raw encoded `ByteArray` + `contentDescription` |
 | `CodeBlock` | `content`, `language` (`Json`, `Xml`, `Html`, `PlainText`), `searchable` |

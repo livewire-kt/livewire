@@ -24,6 +24,7 @@ import com.livewire.ui.widget.Text
 internal fun RequestListItem(
   event: NetworkEvent,
   isSelected: Boolean,
+  maxLines: Int,
   onClick: ClickAction,
   modifier: LivewireModifier = LivewireModifier,
 ) {
@@ -93,6 +94,7 @@ internal fun RequestListItem(
         style = LivewireTheme.typography.bodySmall,
         color = LivewireTheme.colorScheme.onSurfaceVariant,
         modifier = LivewireModifier.weight(1f),
+        maxLines = maxLines,
       )
 
       // Duration
