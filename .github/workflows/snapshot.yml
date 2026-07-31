@@ -1,0 +1,72 @@
+name: snapshot
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  publish-snapshot:
+    name: Publish snapshot
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Validate wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: Set up jdk 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Accept android sdk licenses
+        run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+
+      - name: Resolve snapshot version
+        id: version
+        run: |
+          set -euo pipefail
+          VERSION=$(sed -n 's/^livewire\.version=//p' gradle.properties)
+          if [ -z "$VERSION" ]; then
+            echo "::error::livewire.version not found in gradle.properties"
+            exit 1
+          fi
+          case "$VERSION" in
+            *-SNAPSHOT) ;;
+            *)
+              echo "::error::livewire.version is '$VERSION' but main must always be on a -SNAPSHOT version. Bump gradle.properties to the next version with a -SNAPSHOT suffix."
+              exit 1
+              ;;
+          esac
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Publishing snapshot version $VERSION"
+
+      - name: Publish snapshot
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.SIGNING_IN_MEMORY_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.SIGNING_IN_MEMORY_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.SIGNING_IN_MEMORY_KEY_PASSWORD }}
+        run: ./gradlew publishToMavenCentral --stacktrace
+
+      - name: Summarize
+        run: |
+          {
+            echo "## Snapshot published"
+            echo ""
+            echo "- **version:** \`${{ steps.version.outputs.version }}\`"
+            echo "- **repository:** \`https://central.sonatype.com/repository/maven-snapshots/\`"
+          } >> "$GITHUB_STEP_SUMMARY"
