@@ -23,6 +23,8 @@ fun Text(
   color: Color = Color.Unspecified,
   style: LivewireTextStyle? = null,
   fontWeight: Int? = null,
+  minLines: Int = 1,
+  maxLines: Int = Int.MAX_VALUE,
 ) {
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<TextNode, Applier<LayoutNode>>(
@@ -34,6 +36,8 @@ fun Text(
       update(text, TextNode.SetText)
       set(style, TextNode.SetStyle)
       set(fontWeight, TextNode.SetFontWeight)
+      set(minLines, TextNode.SetMinLines)
+      set(maxLines, TextNode.SetMaxLines)
     },
   )
 }
@@ -46,6 +50,8 @@ class TextNode(
   var color: Color = Color.Unspecified,
   var style: LivewireTextStyle? = null,
   var fontWeight: Int? = null,
+  var minLines: Int = 1,
+  var maxLines: Int = Int.MAX_VALUE,
 ) : LayoutNode() {
 
   companion object {
@@ -53,5 +59,7 @@ class TextNode(
     val SetColor: TextNode.(Color) -> Unit = applier { color = it }
     val SetStyle: TextNode.(LivewireTextStyle?) -> Unit = applier { style = it }
     val SetFontWeight: TextNode.(Int?) -> Unit = applier { fontWeight = it }
+    val SetMinLines: TextNode.(Int) -> Unit = applier { minLines = it }
+    val SetMaxLines: TextNode.(Int) -> Unit = applier { maxLines = it }
   }
 }

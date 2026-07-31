@@ -8,6 +8,9 @@ import com.livewire.ui.graphics.VectorIcon
 import com.livewire.ui.graphics.toVectorIcon
 import kotlinx.serialization.Serializable
 
+@DslMarker
+annotation class PluginBuilderDsl
+
 /**
  * A simple interface for plugins to define how they are render data connector content
  * in the host application.
