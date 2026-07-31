@@ -45,7 +45,7 @@ The complete catalog of composables and modifiers available to plugin authors, a
 | `Text` | `text`, `color`, `style` (full M3 type scale: `DisplayLarge` … `LabelSmall`), `fontWeight` |
 | `Icon` | any Compose `ImageVector` — vectors serialize across the wire |
 | `Image` | raw encoded `ByteArray` + `contentDescription` |
-| `CodeBlock` | `content`, `language` (`Json`, `Xml`, `Html`, `PlainText`), `searchable` |
+| `CodeBlock` | `content`, `language` (`Json`, `Xml`, `Html`, `PlainText`), `searchable`, `initialTreeState` (`Collapsed`, `FirstItemExpanded`, `Expanded`) |
 | `Table` | `columns`, `rows`, built-in pagination (`pageSize = 10`) |
 | `ProgressIndicator` | `progress` (`null` = indeterminate), `style` (`Linear`, `Circular`) |
 | `HorizontalDivider` / `VerticalDivider` | `thickness` |
