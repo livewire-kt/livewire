@@ -173,41 +173,45 @@ internal fun AppUi(
       },
       modifier = modifier,
     ) {
-      val layoutNode by host.connection.incomingLayoutNodes.collectAsState()
-      CompositionLocalProvider(
-        LocalLivewireActionDispatcher provides host,
-        LocalSnackDispatcher provides snackbarDispatcher,
-      ) {
-        key(selectedPlugin?.pluginId) {
-          LayoutNodeContent(
-            node = layoutNode,
+      when {
+        state != Connected -> {
+          DisconnectedStateLayout(
+            apps = apps,
+            devicesReady = devicesReady,
+            state = state,
+            onConnectClick = { app ->
+              selectedApp = app
+              onConnect(app)
+            },
+            onDisconnectClick = {
+              selectedApp = null
+              onDisconnect()
+            },
+          )
+        }
+        selectedPlugin == null -> {
+          val uriHandler = LocalUriHandler.current
+          EmptyPluginLayout(
+            onOpenUrl = { url ->
+              uriHandler.openUri(url)
+            },
             modifier = Modifier.fillMaxSize(),
           )
         }
-      }
-
-      if (state != Connected) {
-        DisconnectedStateLayout(
-          apps = apps,
-          devicesReady = devicesReady,
-          state = state,
-          onConnectClick = { app ->
-            selectedApp = app
-            onConnect(app)
-          },
-          onDisconnectClick = {
-            selectedApp = null
-            onDisconnect()
-          },
-        )
-      } else if (selectedPlugin == null) {
-        val uriHandler = LocalUriHandler.current
-        EmptyPluginLayout(
-          onOpenUrl = { url ->
-            uriHandler.openUri(url)
-          },
-          modifier = Modifier.fillMaxSize(),
-        )
+        else -> {
+          val layoutNode by host.connection.incomingLayoutNodes.collectAsState()
+          CompositionLocalProvider(
+            LocalLivewireActionDispatcher provides host,
+            LocalSnackDispatcher provides snackbarDispatcher,
+          ) {
+            key(selectedPlugin.pluginId) {
+              LayoutNodeContent(
+                node = layoutNode,
+                modifier = Modifier.fillMaxSize(),
+              )
+            }
+          }
+        }
       }
     }
   }
