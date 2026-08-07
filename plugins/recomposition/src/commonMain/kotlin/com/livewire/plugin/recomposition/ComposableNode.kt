@@ -35,7 +35,9 @@ internal class ComposableNode(
     private set
 
   private var ownChildren: List<ComposableNode> = emptyList()
-  private var graftedChildren: List<ComposableNode> = emptyList()
+
+  var graftedChildren: List<ComposableNode> = emptyList()
+    private set
 
   fun setChildren(newChildren: List<ComposableNode>) {
     ownChildren = newChildren.toList()

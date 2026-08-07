@@ -28,8 +28,16 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
     snapshot: List<GroupSnapshot>,
     composedScopes: Set<RecomposeScope>,
   ): List<ComposableNode> = buildList {
+    val ancestry = mutableListOf<String>()
     for (group in snapshot) {
-      collect(group, composedScopes, this, parentNode = null, parentExecuted = false)
+      collect(
+        group = group,
+        composedScopes = composedScopes,
+        collector = this,
+        parentNode = null,
+        parentExecuted = false,
+        ancestry = ancestry,
+      )
     }
   }
 
@@ -53,6 +61,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
     collector: MutableList<ComposableNode>,
     parentNode: ComposableNode?,
     parentExecuted: Boolean,
+    ancestry: MutableList<String>,
   ) {
     val sourceInfo = group.sourceInfo?.let { parseSourceInformation(it) }
     val name = parseComposableName(sourceInfo)
@@ -83,11 +92,19 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
       }
 
       val childNodes = mutableListOf<ComposableNode>()
+      ancestry.add(name)
       for (child in group.children) {
-        collect(child, composedScopes, childNodes, parentNode = node, parentExecuted = childExecuted)
+        collect(
+          group = child,
+          composedScopes = composedScopes,
+          collector = childNodes,
+          parentNode = node,
+          parentExecuted = childExecuted,
+          ancestry = ancestry,
+        )
       }
-
-      node.setChildren(childNodes)
+      node.setChildren(childNodes.withoutHiddenChains(ancestry))
+      ancestry.removeAt(ancestry.lastIndex)
 
       collector.add(node)
     } else {
@@ -110,7 +127,14 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
       }
 
       group.children.forEach {
-        collect(it, composedScopes, collector, parentNode, parentExecuted = childExecuted)
+        collect(
+          group = it,
+          composedScopes = composedScopes,
+          collector = collector,
+          parentNode = parentNode,
+          parentExecuted = childExecuted,
+          ancestry = ancestry,
+        )
       }
     }
   }
