@@ -110,7 +110,9 @@ class LivewireHostConnection(
   private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
 
   @Volatile
-  private var expectedAppId: String? = null
+  private var expectedInstanceId: String? = null
+
+  val targetInstanceId: String? get() = expectedInstanceId
 
   private val connectMutex = Mutex()
   private var connectJob: Job? = null
@@ -128,7 +130,7 @@ class LivewireHostConnection(
   )
 
   suspend fun connect(app: HostApp): Unit = connectMutex.withLock {
-    if (app.instanceId == expectedAppId && connectionState.value.isLive()) {
+    if (app.instanceId == expectedInstanceId && connectionState.value.isLive()) {
       logDebug("already targeting ${app.id} (${connectionState.value}); ignoring connect")
       return@withLock
     }
@@ -138,7 +140,7 @@ class LivewireHostConnection(
     connectJob?.cancelAndJoin()
     teardown()
 
-    expectedAppId = app.instanceId
+    expectedInstanceId = app.instanceId
     connectJob = scope.launch { runConnect(app) }
   }
 
@@ -206,7 +208,7 @@ class LivewireHostConnection(
       routing {
         route(LivewireConstants.WsPath) {
           intercept(ApplicationCallPipeline.Plugins) {
-            if (expectedAppId != context.request.queryParameters["connection_id"]) {
+            if (expectedInstanceId != context.request.queryParameters["connection_id"]) {
               context.respond(HttpStatusCode.Forbidden)
               finish()
             }
@@ -230,7 +232,7 @@ class LivewireHostConnection(
                 )
                 logDebug("encryption handshake complete")
 
-                if (expectedAppId == null || expectedAppId != call.request.queryParameters["connection_id"]) {
+                if (expectedInstanceId == null || expectedInstanceId != call.request.queryParameters["connection_id"]) {
                   logDebug("connection target changed during handshake; closing")
                   return@withLock
                 }
@@ -434,7 +436,7 @@ class LivewireHostConnection(
   }
 
   private suspend fun teardown() {
-    expectedAppId = null
+    expectedInstanceId = null
 
     session?.close()
     session = null

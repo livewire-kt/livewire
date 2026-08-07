@@ -2,6 +2,7 @@ package com.livewire.runtime.discoverymanager
 
 sealed interface HostApp {
   val id: String
+  val identityKey: String
   val instanceId: String
   val displayName: String
   val device: HostDevice
@@ -18,6 +19,7 @@ data class AndroidApp(
   override val protocolVersion: Int,
 ) : HostApp {
   override val id: String = "android:${device.serial}:$packageName"
+  override val identityKey: String get() = id
   override val displayName: String = label.ifEmpty { packageName }
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
@@ -61,6 +63,7 @@ data class IosApp(
   override val protocolVersion: Int,
 ) : HostApp {
   override val id: String = "ios:${device.udid}:$appName"
+  override val identityKey: String get() = id
   override val displayName: String = appName
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
@@ -76,7 +79,7 @@ data class IosApp(
     if (id != other.id) return false
     if (displayName != other.displayName) return false
     if (protocolVersion != other.protocolVersion) return false
-    
+
     return true
   }
 
@@ -102,7 +105,8 @@ data class DesktopApp(
   override val appIcon: ByteArray? = null,
   override val protocolVersion: Int,
 ) : HostApp {
-  override val id: String = "desktop:$appName"
+  override val identityKey: String = "desktop:$appName"
+  override val id: String = "$identityKey:$processId"
   override val displayName: String = appName
   override val device: HostDevice = DesktopDevice
   override fun equals(other: Any?): Boolean {

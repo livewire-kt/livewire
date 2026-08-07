@@ -450,7 +450,7 @@ private fun SelectedAppFooter(
         verticalArrangement = Arrangement.spacedBy(4.dp),
       ) {
         Text(
-          text = if (selectedApp != null) "${selectedApp.displayName} • ${selectedApp.device.displayDetail}" else "No app selected",
+          text = selectedApp?.let { "${it.displayName} • ${it.deviceDetail}" } ?: "No app selected",
           style = MaterialTheme.typography.titleMedium,
           color = if (selectedApp != null) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -542,6 +542,12 @@ fun ConnectButton(
     }
   }
 }
+
+private val HostApp.deviceDetail: String
+  get() = when (this) {
+    is DesktopApp -> "${device.displayDetail} • PID $processId"
+    else -> device.displayDetail
+  }
 
 private val AppIconSize = 40.dp
 
