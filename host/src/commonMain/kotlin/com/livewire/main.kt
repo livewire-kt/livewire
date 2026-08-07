@@ -103,7 +103,9 @@ fun main() = application {
 
   LaunchedEffect(reconnectTargetId, apps, state) {
     val targetId = reconnectTargetId ?: return@LaunchedEffect
-    val matchingApp = apps.firstOrNull { it.id == targetId } ?: return@LaunchedEffect
+    val matchingApp = apps.firstOrNull { it.instanceId == host.connection.targetInstanceId }
+      ?: apps.firstOrNull { it.identityKey == targetId }
+      ?: return@LaunchedEffect
     logDebug("auto-reconnect", "ensuring connection to ${matchingApp.id} (instanceId=${matchingApp.instanceId})")
     host.connection.connect(matchingApp)
   }
@@ -160,7 +162,7 @@ fun main() = application {
         scope.launch { host.connection.disconnect() }
       },
       onConnect = { app ->
-        reconnectTargetId = app.id
+        reconnectTargetId = app.identityKey
         scope.launch { host.connection.connect(app) }
       },
       onNetworkMeterClick = { showNetworkMeter = !showNetworkMeter },
