@@ -10,6 +10,9 @@ permissions:
 jobs:
   publish:
     name: Test & publish
+    # Skip in forks: no publishing secrets there, and downstream jobs
+    # (update-cask, bump-version) are skipped via `needs` when this is.
+    if: github.repository == 'livewire-kt/livewire'
     runs-on: macos-latest
     steps:
       - name: Checkout
