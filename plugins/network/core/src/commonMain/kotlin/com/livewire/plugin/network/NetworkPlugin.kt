@@ -25,6 +25,7 @@ import com.livewire.ui.widget.AnimatedVisibility
 import com.livewire.ui.widget.HorizontalDivider
 import com.livewire.ui.widget.ResizableSurface
 import com.livewire.ui.widget.ResizeAnchor
+import com.livewire.ui.widget.ScrollableColumn
 import com.livewire.ui.widget.Spacer
 
 class NetworkPlugin(
@@ -66,11 +67,11 @@ class NetworkPlugin(
           eventCount = state.events.size,
         )
 
-        Column(
+        ScrollableColumn(
           modifier = LivewireModifier
             .weight(1f)
-            .fillMaxWidth()
-            .verticalScroll(),
+            .fillMaxWidth(),
+          showScrollbar = true,
         ) {
           Spacer(LivewireModifier.height(8.dp))
           state.events.forEach { event ->

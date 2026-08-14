@@ -21,6 +21,7 @@ import com.livewire.ui.modifier.verticalScroll
 import com.livewire.ui.theme.LivewireTheme
 import com.livewire.ui.widget.CodeBlock
 import com.livewire.ui.widget.HorizontalDivider
+import com.livewire.ui.widget.ScrollableColumn
 import com.livewire.ui.widget.Text
 
 @Composable
@@ -70,11 +71,10 @@ internal fun PreferencesPluginContent(inspector: PreferencesInspector) {
         if (state.filterQuery.isBlank()) "No entries" else "No keys match the filter",
       )
 
-      else -> Column(
+      else -> ScrollableColumn(
         modifier = LivewireModifier
           .weight(1f)
-          .fillMaxWidth()
-          .verticalScroll(),
+          .fillMaxWidth(),
       ) {
         state.entries.forEach { entry ->
           // Keyed per preference so host-side editor state stays with the

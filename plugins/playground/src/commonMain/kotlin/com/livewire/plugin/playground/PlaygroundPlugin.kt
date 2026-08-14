@@ -47,6 +47,8 @@ import com.livewire.ui.widget.IconButtonStyle
 import com.livewire.ui.widget.ProgressIndicator
 import com.livewire.ui.widget.ProgressIndicatorStyle
 import com.livewire.ui.widget.RadioButton
+import com.livewire.ui.widget.ScrollableColumn
+import com.livewire.ui.widget.ScrollableRow
 import com.livewire.ui.widget.Slider
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Surface
@@ -70,10 +72,9 @@ class PlaygroundPlugin : Plugin {
 
   @Composable
   override fun Content() {
-    Column(
+    ScrollableColumn(
       LivewireModifier
-        .fillMaxSize()
-        .verticalScroll(),
+        .fillMaxSize(),
     ) {
       Row(
         LivewireModifier
@@ -586,6 +587,49 @@ class PlaygroundPlugin : Plugin {
       ) {
         repeat(20) {
           Text("Item $it")
+        }
+      }
+
+      Row(
+        LivewireModifier
+          .fillMaxWidth()
+          .padding(horizontal = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        ScrollableColumn(
+          modifier = LivewireModifier
+            .weight(1f)
+            .height(160.dp),
+        ) {
+          repeat(30) {
+            Text("Scrollbar item $it")
+          }
+        }
+
+        ScrollableColumn(
+          showScrollbar = false,
+          modifier = LivewireModifier
+            .weight(1f)
+            .height(160.dp),
+        ) {
+          repeat(30) {
+            Text("Hidden scrollbar item $it")
+          }
+        }
+      }
+
+      ScrollableRow(
+        modifier = LivewireModifier
+          .fillMaxWidth()
+          .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        repeat(30) {
+          Chip(
+            label = "Chip $it",
+            action = clickAction { },
+            modifier = LivewireModifier.padding(horizontal = 4.dp),
+          )
         }
       }
 

@@ -23,6 +23,8 @@ import com.livewire.host.ui.nodes.ProgressIndicatorNodeContent
 import com.livewire.host.ui.nodes.RadioButtonNodeContent
 import com.livewire.host.ui.nodes.ResizableSurfaceNodeContent
 import com.livewire.host.ui.nodes.RowNodeContent
+import com.livewire.host.ui.nodes.ScrollableColumnNodeContent
+import com.livewire.host.ui.nodes.ScrollableRowNodeContent
 import com.livewire.host.ui.nodes.SliderNodeContent
 import com.livewire.host.ui.nodes.SpacerNodeContent
 import com.livewire.host.ui.nodes.SurfaceNodeContent
@@ -52,6 +54,8 @@ import com.livewire.ui.widget.ImageNode
 import com.livewire.ui.widget.ProgressIndicatorNode
 import com.livewire.ui.widget.RadioButtonNode
 import com.livewire.ui.widget.ResizableSurfaceNode
+import com.livewire.ui.widget.ScrollableColumnNode
+import com.livewire.ui.widget.ScrollableRowNode
 import com.livewire.ui.widget.SliderNode
 import com.livewire.ui.widget.SpacerNode
 import com.livewire.ui.widget.SurfaceNode
@@ -88,6 +92,8 @@ fun LayoutNodeContent(
     is ProgressIndicatorNode -> ProgressIndicatorNodeContent(node, modifier)
     is RadioButtonNode -> RadioButtonNodeContent(node, modifier)
     is ResizableSurfaceNode -> ResizableSurfaceNodeContent(node, modifier)
+    is ScrollableColumnNode -> ScrollableColumnNodeContent(node, modifier)
+    is ScrollableRowNode -> ScrollableRowNodeContent(node, modifier)
     is SliderNode -> SliderNodeContent(node, modifier)
     is SpacerNode -> SpacerNodeContent(node, modifier)
     is SurfaceNode -> SurfaceNodeContent(node, modifier)
