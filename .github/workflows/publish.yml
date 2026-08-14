@@ -201,6 +201,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: main
+          # Default GITHUB_TOKEN pushes are declined by the main ruleset;
+          # Rotom-Bot is a bypass actor so its PAT can push directly.
+          token: ${{ secrets.ROTOMBOT_TOKEN }}
 
       - name: Bump livewire.version
         run: |
