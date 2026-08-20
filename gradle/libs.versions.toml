@@ -1,6 +1,9 @@
 [versions]
 agp = "9.2.1"
 android-compileSdk = "36"
+# Published library modules compile against 35 so consumers on compileSdk 35 can depend on them
+# (the KMP Android plugin stamps minCompileSdk = compileSdk into every AAR).
+android-library-compileSdk = "35"
 android-minSdk = "26"
 android-targetSdk = "36"
 androidx-activity = "1.13.0"
@@ -22,7 +25,9 @@ jsontree = "2.7.0"
 ktor = "3.5.0"
 material3 = "1.10.0-alpha05"
 coil = "3.4.0"
-molecule = "2.2.0"
+# 2.1.0 is the latest release whose androidx.core dep (1.16.0) allows compileSdk 35; 2.2.0 pulls
+# core-ktx 1.17.0 (requires 36). 2.2.0 has no functional changes, only dependency swaps.
+molecule = "2.1.0"
 okhttp = "5.3.2"
 okio = "3.17.0"
 sqlite-jdbc = "3.53.2.0"

@@ -25,7 +25,7 @@ internal fun Project.deriveNamespace(): String {
 
 internal fun Project.configureKotlinMultiplatformLibrary(withIos: Boolean) {
   val namespace = deriveNamespace()
-  val compileSdkVersion = catalogVersionInt("android-compileSdk")
+  val compileSdkVersion = catalogVersionInt("android-library-compileSdk")
   val minSdkVersion = catalogVersionInt("android-minSdk")
 
   extensions.configure<KotlinMultiplatformExtension> {
