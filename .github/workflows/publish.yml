@@ -10,6 +10,9 @@ permissions:
 jobs:
   publish:
     name: Test & publish
+    # Skip in forks: no publishing secrets there, and downstream jobs
+    # (update-cask, bump-version) are skipped via `needs` when this is.
+    if: github.repository == 'livewire-kt/livewire'
     runs-on: macos-latest
     steps:
       - name: Checkout
@@ -201,6 +204,9 @@ jobs:
         uses: actions/checkout@v6
         with:
           ref: main
+          # Default GITHUB_TOKEN pushes are declined by the main ruleset;
+          # Rotom-Bot is a bypass actor so its PAT can push directly.
+          token: ${{ secrets.ROTOMBOT_TOKEN }}
 
       - name: Bump livewire.version
         run: |
