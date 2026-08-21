@@ -6,11 +6,17 @@ import com.dd.plist.NSObject
 import com.dd.plist.NSString
 import com.dd.plist.PropertyListParser
 import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.net.SocketTimeoutException
 import java.net.StandardProtocolFamily
 import java.net.UnixDomainSocketAddress
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.channels.SelectionKey
+import java.nio.channels.Selector
 import java.nio.channels.SocketChannel
+import java.nio.file.Files
+import java.nio.file.NoSuchFileException
 import java.nio.file.Path
 import kotlin.collections.set
 
@@ -21,11 +27,31 @@ internal class UsbMuxClient private constructor(
   private var nextTag: Int = 1
 
   companion object {
-    fun connect(path: Path): UsbMuxClient {
-      val address = UnixDomainSocketAddress.of(path)
-      val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
-      channel.connect(address)
+    fun connect(path: Path, connectTimeoutMs: Long = ConnectTimeoutMs): UsbMuxClient {
+      if (!Files.exists(path)) throw NoSuchFileException(path.toString())
+      val channel = openChannel(UnixDomainSocketAddress.of(path), connectTimeoutMs)
       return UsbMuxClient(path, channel)
+    }
+
+    private fun openChannel(address: UnixDomainSocketAddress, connectTimeoutMs: Long): SocketChannel {
+      val channel = SocketChannel.open(StandardProtocolFamily.UNIX)
+      try {
+        channel.configureBlocking(false)
+        channel.connect(address)
+        val deadline = System.nanoTime() + connectTimeoutMs * 1_000_000L
+        while (!channel.finishConnect()) {
+          val remainingMs = (deadline - System.nanoTime()) / 1_000_000
+          if (remainingMs <= 0) {
+            throw SocketTimeoutException("usbmux connect timed out after ${connectTimeoutMs}ms")
+          }
+          Thread.sleep(minOf(remainingMs, 25))
+        }
+        channel.configureBlocking(true)
+        return channel
+      } catch (t: Throwable) {
+        runCatching { channel.close() }
+        throw t
+      }
     }
   }
 
@@ -40,22 +66,33 @@ internal class UsbMuxClient private constructor(
 
     val initialEvents = mutableListOf<UsbMuxEvent>()
     while (true) {
-      val (packetTag, payloadDict) = readUsbMuxPacket()
-      if (packetTag == tag) {
-        break
-      }
-      if (packetTag == 0) {
-        parseUsbMuxEvent(payloadDict)?.let { initialEvents.add(it) }
+      when (val result = readUsbMuxPacket()) {
+        is PacketResult.Packet -> {
+          if (result.tag == tag) break
+          if (result.tag == 0) {
+            parseUsbMuxEvent(result.payload)?.let { initialEvents.add(it) }
+          }
+        }
+        PacketResult.Idle, PacketResult.Failed ->
+          throw IllegalStateException("usbmuxd Listen handshake interrupted")
       }
     }
     return initialEvents
   }
 
-  fun nextEvent(): UsbMuxEvent? {
-    while (true) {
-      val (packetTag, payloadDict) = runCatching { readUsbMuxPacket() }.getOrNull() ?: return null
-      if (packetTag != 0) continue
-      parseUsbMuxEvent(payloadDict)?.let { return it }
+  fun nextEvent(): NextEvent {
+    val result = try {
+      readUsbMuxPacket()
+    } catch (_: Exception) {
+      return NextEvent.Closed
+    }
+    return when (result) {
+      is PacketResult.Packet -> {
+        if (result.tag != 0) return NextEvent.Idle
+        parseUsbMuxEvent(result.payload)?.let { return NextEvent.Event(it) } ?: NextEvent.Idle
+      }
+      PacketResult.Idle -> NextEvent.Idle
+      PacketResult.Failed -> NextEvent.Closed
     }
   }
 
@@ -65,21 +102,24 @@ internal class UsbMuxClient private constructor(
     payload["PortNumber"] = NSNumber(((port shl 8) and 0xFF00) or (port shr 8)) // Convert to big endian
     val packet = plistPacket("Connect", payload)
 
-    val stream = SocketChannel.open(StandardProtocolFamily.UNIX)
-    stream.connect(UnixDomainSocketAddress.of(socketPath))
+    val stream = openChannel(UnixDomainSocketAddress.of(socketPath), ConnectTimeoutMs)
 
-    val tag = nextTag()
-    sendUsbMuxPlist(tag, packet, stream)
-    val response = readUsbMuxPlist(tag, stream)
+    return try {
+      val tag = nextTag()
+      sendUsbMuxPlist(tag, packet, stream)
+      val response = readUsbMuxPlist(tag, stream)
 
-    val dict = response as? NSDictionary
-    val code = dict?.objectForKey("Number") as? NSNumber
-    if (code != null && code.intValue() != 0) {
-      stream.close()
-      throw IllegalStateException("usbmux connect failed: ${code.intValue()}")
+      val dict = response as? NSDictionary
+      val code = dict?.objectForKey("Number") as? NSNumber
+      if (code != null && code.intValue() != 0) {
+        throw IllegalStateException("usbmux connect failed: ${code.intValue()}")
+      }
+
+      stream
+    } catch (t: Throwable) {
+      runCatching { stream.close() }
+      throw t
     }
-
-    return stream
   }
 
   private fun nextTag(): Int = nextTag++
@@ -95,13 +135,16 @@ internal class UsbMuxClient private constructor(
 
   private fun readUsbMuxPlist(tag: Int, target: SocketChannel): NSObject {
     while (true) {
-      val (packetTag, payload) = readUsbMuxPacket(target)
-      if (packetTag != tag) continue
-      return payload ?: NSDictionary()
+      when (val result = readUsbMuxPacket(target)) {
+        is PacketResult.Packet -> if (result.tag == tag) return result.payload ?: NSDictionary()
+        PacketResult.Idle, PacketResult.Failed ->
+          throw IllegalStateException("usbmux response interrupted")
+      }
     }
   }
 
   private fun sendUsbMuxPacket(tag: Int, payload: ByteArray, target: SocketChannel) {
+    target.configureBlocking(true)
     val size = 16 + payload.size
     val header = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN)
     header.putInt(size)
@@ -115,15 +158,22 @@ internal class UsbMuxClient private constructor(
     }
   }
 
-  private fun readUsbMuxPacket(): Pair<Int, NSDictionary?> = readUsbMuxPacket(channel)
+  private fun readUsbMuxPacket(): PacketResult = readUsbMuxPacket(channel)
 
-  private fun readUsbMuxPacket(target: SocketChannel): Pair<Int, NSDictionary?> {
+  private fun readUsbMuxPacket(target: SocketChannel): PacketResult {
     val sizeBuf = ByteArray(4)
-    readFully(target, sizeBuf)
+    when (val outcome = readFully(target, sizeBuf, PacketTimeoutMs)) {
+      is ReadOutcome.TimedOut ->
+        return if (outcome.bytesRead == 0) PacketResult.Idle else PacketResult.Failed
+      ReadOutcome.Full -> {}
+    }
     val size = ByteBuffer.wrap(sizeBuf).order(ByteOrder.LITTLE_ENDIAN).int
-    if (size < 16) throw IllegalStateException("short usbmux packet")
+    if (size < 16) return PacketResult.Failed
     val rest = ByteArray(size - 4)
-    readFully(target, rest)
+    when (val outcome = readFully(target, rest, PacketTimeoutMs)) {
+      is ReadOutcome.TimedOut -> return PacketResult.Failed
+      ReadOutcome.Full -> {}
+    }
     val tag = ByteBuffer.wrap(rest, 8, 4).order(ByteOrder.LITTLE_ENDIAN).int
     val payload = if (rest.size > 12) rest.copyOfRange(12, rest.size) else ByteArray(0)
     val plist = if (payload.isNotEmpty()) {
@@ -131,7 +181,7 @@ internal class UsbMuxClient private constructor(
     } else {
       null
     }
-    return tag to plist
+    return PacketResult.Packet(tag, plist)
   }
 
   private fun plistPacket(messageType: String, payload: NSDictionary?): NSDictionary {
@@ -195,14 +245,75 @@ internal class UsbMuxClient private constructor(
     }
   }
 
-  private fun readFully(channel: SocketChannel, buffer: ByteArray) {
+  private fun readFully(target: SocketChannel, buffer: ByteArray, timeoutMs: Long): ReadOutcome {
+    val selector = Selector.open()
     var offset = 0
-    while (offset < buffer.size) {
-      val read = channel.read(ByteBuffer.wrap(buffer, offset, buffer.size - offset))
-      if (read < 0) throw IllegalStateException("unexpected eof")
-      offset += read
+    var deadline = System.nanoTime() + timeoutMs * 1_000_000L
+    try {
+      target.configureBlocking(false)
+      target.register(selector, SelectionKey.OP_READ)
+      while (offset < buffer.size) {
+        val remainingMs = (deadline - System.nanoTime()) / 1_000_000
+        if (remainingMs <= 0) return ReadOutcome.TimedOut(offset)
+        selector.select(remainingMs)
+        selector.selectedKeys().clear()
+        val read = target.read(ByteBuffer.wrap(buffer, offset, buffer.size - offset))
+        if (read < 0) throw IllegalStateException("unexpected eof from usbmuxd")
+        offset += read
+      }
+      return ReadOutcome.Full
+    } finally {
+      selector.close()
+      runCatching { target.configureBlocking(true) }
     }
   }
+}
+
+internal fun SocketChannel.readAllBounded(timeoutMs: Long): ByteArray {
+  val out = ByteArrayOutputStream(4096)
+  val buffer = ByteArray(4096)
+  val selector = Selector.open()
+  var deadline = System.nanoTime() + timeoutMs * 1_000_000L
+  try {
+    configureBlocking(false)
+    register(selector, SelectionKey.OP_READ)
+    while (true) {
+      val remainingMs = (deadline - System.nanoTime()) / 1_000_000
+      if (remainingMs <= 0) break
+      selector.select(remainingMs)
+      selector.selectedKeys().clear()
+      val read = read(ByteBuffer.wrap(buffer))
+      when {
+        read < 0 -> return out.toByteArray() // peer closed, packet complete
+        read > 0 -> {
+          out.write(buffer, 0, read)
+          val grace = System.nanoTime() + ReadGraceMs * 1_000_000L
+          if (grace < deadline) deadline = grace
+        }
+      }
+    }
+    return out.toByteArray()
+  } finally {
+    selector.close()
+    runCatching { configureBlocking(true) }
+  }
+}
+
+internal sealed interface NextEvent {
+  data class Event(val event: UsbMuxEvent) : NextEvent
+  data object Idle : NextEvent
+  data object Closed : NextEvent
+}
+
+private sealed interface PacketResult {
+  data class Packet(val tag: Int, val payload: NSDictionary?) : PacketResult
+  data object Idle : PacketResult
+  data object Failed : PacketResult
+}
+
+private sealed interface ReadOutcome {
+  data object Full : ReadOutcome
+  data class TimedOut(val bytesRead: Int) : ReadOutcome
 }
 
 internal sealed interface UsbMuxEvent {
@@ -219,3 +330,7 @@ internal sealed interface UsbMuxEvent {
 }
 
 internal const val UsbmuxdPath = "/var/run/usbmuxd"
+
+private const val ConnectTimeoutMs = 2000L
+private const val PacketTimeoutMs = 3000L
+private const val ReadGraceMs = 250L

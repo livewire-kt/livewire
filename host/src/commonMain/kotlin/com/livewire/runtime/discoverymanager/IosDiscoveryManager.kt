@@ -1,6 +1,7 @@
 package com.livewire.runtime.discoverymanager
 
 import com.livewire.runtime.iosbridge.IosDeviceBridge
+import com.livewire.runtime.iosbridge.UsbmuxdPath
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -8,16 +9,32 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 object IosDiscoveryManager : PlatformDiscoveryManager {
   private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
   private val bridge = IosDeviceBridge(scope)
 
-  override val devices: Flow<List<IosApp>> = bridge.devices
+  override val devices: Flow<List<HostApp>> = bridge.devices
   override val isReady: StateFlow<Boolean> = bridge.isReady
 
-  // The usbmuxd bridge retries indefinitely and has no ability to surface errors atm
-  override val error: StateFlow<DiscoveryError?> = MutableStateFlow(null)
+  override val error: StateFlow<DiscoveryError?>
+    field = MutableStateFlow(null)
+
+  init {
+    scope.launch {
+      bridge.usbmuxdAvailable.collect { available ->
+        error.value = if (available) {
+          null
+        } else {
+          DiscoveryError.ScanFailed(
+            Ios,
+            "usbmuxd is not reachable at $UsbmuxdPath — install/start usbmuxd (libimobiledevice) to use physical iOS devices",
+          )
+        }
+      }
+    }
+  }
 
   override suspend fun ensureStarted() {
     bridge.ensureStarted()
@@ -25,6 +42,7 @@ object IosDiscoveryManager : PlatformDiscoveryManager {
 
   override fun shutdown() {
     bridge.shutdown()
+    error.value = null
     scope.cancel()
   }
 }
