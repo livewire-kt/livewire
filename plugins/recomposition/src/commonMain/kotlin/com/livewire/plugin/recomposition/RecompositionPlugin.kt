@@ -47,6 +47,7 @@ import com.livewire.ui.widget.Icon
 import com.livewire.ui.widget.IconButton
 import com.livewire.ui.widget.ResizableSurface
 import com.livewire.ui.widget.ResizeAnchor
+import com.livewire.ui.widget.ScrollableColumn
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Text
 import kotlinx.coroutines.FlowPreview
@@ -168,11 +169,10 @@ class RecompositionPlugin(
 
       HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
 
-      Column(
+      ScrollableColumn(
         modifier = LivewireModifier
           .weight(1f)
-          .fillMaxWidth()
-          .verticalScroll(),
+          .fillMaxWidth(),
       ) {
         rows.forEach { row ->
           val isExpanded = expandOverrides[row.key] != false
@@ -390,10 +390,9 @@ class RecompositionPlugin(
     row: TreeRow,
     modifier: LivewireModifier = LivewireModifier,
   ) {
-    Column(
+    ScrollableColumn(
       modifier = modifier
-        .fillMaxSize()
-        .verticalScroll(),
+        .fillMaxSize(),
     ) {
       Column(
         modifier = LivewireModifier
