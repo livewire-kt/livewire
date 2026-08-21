@@ -16,8 +16,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.BufferedReader
-import java.nio.channels.Channels
 import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
@@ -30,6 +30,9 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
 
   val isReady: StateFlow<Boolean>
     field = MutableStateFlow(false)
+
+  val usbmuxdAvailable: StateFlow<Boolean>
+    field = MutableStateFlow(true)
 
   private val deviceIdMap = mutableMapOf<Udid, Int>()
   private val physicalDeviceMap = mutableMapOf<Udid, IosDevice>()
@@ -71,7 +74,13 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
   }
 
   private suspend fun runUsbMuxLoop() {
+    var retryDelay = InitialRetryDelayMs
+
     while (scope.isActive) {
+      if (!isReady.value) {
+        isReady.value = true
+      }
+
       val client = runCatching {
         UsbMuxClient.connect(Paths.get(UsbmuxdPath)).also {
           logDebug("connected to usbmuxd at $UsbmuxdPath")
@@ -79,8 +88,10 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
       }.getOrNull()
 
       if (client == null) {
-        logDebug("failed to connect to usbmuxd at $UsbmuxdPath")
-        delay(500)
+        usbmuxdAvailable.value = false
+        logDebug("failed to connect to usbmuxd at $UsbmuxdPath (retrying in ${retryDelay}ms)")
+        retryDelay = nextBackoff(retryDelay)
+        delay(retryDelay)
         continue
       }
 
@@ -90,31 +101,38 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
 
       if (initialEvents == null) {
         logDebug("failed to listen for usbmuxd events")
+        usbmuxdAvailable.value = false
         usbmuxClient.compareAndSet(client, null)
         client.close()
-        delay(500)
+        retryDelay = nextBackoff(retryDelay)
+        delay(retryDelay)
         continue
       }
+
+      usbmuxdAvailable.value = true
+      retryDelay = InitialRetryDelayMs
 
       logDebug("received ${initialEvents.size} initial usbmuxd events")
       for (event in initialEvents) {
         handleUsbMuxEvent(event)
       }
 
-      if (!isReady.value) {
-        isReady.value = true
-      }
-
       while (scope.isActive) {
-        val event = client.nextEvent() ?: break
-        handleUsbMuxEvent(event)
+        when (val next = client.nextEvent()) {
+          is NextEvent.Event -> handleUsbMuxEvent(next.event)
+          NextEvent.Idle -> Unit // connection is healthy but nothing's attached…keep waiting
+          NextEvent.Closed -> break // usbmuxd died or a frame got corrupted…reconnect
+        }
       }
 
       usbmuxClient.compareAndSet(client, null)
       client.close()
-      delay(500)
+      retryDelay = nextBackoff(retryDelay)
+      delay(retryDelay)
     }
   }
+
+  private fun nextBackoff(current: Long): Long = (current * 2).coerceAtMost(MaxRetryDelayMs)
 
   private suspend fun handleUsbMuxEvent(event: UsbMuxEvent) {
     when (event) {
@@ -122,9 +140,11 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
         logDebug("device attached: deviceId=${event.deviceId} udid=${event.udid}")
         val udid = event.udid?.let { Udid(it) } ?: return
 
+        val physicalDevice = loadPhysicalDevice(udid.value)
+
         stateLock.withLock {
           deviceIdMap[udid] = event.deviceId
-          physicalDeviceMap[udid] = loadPhysicalDevice(udid.value)
+          physicalDeviceMap[udid] = physicalDevice
         }
 
         discoveryJobs[udid]?.cancel()
@@ -206,7 +226,7 @@ class IosDeviceBridge(private val scope: CoroutineScope) {
     }
 
     return try {
-      DiscoveryPacket.decode(Channels.newInputStream(stream).readBytes())
+      DiscoveryPacket.decode(stream.readAllBounded(TcpDiscoveryTimeoutMs))
     } catch (e: Exception) {
       logDebug("tcp discovery failed for deviceId=$deviceId: ${e.message}")
       null
@@ -283,10 +303,18 @@ private fun runCommand(vararg args: String): CommandResult {
     val process = ProcessBuilder(*args)
       .redirectErrorStream(false)
       .start()
+
+    val exited = process.waitFor(CommandTimeoutMs, TimeUnit.MILLISECONDS)
+    if (!exited) {
+      process.destroyForcibly()
+      process.waitFor(2, TimeUnit.SECONDS)
+      logDebug("ios-bridge", "command timed out after ${CommandTimeoutMs}ms: ${args.joinToString(" ")}")
+      return CommandResult(1, "", "timed out after ${CommandTimeoutMs}ms")
+    }
+
     val stdout = process.inputStream.bufferedReader().use(BufferedReader::readText)
     val stderr = process.errorStream.bufferedReader().use(BufferedReader::readText)
-    val exitCode = process.waitFor()
-    CommandResult(exitCode, stdout, stderr)
+    CommandResult(process.exitValue(), stdout, stderr)
   } catch (e: Exception) {
     CommandResult(1, "", e.message ?: "")
   }
@@ -304,3 +332,7 @@ value class Udid(val value: String)
 private fun isMacOs(): Boolean = System.getProperty("os.name").lowercase().contains("mac")
 
 private const val RefreshRateMs = 2000L
+private const val TcpDiscoveryTimeoutMs = 2000L
+private const val InitialRetryDelayMs = 500L
+private const val MaxRetryDelayMs = 8000L
+private const val CommandTimeoutMs = 5000L
