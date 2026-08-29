@@ -1,5 +1,6 @@
 package com.livewire.client
 
+import com.livewire.LivewireIoDispatcher
 import com.livewire.LivewireConstants
 import com.livewire.crypto.LivewireHandshake
 import com.livewire.logDebug
@@ -23,7 +24,6 @@ import kotlin.time.measureTimedValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -43,12 +43,12 @@ enum class ConnectionState {
 class LivewireServer(
   vararg decoders: PayloadDecoder<*>,
   private val serializationStrategy: LayoutNodeSerializationStrategy,
-  context: CoroutineContext = Dispatchers.IO,
+  context: CoroutineContext = LivewireIoDispatcher,
 ) {
   constructor(
     decoders: Collection<PayloadDecoder<*>>,
     serializationStrategy: LayoutNodeSerializationStrategy,
-    context: CoroutineContext = Dispatchers.IO,
+    context: CoroutineContext = LivewireIoDispatcher,
   ) : this(
     *decoders.toTypedArray(),
     serializationStrategy = serializationStrategy,
@@ -76,7 +76,9 @@ class LivewireServer(
 
   private fun buildHttpClient() = HttpClient(createPlatformEngine()) {
     install(WebSockets) {
-      pingInterval = 15.seconds
+      if (supportsWebSocketPings) {
+        pingInterval = 15.seconds
+      }
     }
   }
 

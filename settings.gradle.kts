@@ -38,6 +38,7 @@ plugins {
 include(":demo:common")
 include(":demo:android")
 include(":demo:desktop")
+include(":demo:web")
 
 include(":host")
 include(":host-ui")

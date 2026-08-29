@@ -9,6 +9,7 @@ object LivewireConstants {
   private const val TcpDiscoveryPortStart = 38304
   private const val TcpDiscoveryPortCount = 5
   const val WsPath: String = "/livewire"
+  const val AnnouncePath: String = "/announce"
 
   val TcpDiscoveryPorts: List<Int>
     get() = (TcpDiscoveryPortStart until TcpDiscoveryPortStart + TcpDiscoveryPortCount).toList()

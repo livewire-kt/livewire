@@ -4,6 +4,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.livewire.ui.icons.AndroidIcon
 import com.livewire.ui.icons.AppleIcon
 import com.livewire.ui.icons.DesktopIcon
+import com.livewire.ui.icons.WebIcon
 import dadb.Dadb
 
 sealed interface HostDevice {
@@ -44,4 +45,12 @@ object DesktopDevice : HostDevice {
   override val id: String = "desktop:local"
   override val displayDetail: String = "Local Machine"
   override val platformIcon: ImageVector = DesktopIcon
+}
+
+data class WebDevice(
+  val browser: String,
+) : HostDevice {
+  override val id: String = "web:$browser"
+  override val displayDetail: String = browser
+  override val platformIcon: ImageVector = WebIcon
 }

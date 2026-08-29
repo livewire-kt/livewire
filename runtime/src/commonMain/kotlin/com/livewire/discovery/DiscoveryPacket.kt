@@ -7,6 +7,7 @@ enum class DiscoveryPlatform {
   IosSimulator,
   IosPhysical,
   Desktop,
+  Web,
 }
 
 /**
