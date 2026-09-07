@@ -457,7 +457,7 @@ private fun SelectedAppFooter(
 
         if (selectedApp != null && selectedApp.protocolVersion != LivewireConstants.ProtocolVersion) {
           val warningMessage = if (selectedApp.protocolVersion < LivewireConstants.ProtocolVersion) {
-            "The Livewire library in the select app is out of date. Update to connect."
+            "The Livewire library in the selected app is out of date. Update to connect."
           } else {
             "The Livewire host app is out of date. Update to connect."
           }

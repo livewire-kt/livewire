@@ -1,7 +1,7 @@
 package com.livewire
 
 object LivewireConstants {
-  const val ProtocolVersion = 1
+  const val ProtocolVersion = 2
 
   const val Port = 38301
   const val BridgePort = 38302

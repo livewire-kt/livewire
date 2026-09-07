@@ -105,6 +105,10 @@ class LivewireHostConnection(
   private var currentRoot: LayoutNode = RootNode()
   @Volatile
   private var awaitingResync = false
+  @Volatile
+  private var consecutiveDecodeFailures = 0
+  @Volatile
+  private var layoutDecodeAbandoned = false
 
   private var activeConnection: ActiveConnection? = null
   private var server: EmbeddedServer<CIOApplicationEngine, CIOApplicationEngine.Configuration>? = null
@@ -221,6 +225,8 @@ class LivewireHostConnection(
             sessionMutex.withLock {
               activeHandlerJob = coroutineContext[Job]
               awaitingResync = false
+              consecutiveDecodeFailures = 0
+              layoutDecodeAbandoned = false
 
               val pendingLayout = Channel<ByteArray>(capacity = PendingLayoutCapacity)
               var decoderJob: Job? = null
@@ -243,17 +249,19 @@ class LivewireHostConnection(
 
                 decoderJob = launch(Dispatchers.Default) {
                   for (bytes in pendingLayout) {
+                    if (layoutDecodeAbandoned) continue
                     try {
                       when (val incoming = codec.decodeLayoutBytes(bytes)) {
                         is LivewireIncoming.Layout -> receiveFullTree(incoming.node)
                         is LivewireIncoming.Patches -> if (!awaitingResync && !receivePatches(incoming.patches)) requestResync()
                         else -> Unit
                       }
+                      consecutiveDecodeFailures = 0
                     } catch (e: CancellationException) {
                       throw e
                     } catch (e: Throwable) {
                       logDebug("failed to decode layout: ${e.message}")
-                      requestResync()
+                      onLayoutDecodeFailure(e)
                     }
                   }
                 }
@@ -352,6 +360,18 @@ class LivewireHostConnection(
       }
     }
     return !desynced
+  }
+
+  private suspend fun onLayoutDecodeFailure(cause: Throwable) {
+    consecutiveDecodeFailures++
+    if (consecutiveDecodeFailures >= MaxDecodeFailures) {
+      layoutDecodeAbandoned = true
+      logDebug("abandoning layout after $consecutiveDecodeFailures failed decodes")
+      connectionError.value = ConnectionError.LayoutDecodeFailed(cause.describe())
+      return
+    }
+    awaitingResync = false
+    requestResync()
   }
 
   private suspend fun requestResync() {
@@ -468,6 +488,7 @@ class LivewireHostConnection(
 }
 
 private const val PendingLayoutCapacity = 64
+private const val MaxDecodeFailures = 3
 
 private fun LayoutNode.registerAll(
   nodeMap: MutableMap<Long, LayoutNode>,
