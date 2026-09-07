@@ -18,7 +18,7 @@ internal actual fun extractParametersFromLambda(
 ): List<ParameterInfo>? {
   val block = try {
     scope.javaClass.accessibleField("block")?.get(scope) ?: return null
-  } catch (_: Exception) {
+  } catch (_: Throwable) {
     return null
   }
 
@@ -38,7 +38,7 @@ internal actual fun extractParametersFromLambda(
         null
       }
     }
-  } catch (_: Exception) {
+  } catch (_: Throwable) {
     null
   }
 }

@@ -105,7 +105,13 @@ internal sealed interface ParameterValue {
   }
 
   companion object {
-    fun fromValue(value: Any?, inlineClass: String?): ParameterValue {
+    fun fromValue(value: Any?, inlineClass: String?): ParameterValue = try {
+      describe(value, inlineClass)
+    } catch (t: Throwable) {
+      Text("<${t::class.simpleName} while describing value>")
+    }
+
+    private fun describe(value: Any?, inlineClass: String?): ParameterValue {
       if (value == null) return Text("null")
 
       if (inlineClass != null) {

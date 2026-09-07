@@ -21,11 +21,14 @@ import androidx.compose.runtime.tooling.CompositionRegistrationObserver
 import androidx.compose.runtime.tooling.ObservableComposition
 import androidx.collection.MutableScatterSet
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.livewire.logError
 import com.livewire.ui.composition.LivewireComposition
 import kotlin.concurrent.Volatile
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -84,29 +87,62 @@ object RecompositionTracker {
     started = true
 
     enableSourceInformation()
-    trackingScope = scope
+    // child scope so stop() never cancels a scope the caller's still using
+    val tracking = CoroutineScope(scope.coroutineContext + SupervisorJob(scope.coroutineContext[Job]))
+    trackingScope = tracking
 
-    scope.launch {
-      for (command in commands) process(command)
+    tracking.launch {
+      for (command in commands) {
+        try {
+          process(command)
+        } catch (e: CancellationException) {
+          throw e
+        } catch (t: Throwable) {
+          logError("Recomposition", "recomposition tracker failed while processing $command", t)
+        }
+      }
     }
 
-    scope.launch {
+    tracking.launch {
       for (signal in publishSignal) {
-        publish()
+        try {
+          publish()
+        } catch (e: CancellationException) {
+          throw e
+        } catch (t: Throwable) {
+          logError("Recomposition", "recomposition tracker failed while publishing", t)
+        }
         delay(PublishThrottleMs)
       }
     }
 
     // on the main thread because the ios recomposer is a threadlocal
-    scope.launch {
+    tracking.launch {
       val observed = mutableSetOf<Any>()
       Recomposer.runningRecomposers.collect { recomposers ->
-        recomposers.forEach { if (observed.add(it)) track(it) }
+        recomposers.forEach {
+          if (observed.add(it)) {
+            try {
+              track(it)
+            } catch (e: CancellationException) {
+              throw e
+            } catch (t: Throwable) {
+              logError("Recomposition", "recomposition tracker failed while observing recomposer", t)
+            }
+
+          }
+        }
 
         val removed = observed - recomposers
         removed.forEach {
           observed.remove(it)
-          untrack(it)
+          try {
+            untrack(it)
+          } catch (e: CancellationException) {
+            throw e
+          } catch (t: Throwable) {
+            logError("Recomposition", "recomposition tracker failed while releasing recomposer", t)
+          }
         }
       }
     }
@@ -235,8 +271,11 @@ object RecompositionTracker {
     // turned out to be a noop. exit flag covers the first case, isInvalidFor covers the second.
     override fun onScopeEnter(scope: RecomposeScope) {
       val pending = pendingInvalidations.remove(scope) ?: return
-      val willExecute = pending === UnconditionalInvalidation ||
+      val willExecute = pending === UnconditionalInvalidation || try {
         (scope as? RecomposeScopeImpl)?.isInvalidFor(pending) ?: true
+      } catch (_: Throwable) {
+        true
+      }
       if (!willExecute) record().reread.add(scope)
     }
 
@@ -333,7 +372,14 @@ object RecompositionTracker {
     }
 
     val job = scope.launch {
-      val snapshot = frameClock.withFrameNanos { captureSnapshot(composition) }
+      val snapshot = try {
+        frameClock.withFrameNanos { captureSnapshot(composition) }
+      } catch (e: CancellationException) {
+        throw e
+      } catch (t: Throwable) {
+        logError("Recomposition", "recomposition tracker failed while capturing a composition", t)
+        null
+      }
       if (snapshot != null) {
         commands.trySend(Command.Rebuild(composition, snapshot, pass))
       }
@@ -356,6 +402,7 @@ object RecompositionTracker {
     pass: ScopePass,
   ) {
     if (!compositionObserverHandles.containsKey(composition)) return
+    recordCaptureStats(composition, snapshot)
     compositionRoots[composition] = builder.build(snapshot, pass)
     requestPublish()
   }
@@ -369,18 +416,26 @@ object RecompositionTracker {
     }
     val start = MonotonicClock.elapsedNanos()
     val snapshot = builder.snapshot(compositionData.compositionGroups)
-    val elapsed = MonotonicClock.elapsedNanos() - start
+    lastCaptureNanos = MonotonicClock.elapsedNanos() - start
+    return snapshot
+  }
+
+  // written inside the frame callback, read back by rebuild on the tracker thread
+  @Volatile
+  private var lastCaptureNanos = 0L
+
+  private fun recordCaptureStats(composition: ObservableComposition, snapshot: List<GroupSnapshot>) {
+    val elapsed = lastCaptureNanos
     captureCount++
     captureNanosTotal += elapsed
     if (elapsed > captureNanosMax) captureNanosMax = elapsed
-    if (snapshot != null) groupCounts[composition] = snapshot.sumOf { it.groupCount() }
+    groupCounts[composition] = snapshot.sumOf { it.groupCount() }
     captureStats.value = CaptureStats(
       captures = captureCount,
       groups = groupCounts.values.sum(),
       averageMillis = captureNanosTotal / captureCount / 1_000_000f,
       maxMillis = captureNanosMax / 1_000_000f,
     )
-    return snapshot
   }
 
   private fun GroupSnapshot.groupCount(): Int = 1 + children.sumOf { it.groupCount() }

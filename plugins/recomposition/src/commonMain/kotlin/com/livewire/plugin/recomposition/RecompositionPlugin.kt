@@ -814,6 +814,7 @@ data class RecompositionThresholds(
 )
 
 private fun formatOneDecimal(value: Float): String {
+  if (!value.isFinite()) return "-"
   val scaled = (value * 10).roundToInt()
   return "${scaled / 10}.${scaled % 10}"
 }
