@@ -52,6 +52,8 @@ import com.livewire.ui.widget.ChipStyle
 import com.livewire.ui.widget.HorizontalDivider
 import com.livewire.ui.widget.Icon
 import com.livewire.ui.widget.IconButton
+import com.livewire.ui.widget.LazyColumn
+import com.livewire.ui.widget.LazyColumnScroll
 import com.livewire.ui.widget.ResizableSurface
 import com.livewire.ui.widget.ResizeAnchor
 import com.livewire.ui.widget.ScrollableColumn
@@ -95,6 +97,7 @@ class RecompositionPlugin(
     var recomposedOnly by remember { mutableStateOf(false) }
     var showWireframe by remember { mutableStateOf(true) }
     var wireframeHeight by remember { mutableStateOf(InitialWireframeHeight) }
+    var scrollTo by remember { mutableStateOf<LazyColumnScroll?>(null) }
     val collapsed = remember(rawRoots, version, recomposedOnly) {
       collapse(rawRoots).let { if (recomposedOnly) it.onlyRecomposed() else it }
     }
@@ -130,6 +133,8 @@ class RecompositionPlugin(
         onShowWireframeChanged = { showWireframe = it },
         wireframeHeight = wireframeHeight,
         onWireframeHeightChanged = { wireframeHeight = it },
+        scrollTo = scrollTo,
+        onScrollTo = { index -> scrollTo = LazyColumnScroll(index, (scrollTo?.token ?: 0L) + 1) },
         expandOverrides = expandOverrides,
         selectedKey = selectedKey,
         breadcrumbExpansions = breadcrumbExpansions,
@@ -171,6 +176,8 @@ class RecompositionPlugin(
     onShowWireframeChanged: (Boolean) -> Unit,
     wireframeHeight: Dp,
     onWireframeHeightChanged: (Dp) -> Unit,
+    scrollTo: LazyColumnScroll?,
+    onScrollTo: (Int) -> Unit,
     expandOverrides: Map<Any, Boolean>,
     selectedKey: Any?,
     breadcrumbExpansions: Map<Any, Set<Int>>,
@@ -230,7 +237,12 @@ class RecompositionPlugin(
             selectedKey = selectedKey,
             now = now,
             height = wireframeHeight - WireframePadding * 2,
-            onRowSelection = onRowSelection,
+            onRowSelection = { key ->
+              onRowSelection(key)
+              if (key != null) rows.indexOfFirst { it.key == key }
+                .takeIf { it >= 0 }
+                ?.let(onScrollTo)
+            },
           )
         }
         HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
@@ -256,136 +268,161 @@ class RecompositionPlugin(
 
       HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
 
-      ScrollableColumn(
+      LazyColumn(
+        itemCount = rows.size,
         modifier = LivewireModifier
           .weight(1f)
           .fillMaxWidth(),
+        estimatedItemHeight = TreeRowHeight,
+        overscan = TreeRowOverscan,
+        scrollTo = scrollTo,
+      ) { index ->
+        TreeRowContent(
+          row = rows[index],
+          now = now,
+          expandOverrides = expandOverrides,
+          selectedKey = selectedKey,
+          breadcrumbExpansions = breadcrumbExpansions,
+          onRowSelection = onRowSelection,
+          onExpandOverrideChanged = onExpandOverrideChanged,
+          onBreadcrumbExpansionChanged = onBreadcrumbExpansionChanged,
+        )
+      }
+    }
+  }
+
+  @Composable
+  private fun TreeRowContent(
+    row: TreeRow,
+    now: Long,
+    expandOverrides: Map<Any, Boolean>,
+    selectedKey: Any?,
+    breadcrumbExpansions: Map<Any, Set<Int>>,
+    onRowSelection: (Any?) -> Unit,
+    onExpandOverrideChanged: (Any, Boolean) -> Unit,
+    onBreadcrumbExpansionChanged: (Any, Set<Int>) -> Unit,
+  ) {
+    val isExpanded = expandOverrides[row.key] != false
+    val isSelected = selectedKey == row.key
+    val isHot = row.lastRecompositionMillis > 0 && now - row.lastRecompositionMillis < HotWindowMs
+
+    Row(
+      LivewireModifier
+        .fillMaxWidth()
+        .thenIf(isSelected) {
+          background(LivewireTheme.colorScheme.primaryContainer)
+        }
+        .thenIf(isHot && !isSelected) {
+          background(HotRowBackground)
+        }
+        .clickable(
+          action = clickAction(key = "select_${row.key}") {
+            onRowSelection(if (isSelected) null else row.key)
+          },
+        ),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      if (isSelected) {
+        Box(
+          modifier = LivewireModifier
+            .width(SelectedIndicatorWidth)
+            .height(20.dp)
+            .clip(RoundedCornerShape(1.dp))
+            .background(LivewireTheme.colorScheme.primary),
+        )
+      }
+
+      Row(
+        modifier = LivewireModifier
+          .weight(1f)
+          .padding(
+            left = (row.depth * 14).dp + if (isSelected) (RowStartPaddingWidth - SelectedIndicatorWidth) else RowStartPaddingWidth,
+            right = 8.dp,
+            top = 2.dp,
+            bottom = 2.dp,
+          ),
+        verticalAlignment = Alignment.CenterVertically,
       ) {
-        rows.forEach { row ->
-          val isExpanded = expandOverrides[row.key] != false
-          val isSelected = selectedKey == row.key
-          val isHot = row.lastRecompositionMillis > 0 && now - row.lastRecompositionMillis < HotWindowMs
-
-          Row(
-            LivewireModifier
-              .fillMaxWidth()
-              .thenIf(isSelected) {
-                background(LivewireTheme.colorScheme.primaryContainer)
-              }
-              .thenIf(isHot && !isSelected) {
-                background(HotRowBackground)
-              }
-              .clickable(
-                action = clickAction(key = "select_${row.key}") {
-                  onRowSelection(if (isSelected) null else row.key)
-                },
-              ),
-            verticalAlignment = Alignment.CenterVertically,
-          ) {
-            if (isSelected) {
-              Box(
-                modifier = LivewireModifier
-                  .width(SelectedIndicatorWidth)
-                  .height(20.dp)
-                  .clip(RoundedCornerShape(1.dp))
-                  .background(LivewireTheme.colorScheme.primary),
-              )
-            }
-
-            Row(
-              modifier = LivewireModifier
-                .weight(1f)
-                .padding(
-                  left = (row.depth * 14).dp + if (isSelected) (RowStartPaddingWidth - SelectedIndicatorWidth) else RowStartPaddingWidth,
-                  right = 8.dp,
-                  top = 2.dp,
-                  bottom = 2.dp,
-                ),
-              verticalAlignment = Alignment.CenterVertically,
-            ) {
-              ExpansionIndicatorSlot(
-                action = when {
-                  row.isBreadcrumbRow -> clickAction(key = "collapse_crumb_${row.key}") {
-                    row.breadcrumbNodeKey?.let { nodeKey ->
-                      onBreadcrumbExpansionChanged(nodeKey, breadcrumbExpansions[nodeKey].orEmpty() - row.breadcrumbIndex)
-                    }
-                  }
-
-                  row.hasChildren -> clickAction(key = "toggle_${row.key}") {
-                    onExpandOverrideChanged(row.key, !isExpanded)
-                  }
-
-                  else -> null
-                },
-                expanded = isExpanded,
-              )
-
-              Row(
-                modifier = LivewireModifier
-                  .weight(1f)
-                  .horizontalScroll(),
-              ) {
-                if (row.isBreadcrumbRow) {
-                  val nodeKey = row.breadcrumbNodeKey ?: row.key
-                  row.breadcrumbs.forEachIndexed { index, breadcrumb ->
-                    val originalIndex = row.breadcrumbOriginalIndices.getOrElse(index) { index }
-                    BreadcrumbChip(
-                      name = breadcrumb,
-                      count = row.breadcrumbCounts.getOrElse(index) { 0 },
-                      action = clickAction(key = "expand_crumb_${nodeKey}_$originalIndex") {
-                        onBreadcrumbExpansionChanged(nodeKey, breadcrumbExpansions[nodeKey].orEmpty() + originalIndex)
-                      },
-                    )
-                  }
-                  Text(
-                    row.name,
-                    style = LivewireTheme.typography.bodySmall,
-                    color = LivewireTheme.colorScheme.onSurfaceVariant,
-                  )
-                } else if (row.breadcrumbs.isNotEmpty()) {
-                  row.breadcrumbs.forEachIndexed { index, breadcrumb ->
-                    val originalIndex = row.breadcrumbOriginalIndices.getOrElse(index) { index }
-                    BreadcrumbChip(
-                      name = breadcrumb,
-                      count = row.breadcrumbCounts.getOrElse(index) { 0 },
-                      action = clickAction(key = "expand_crumb_${row.key}_$originalIndex") {
-                        onBreadcrumbExpansionChanged(row.key, breadcrumbExpansions[row.key].orEmpty() + originalIndex)
-                      },
-                    )
-                  }
-                  Text(
-                    row.name,
-                    style = LivewireTheme.typography.bodySmall,
-                    color = LivewireTheme.colorScheme.onSurfaceVariant,
-                  )
-                } else {
-                  Text(
-                    row.name,
-                    style = LivewireTheme.typography.bodySmall,
-                    color = LivewireTheme.colorScheme.onSurfaceVariant,
-                  )
-                }
-              }
-
-              MetricBadge(
-                count = row.recompositionCount,
-                color = recompositionColor(row.recompositionCount, recompositionThresholds),
-              )
-              MetricBadge(
-                count = row.skipCount,
-                color = SkipBadgeText,
-                backgroundColor = SkipBadgeBackground,
-              )
-              if (row.isBreadcrumbRow) {
-                Spacer(modifier = LivewireModifier.width(MetricColumnWidth))
-              } else {
-                MetricBadge(
-                  count = row.childRecompositionCount,
-                  color = recompositionColor(row.childRecompositionCount, childRecompositionThresholds),
-                )
+        ExpansionIndicatorSlot(
+          action = when {
+            row.isBreadcrumbRow -> clickAction(key = "collapse_crumb_${row.key}") {
+              row.breadcrumbNodeKey?.let { nodeKey ->
+                onBreadcrumbExpansionChanged(nodeKey, breadcrumbExpansions[nodeKey].orEmpty() - row.breadcrumbIndex)
               }
             }
+
+            row.hasChildren -> clickAction(key = "toggle_${row.key}") {
+              onExpandOverrideChanged(row.key, !isExpanded)
+            }
+
+            else -> null
+          },
+          expanded = isExpanded,
+        )
+
+        Row(
+          modifier = LivewireModifier
+            .weight(1f)
+            .horizontalScroll(),
+        ) {
+          if (row.isBreadcrumbRow) {
+            val nodeKey = row.breadcrumbNodeKey ?: row.key
+            row.breadcrumbs.forEachIndexed { index, breadcrumb ->
+              val originalIndex = row.breadcrumbOriginalIndices.getOrElse(index) { index }
+              BreadcrumbChip(
+                name = breadcrumb,
+                count = row.breadcrumbCounts.getOrElse(index) { 0 },
+                action = clickAction(key = "expand_crumb_${nodeKey}_$originalIndex") {
+                  onBreadcrumbExpansionChanged(nodeKey, breadcrumbExpansions[nodeKey].orEmpty() + originalIndex)
+                },
+              )
+            }
+            Text(
+              row.name,
+              style = LivewireTheme.typography.bodySmall,
+              color = LivewireTheme.colorScheme.onSurfaceVariant,
+            )
+          } else if (row.breadcrumbs.isNotEmpty()) {
+            row.breadcrumbs.forEachIndexed { index, breadcrumb ->
+              val originalIndex = row.breadcrumbOriginalIndices.getOrElse(index) { index }
+              BreadcrumbChip(
+                name = breadcrumb,
+                count = row.breadcrumbCounts.getOrElse(index) { 0 },
+                action = clickAction(key = "expand_crumb_${row.key}_$originalIndex") {
+                  onBreadcrumbExpansionChanged(row.key, breadcrumbExpansions[row.key].orEmpty() + originalIndex)
+                },
+              )
+            }
+            Text(
+              row.name,
+              style = LivewireTheme.typography.bodySmall,
+              color = LivewireTheme.colorScheme.onSurfaceVariant,
+            )
+          } else {
+            Text(
+              row.name,
+              style = LivewireTheme.typography.bodySmall,
+              color = LivewireTheme.colorScheme.onSurfaceVariant,
+            )
           }
+        }
+
+        MetricBadge(
+          count = row.recompositionCount,
+          color = recompositionColor(row.recompositionCount, recompositionThresholds),
+        )
+        MetricBadge(
+          count = row.skipCount,
+          color = SkipBadgeText,
+          backgroundColor = SkipBadgeBackground,
+        )
+        if (row.isBreadcrumbRow) {
+          Spacer(modifier = LivewireModifier.width(MetricColumnWidth))
+        } else {
+          MetricBadge(
+            count = row.childRecompositionCount,
+            color = recompositionColor(row.childRecompositionCount, childRecompositionThresholds),
+          )
         }
       }
     }
@@ -821,6 +858,8 @@ private fun formatOneDecimal(value: Float): String {
 
 private const val VersionSampleIntervalMs = 100L
 private const val HotWindowMs = 1500L
+private val TreeRowHeight = 28.dp
+private const val TreeRowOverscan = 40
 private const val MaxWireframeRects = 400
 private const val MinLabelWidth = 40f
 private const val MinLabelHeight = 14f
