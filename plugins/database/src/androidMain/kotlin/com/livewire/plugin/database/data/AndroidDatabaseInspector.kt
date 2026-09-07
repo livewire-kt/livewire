@@ -4,7 +4,6 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import java.io.File
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -14,17 +13,8 @@ class AndroidDatabaseInspector(
 
   override suspend fun discoverDatabases(): Result<List<DatabaseInfo>> = withContext(Dispatchers.IO) {
     try {
-      val databases = context.databaseList()
-        .map { name -> context.getDatabasePath(name) }
-        .filter { file -> file.isFile && file.isSqliteDatabase() }
-        .map { file ->
-          DatabaseInfo(
-            name = file.name,
-            path = file.absolutePath,
-            sizeBytes = file.length(),
-          )
-        }
-      Result.success(databases)
+      val dataDir = File(context.applicationInfo.dataDir)
+      Result.success(scanForDatabases(listOf(dataDir)))
     } catch (e: Exception) {
       Result.failure(Exception("Failed to discover databases", e))
     }
@@ -50,21 +40,6 @@ class AndroidDatabaseInspector(
     } catch (e: Exception) {
       Result.failure(Exception("failed to open database: ${e.message}", e))
     }
-  }
-
-  private fun File.isSqliteDatabase(): Boolean = try {
-    inputStream().use { stream ->
-      val header = ByteArray(SQLITE_MAGIC.size)
-      var read = 0
-      while (read < header.size) {
-        val count = stream.read(header, read, header.size - read)
-        if (count == -1) break
-        read += count
-      }
-      isSqliteHeader(header.copyOf(read))
-    }
-  } catch (e: IOException) {
-    false
   }
 
   private class AndroidConnection(

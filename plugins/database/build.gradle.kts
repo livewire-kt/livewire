@@ -16,10 +16,19 @@ kotlin {
     }
   }
 
+  applyDefaultHierarchyTemplate()
+
   sourceSets {
-    androidMain.dependencies {
-      api(libs.kotlinx.coroutines.android)
-      implementation(libs.androidx.sqlite.framework)
+    val jvmSharedMain by creating {
+      dependsOn(commonMain.get())
+    }
+
+    androidMain {
+      dependsOn(jvmSharedMain)
+      dependencies {
+        api(libs.kotlinx.coroutines.android)
+        implementation(libs.androidx.sqlite.framework)
+      }
     }
     commonMain.dependencies {
       api(projects.ui)
@@ -33,9 +42,12 @@ kotlin {
     iosMain.dependencies {
       implementation(libs.compose.runtime)
     }
-    jvmMain.dependencies {
-      api(libs.kotlinx.coroutinesSwing)
-      implementation(libs.sqlite.jdbc)
+    jvmMain {
+      dependsOn(jvmSharedMain)
+      dependencies {
+        api(libs.kotlinx.coroutinesSwing)
+        implementation(libs.sqlite.jdbc)
+      }
     }
   }
 }
