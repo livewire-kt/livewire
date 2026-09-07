@@ -19,14 +19,13 @@ import com.livewire.ui.modifier.animateContentSize
 import com.livewire.ui.modifier.fillMaxHeight
 import com.livewire.ui.modifier.fillMaxSize
 import com.livewire.ui.modifier.fillMaxWidth
-import com.livewire.ui.modifier.height
+import com.livewire.ui.modifier.padding
 import com.livewire.ui.modifier.verticalScroll
 import com.livewire.ui.widget.AnimatedVisibility
 import com.livewire.ui.widget.HorizontalDivider
 import com.livewire.ui.widget.ResizableSurface
 import com.livewire.ui.widget.ResizeAnchor
-import com.livewire.ui.widget.ScrollableColumn
-import com.livewire.ui.widget.Spacer
+import com.livewire.ui.widget.LazyColumn
 
 class NetworkPlugin(
   configure: NetworkPluginBuilder.() -> Unit = {},
@@ -67,24 +66,23 @@ class NetworkPlugin(
           eventCount = state.events.size,
         )
 
-        ScrollableColumn(
+        LazyColumn(
+          itemCount = state.events.size,
           modifier = LivewireModifier
             .weight(1f)
-            .fillMaxWidth(),
-          showScrollbar = true,
-        ) {
-          Spacer(LivewireModifier.height(8.dp))
-          state.events.forEach { event ->
-            RequestListItem(
-              event = event,
-              isSelected = state.selectedEvent?.id == event.id,
-              maxLines = config.requestPathMaxLines,
-              onClick = clickAction {
-                state.eventSink(NetworkUiEvent.SelectEvent(event))
-              },
-            )
-          }
-          Spacer(LivewireModifier.height(8.dp))
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+          estimatedItemHeight = 56.dp,
+        ) { index ->
+          val event = state.events[index]
+          RequestListItem(
+            event = event,
+            isSelected = state.selectedEvent?.id == event.id,
+            maxLines = config.requestPathMaxLines,
+            onClick = clickAction {
+              state.eventSink(NetworkUiEvent.SelectEvent(event))
+            },
+          )
         }
       }
 

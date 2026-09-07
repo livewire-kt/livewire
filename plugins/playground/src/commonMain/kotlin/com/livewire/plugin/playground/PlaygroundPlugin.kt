@@ -44,6 +44,7 @@ import com.livewire.ui.widget.HorizontalDivider
 import com.livewire.ui.widget.Icon
 import com.livewire.ui.widget.IconButton
 import com.livewire.ui.widget.IconButtonStyle
+import com.livewire.ui.widget.LazyColumn
 import com.livewire.ui.widget.ProgressIndicator
 import com.livewire.ui.widget.ProgressIndicatorStyle
 import com.livewire.ui.widget.RadioButton
@@ -795,6 +796,17 @@ class PlaygroundPlugin : Plugin {
           .height(300.dp)
           .padding(16.dp),
       )
+
+      LazyColumn(
+        itemCount = 5000,
+        estimatedItemHeight = 24.dp,
+        modifier = LivewireModifier
+          .fillMaxWidth()
+          .height(200.dp)
+          .padding(16.dp),
+      ) { index ->
+        Text("Lazy item $index")
+      }
 
       Button(
         action = clickAction { throw RuntimeException("AHHH!") },

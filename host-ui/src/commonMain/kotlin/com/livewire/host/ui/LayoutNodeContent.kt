@@ -19,6 +19,8 @@ import com.livewire.host.ui.nodes.FloatingToolbarNodeContent
 import com.livewire.host.ui.nodes.IconButtonNodeContent
 import com.livewire.host.ui.nodes.IconNodeContent
 import com.livewire.host.ui.nodes.ImageNodeContent
+import com.livewire.host.ui.nodes.LazyColumnItemNodeContent
+import com.livewire.host.ui.nodes.LazyColumnNodeContent
 import com.livewire.host.ui.nodes.ProgressIndicatorNodeContent
 import com.livewire.host.ui.nodes.RadioButtonNodeContent
 import com.livewire.host.ui.nodes.ResizableSurfaceNodeContent
@@ -51,6 +53,8 @@ import com.livewire.ui.widget.FloatingToolbarNode
 import com.livewire.ui.widget.IconButtonNode
 import com.livewire.ui.widget.IconNode
 import com.livewire.ui.widget.ImageNode
+import com.livewire.ui.widget.LazyColumnItemNode
+import com.livewire.ui.widget.LazyColumnNode
 import com.livewire.ui.widget.ProgressIndicatorNode
 import com.livewire.ui.widget.RadioButtonNode
 import com.livewire.ui.widget.ResizableSurfaceNode
@@ -82,6 +86,8 @@ fun LayoutNodeContent(
     is IconButtonNode -> IconButtonNodeContent(node, modifier)
     is IconNode -> IconNodeContent(node, modifier)
     is ImageNode -> ImageNodeContent(node, modifier)
+    is LazyColumnNode -> LazyColumnNodeContent(node, modifier)
+    is LazyColumnItemNode -> LazyColumnItemNodeContent(node, modifier)
     is CheckboxNode -> CheckboxNodeContent(node, modifier)
     is ChipNode -> ChipNodeContent(node, modifier)
     is CodeBlockNode -> CodeBlockNodeContent(node, modifier)
