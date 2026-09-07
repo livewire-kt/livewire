@@ -33,6 +33,8 @@ internal class NodeRegistry {
     contextGraftPoints.entries.retainAll { it.value.key in liveKeys }
   }
 
+  fun forEachNode(action: (ComposableNode) -> Unit) = identityNodes.values.forEach(action)
+
   fun clear() {
     identityNodes.clear()
     scopeNodes.clear()

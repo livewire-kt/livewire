@@ -63,6 +63,19 @@ class ParameterExtractorTest {
   }
 
   @Test
+  fun `skips the dispatch receiver of a member composable`() {
+    val host = MemberHost()
+    val params = extract(
+      compose { host.Member(index = 3, key = "k") },
+      ParameterSourceInformation(0, "index"),
+      ParameterSourceInformation(1, "key"),
+    )
+    assertNotNull(params)
+    assertEquals("3", params.display("index"))
+    assertEquals("\"k\"", params.display("key"))
+  }
+
+  @Test
   fun `decodes an inline class parameter value`() {
     val params = extract(
       compose { TargetWithInlineClass(Color.Red) },
@@ -97,6 +110,15 @@ private fun DemoScope.TargetWithReceiver(a: Int) {
   @Suppress("UNUSED_EXPRESSION")
   trigger.value
   capturedScope = currentRecomposeScope
+}
+
+private class MemberHost {
+  @Composable
+  fun Member(index: Int, key: String) {
+    @Suppress("UNUSED_EXPRESSION")
+    trigger.value
+    capturedScope = currentRecomposeScope
+  }
 }
 
 @Composable

@@ -16,8 +16,14 @@ internal class ComposableNode(
   var compositionCount: Int = 0
     private set
 
-  val recompositionCount: Int
-    get() = maxOf(0, compositionCount - 1)
+  var recompositionCount: Int = 0
+    private set
+
+  @Volatile
+  var lastRecompositionMillis: Long = 0L
+    private set
+
+  private var seen = false
 
   val skipCount: Int
     get() = enterCount - compositionCount
@@ -28,6 +34,12 @@ internal class ComposableNode(
   private var invalidatedSinceLastComposition = false
 
   var parameters: List<ParameterInfo> = emptyList()
+
+  @Volatile
+  var deactivated: Boolean = false
+
+  @Volatile
+  var bounds: NodeBounds? = null
 
   // copy on write so the ui thread can traverse children while the tracker thread rebuilds it
   @Volatile
@@ -65,12 +77,28 @@ internal class ComposableNode(
     enterCount++
   }
 
-  fun recordComposition() {
+  // a node observed in a capture without executing must already have been composed before tracking began
+  fun markExisting() {
+    seen = true
+  }
+
+  fun recordComposition(parentExecuted: Boolean = false, changedArguments: List<String> = emptyList()) {
     val now = MonotonicClock.elapsedMillis()
 
-    if (compositionCount > 0 && !invalidatedSinceLastComposition) {
-      invalidationReasons.add(InvalidationReason.Unknown())
+    if (seen) {
+      recompositionCount++
+      lastRecompositionMillis = now
+      if (!invalidatedSinceLastComposition) {
+        invalidationReasons.add(
+          when {
+            changedArguments.isNotEmpty() -> InvalidationReason.ArgumentsChanged(changedArguments)
+            parentExecuted -> InvalidationReason.Parent()
+            else -> InvalidationReason.Unknown()
+          },
+        )
+      }
     }
+    seen = true
     invalidatedSinceLastComposition = false
     compositionCount++
 
@@ -81,6 +109,18 @@ internal class ComposableNode(
     timestampRing[timestampHead] = now
     timestampHead = (timestampHead + 1) % MaxRateSamples
     if (timestampCount < MaxRateSamples) timestampCount += 1
+  }
+
+  fun resetCounts() {
+    enterCount = 0
+    compositionCount = 0
+    recompositionCount = 0
+    lastRecompositionMillis = 0L
+    timestampHead = 0
+    timestampCount = 0
+    invalidationReasons.clear()
+    invalidatedSinceLastComposition = false
+    seen = true
   }
 
   fun recordInvalidation(value: Any?) {

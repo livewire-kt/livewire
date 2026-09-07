@@ -4,6 +4,7 @@
 package com.livewire.plugin.recomposition
 
 import androidx.annotation.VisibleForTesting
+import androidx.compose.runtime.Composer
 import androidx.compose.runtime.CompositionContext
 import androidx.compose.runtime.GapComposer
 import androidx.compose.runtime.LinkComposer
@@ -14,6 +15,8 @@ import androidx.compose.runtime.tooling.CompositionGroup
 import androidx.compose.runtime.tooling.ParameterSourceInformation
 import androidx.compose.runtime.tooling.SourceInformation
 import androidx.compose.runtime.tooling.parseSourceInformation
+import androidx.compose.ui.layout.LayoutInfo
+import androidx.compose.ui.layout.positionInRoot
 
 internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
 
@@ -26,13 +29,13 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
 
   fun build(
     snapshot: List<GroupSnapshot>,
-    composedScopes: Set<RecomposeScope>,
+    pass: ScopePass,
   ): List<ComposableNode> = buildList {
     val ancestry = mutableListOf<String>()
     for (group in snapshot) {
       collect(
         group = group,
-        composedScopes = composedScopes,
+        pass = pass,
         collector = this,
         parentNode = null,
         parentExecuted = false,
@@ -44,46 +47,67 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
   @VisibleForTesting
   fun build(
     groups: Iterable<CompositionGroup>,
-    composedScopes: Set<RecomposeScope>,
-  ): List<ComposableNode>? = snapshot(groups)?.let { build(it, composedScopes) }
+    pass: ScopePass,
+  ): List<ComposableNode>? = snapshot(groups)?.let { build(it, pass) }
 
+  // asking for identity mints a persistent anchor in the app's slot table, so only groups that become nodes get one
   private fun CompositionGroup.toSnapshot(): GroupSnapshot = GroupSnapshot(
     sourceInfo = sourceInfo,
-    identity = identity,
+    identity = if (parseComposableName(sourceInfo?.let { parseSourceInformation(it) }) != null) identity else null,
     key = key,
     data = data.toList(),
+    bounds = (node as? LayoutInfo)?.bounds(),
     children = compositionGroups.map { it.toSnapshot() },
   )
 
+  private fun LayoutInfo.bounds(): NodeBounds? = try {
+    if (!isAttached || !isPlaced) {
+      null
+    } else {
+      val position = coordinates.positionInRoot()
+      NodeBounds(position.x, position.y, width.toFloat(), height.toFloat())
+    }
+  } catch (_: Throwable) {
+    null
+  }
+
   private fun collect(
     group: GroupSnapshot,
-    composedScopes: Set<RecomposeScope>,
+    pass: ScopePass,
     collector: MutableList<ComposableNode>,
     parentNode: ComposableNode?,
     parentExecuted: Boolean,
     ancestry: MutableList<String>,
-  ) {
+  ): NodeBounds? {
     val sourceInfo = group.sourceInfo?.let { parseSourceInformation(it) }
     val name = parseComposableName(sourceInfo)
     val scope = group.data.firstOrNull { it is RecomposeScope } as? RecomposeScope
-    val selfExecuted = scope != null && scope in composedScopes
-    val reached = parentExecuted || selfExecuted
-    val childExecuted = if (scope != null) selfExecuted else parentExecuted
+    val selfExecuted = scope != null && scope in pass.executed
+    val selfSkipped = scope != null && scope in pass.skipped
+    val selfPaused = scope != null && scope in pass.paused
+    // inline groups have no scope of their own and just run when their parent scope runs
+    val reached = if (scope != null) selfExecuted || selfSkipped else parentExecuted
+    val executed = if (scope != null) selfExecuted else parentExecuted
 
     if (name != null) {
       val identity = group.identity ?: group.key
       val node = registry.obtain(identity, name)
 
+      // deactivated reusable content keeps its groups, but the composer clears their remember slots and releases their recompose scopes
+      node.deactivated = group.data.any { it === Composer.Empty }
+
       if (scope != null) registry.bindScope(scope, node)
 
-      if (reached) {
-        node.recordEnter()
-        if (scope == null || selfExecuted) {
-          node.recordComposition()
-        }
-      }
-
+      val previousParameters = node.parameters
       node.parameters = extractParameters(group.data, sourceInfo)
+
+      if (reached && !pass.baseline) node.recordEnter()
+      when {
+        executed && !pass.baseline -> node.recordComposition(parentExecuted, changedArguments(previousParameters, node.parameters))
+        // a paused scope has been inserted but not run yet
+        selfPaused -> Unit
+        else -> node.markExisting()
+      }
 
       group.data.forEach {
         unwrappedCompositionContext(it)?.let { context ->
@@ -92,21 +116,25 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
       }
 
       val childNodes = mutableListOf<ComposableNode>()
+      var bounds = group.bounds
       ancestry.add(name)
       for (child in group.children) {
-        collect(
+        val childBounds = collect(
           group = child,
-          composedScopes = composedScopes,
+          pass = pass,
           collector = childNodes,
           parentNode = node,
-          parentExecuted = childExecuted,
+          parentExecuted = executed,
           ancestry = ancestry,
         )
+        bounds = bounds union childBounds
       }
       node.setChildren(childNodes.withoutHiddenChains(ancestry))
       ancestry.removeAt(ancestry.lastIndex)
+      node.bounds = bounds
 
       collector.add(node)
+      return bounds
     } else {
       // transparent groups that we'll collapse
       if (scope != null) {
@@ -126,15 +154,30 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
         }
       }
 
+      var bounds = group.bounds
       group.children.forEach {
-        collect(
+        val childBounds = collect(
           group = it,
-          composedScopes = composedScopes,
+          pass = pass,
           collector = collector,
           parentNode = parentNode,
-          parentExecuted = childExecuted,
+          parentExecuted = executed,
           ancestry = ancestry,
         )
+        bounds = bounds union childBounds
+      }
+      return bounds
+    }
+  }
+
+  private fun changedArguments(previous: List<ParameterInfo>, current: List<ParameterInfo>): List<String> {
+    if (previous.isEmpty() || previous.size != current.size) return emptyList()
+    return current.mapIndexedNotNull { index, param ->
+      val before = previous[index]
+      if (before.name == param.name && before.value != param.value) {
+        "${param.name}: ${before.value.displayValue.take(MaxArgumentPreview)} → ${param.value.displayValue.take(MaxArgumentPreview)}"
+      } else {
+        null
       }
     }
   }
@@ -180,12 +223,29 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
 
     if (slotValues.isEmpty()) return emptyList()
 
-    return slotValues.take(metadata.size).mapIndexed { index, value ->
+    // the composer only keeps slots for arguments it had to compare. the runtime lists parameters in declaration order, which is also the slot order
+    val declared = metadata.sortedBy { it.sortedIndex }
+    val complete = slotValues.size == declared.size
+    return slotValues.take(declared.size).mapIndexed { index, value ->
+      val meta = declared[index]
       ParameterInfo(
-        name = "param$index",
-        value = ParameterValue.fromValue(value, inlineClass = null),
+        name = if (complete) meta.name ?: "param$index" else "param$index",
+        value = ParameterValue.fromValue(value, inlineClass = if (complete) meta.inlineClass else null),
       )
     }
+  }
+}
+
+private const val MaxArgumentPreview = 60
+
+internal class ScopePass(
+  val executed: Set<RecomposeScope>,
+  val skipped: Set<RecomposeScope>,
+  val paused: Set<RecomposeScope> = emptySet(),
+  val baseline: Boolean = false,
+) {
+  companion object {
+    val Empty = ScopePass(emptySet(), emptySet())
   }
 }
 
@@ -195,7 +255,28 @@ internal class GroupSnapshot(
   val key: Any,
   val data: List<Any?>,
   val children: List<GroupSnapshot>,
+  val bounds: NodeBounds? = null,
 )
+
+internal data class NodeBounds(
+  val left: Float,
+  val top: Float,
+  val width: Float,
+  val height: Float,
+) {
+  val right: Float get() = left + width
+  val bottom: Float get() = top + height
+}
+
+internal infix fun NodeBounds?.union(other: NodeBounds?): NodeBounds? = when {
+  this == null -> other
+  other == null -> this
+  else -> {
+    val left = minOf(left, other.left)
+    val top = minOf(top, other.top)
+    NodeBounds(left, top, maxOf(right, other.right) - left, maxOf(bottom, other.bottom) - top)
+  }
+}
 
 internal fun parseComposableName(sourceInfo: SourceInformation?): String? {
   val parsedName = sourceInfo?.functionName ?: return null

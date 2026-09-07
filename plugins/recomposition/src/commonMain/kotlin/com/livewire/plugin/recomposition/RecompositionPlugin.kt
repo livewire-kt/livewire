@@ -4,6 +4,7 @@ package com.livewire.plugin.recomposition
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -42,6 +43,10 @@ import com.livewire.ui.modifier.verticalScroll
 import com.livewire.ui.modifier.width
 import com.livewire.ui.theme.LivewireTheme
 import com.livewire.ui.widget.AnimatedVisibility
+import com.livewire.ui.widget.Button
+import com.livewire.ui.widget.ButtonStyle
+import com.livewire.ui.widget.Chip
+import com.livewire.ui.widget.ChipStyle
 import com.livewire.ui.widget.HorizontalDivider
 import com.livewire.ui.widget.Icon
 import com.livewire.ui.widget.IconButton
@@ -50,11 +55,10 @@ import com.livewire.ui.widget.ResizeAnchor
 import com.livewire.ui.widget.ScrollableColumn
 import com.livewire.ui.widget.Spacer
 import com.livewire.ui.widget.Text
-import kotlinx.coroutines.FlowPreview
 import kotlin.math.roundToInt
-import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.sample
-import kotlinx.coroutines.launch
 
 class RecompositionPlugin(
   private val alwaysOnSampling: Boolean = false,
@@ -86,7 +90,11 @@ class RecompositionPlugin(
     val version by remember { RecompositionTracker.version.sample(VersionSampleIntervalMs) }
       .collectAsState(RecompositionTracker.version.value)
     val rawRoots = remember(version) { RecompositionTracker.snapshotRoots() }
-    val collapsed = remember(rawRoots, version) { collapse(rawRoots) }
+    var recomposedOnly by remember { mutableStateOf(false) }
+    var showWireframe by remember { mutableStateOf(true) }
+    val collapsed = remember(rawRoots, version, recomposedOnly) {
+      collapse(rawRoots).let { if (recomposedOnly) it.onlyRecomposed() else it }
+    }
 
     val expandOverrides = remember { mutableStateMapOf<Any, Boolean>() }
     var selectedKey by remember { mutableStateOf<Any?>(null) }
@@ -96,11 +104,27 @@ class RecompositionPlugin(
       derivedStateOf { flattenTree(collapsed, expandOverrides, breadcrumbExpansions) }
     }
 
+    // keeps the "just recomposed" tint decaying while the tracker itself is quiet
+    var now by remember { mutableStateOf(MonotonicClock.elapsedMillis()) }
+    val hottest = rows.maxOfOrNull { it.lastRecompositionMillis } ?: 0L
+    LaunchedEffect(hottest) {
+      while (MonotonicClock.elapsedMillis() - hottest < HotWindowMs) {
+        delay(HotTickMs)
+        now = MonotonicClock.elapsedMillis()
+      }
+      now = MonotonicClock.elapsedMillis()
+    }
+
     val selectedRow = rows.firstOrNull { it.key == selectedKey }
 
     Row(LivewireModifier.fillMaxSize()) {
       MainContent(
         rows = rows,
+        now = now,
+        recomposedOnly = recomposedOnly,
+        onRecomposedOnlyChanged = { recomposedOnly = it },
+        showWireframe = showWireframe,
+        onShowWireframeChanged = { showWireframe = it },
         expandOverrides = expandOverrides,
         selectedKey = selectedKey,
         breadcrumbExpansions = breadcrumbExpansions,
@@ -135,6 +159,11 @@ class RecompositionPlugin(
   @Composable
   private fun RowScope.MainContent(
     rows: List<TreeRow>,
+    now: Long,
+    recomposedOnly: Boolean,
+    onRecomposedOnlyChanged: (Boolean) -> Unit,
+    showWireframe: Boolean,
+    onShowWireframeChanged: (Boolean) -> Unit,
     expandOverrides: Map<Any, Boolean>,
     selectedKey: Any?,
     breadcrumbExpansions: Map<Any, Set<Int>>,
@@ -149,6 +178,42 @@ class RecompositionPlugin(
         .fillMaxHeight()
         .animateContentSize(),
     ) {
+      Row(
+        LivewireModifier
+          .fillMaxWidth()
+          .background(LivewireTheme.colorScheme.surfaceContainer)
+          .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+      ) {
+        Chip(
+          label = "Recomposed only",
+          action = clickAction(key = "recomposed_only") { onRecomposedOnlyChanged(!recomposedOnly) },
+          style = ChipStyle.Filter,
+          selected = recomposedOnly,
+        )
+        Spacer(modifier = LivewireModifier.width(8.dp))
+        Chip(
+          label = "Wireframe",
+          action = clickAction(key = "show_wireframe") { onShowWireframeChanged(!showWireframe) },
+          style = ChipStyle.Filter,
+          selected = showWireframe,
+        )
+        Spacer(modifier = LivewireModifier.width(8.dp))
+        Button(
+          action = clickAction(key = "reset_counts") { RecompositionTracker.resetCounts() },
+          style = ButtonStyle.Text,
+        ) {
+          Text("Reset counts")
+        }
+      }
+
+      HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
+
+      if (showWireframe) {
+        Wireframe(rows = rows, selectedKey = selectedKey, now = now, onRowSelection = onRowSelection)
+        HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
+      }
+
       Row(
         LivewireModifier
           .fillMaxWidth()
@@ -177,12 +242,16 @@ class RecompositionPlugin(
         rows.forEach { row ->
           val isExpanded = expandOverrides[row.key] != false
           val isSelected = selectedKey == row.key
+          val isHot = row.lastRecompositionMillis > 0 && now - row.lastRecompositionMillis < HotWindowMs
 
           Row(
             LivewireModifier
               .fillMaxWidth()
               .thenIf(isSelected) {
                 background(LivewireTheme.colorScheme.primaryContainer)
+              }
+              .thenIf(isHot && !isSelected) {
+                background(HotRowBackground)
               }
               .clickable(
                 action = clickAction(key = "select_${row.key}") {
@@ -238,24 +307,12 @@ class RecompositionPlugin(
                   val nodeKey = row.breadcrumbNodeKey ?: row.key
                   row.breadcrumbs.forEachIndexed { index, breadcrumb ->
                     val originalIndex = row.breadcrumbOriginalIndices.getOrElse(index) { index }
-                    Text(
-                      text = breadcrumb,
-                      modifier = LivewireModifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(
-                          action = clickAction(key = "expand_crumb_${nodeKey}_$originalIndex") {
-                            onBreadcrumbExpansionChanged(nodeKey, breadcrumbExpansions[nodeKey].orEmpty() + originalIndex)
-                          },
-                        )
-                        .background(LivewireTheme.colorScheme.surfaceContainerHigh)
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                      style = LivewireTheme.typography.bodySmall,
-                      color = LivewireTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                      " > ",
-                      style = LivewireTheme.typography.bodySmall,
-                      color = LivewireTheme.colorScheme.onSurfaceVariant,
+                    BreadcrumbChip(
+                      name = breadcrumb,
+                      count = row.breadcrumbCounts.getOrElse(index) { 0 },
+                      action = clickAction(key = "expand_crumb_${nodeKey}_$originalIndex") {
+                        onBreadcrumbExpansionChanged(nodeKey, breadcrumbExpansions[nodeKey].orEmpty() + originalIndex)
+                      },
                     )
                   }
                   Text(
@@ -266,24 +323,12 @@ class RecompositionPlugin(
                 } else if (row.breadcrumbs.isNotEmpty()) {
                   row.breadcrumbs.forEachIndexed { index, breadcrumb ->
                     val originalIndex = row.breadcrumbOriginalIndices.getOrElse(index) { index }
-                    Text(
-                      text = breadcrumb,
-                      modifier = LivewireModifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .clickable(
-                          action = clickAction(key = "expand_crumb_${row.key}_$originalIndex") {
-                            onBreadcrumbExpansionChanged(row.key, breadcrumbExpansions[row.key].orEmpty() + originalIndex)
-                          },
-                        )
-                        .background(LivewireTheme.colorScheme.surfaceContainerHigh)
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                      style = LivewireTheme.typography.bodySmall,
-                      color = LivewireTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                      " > ",
-                      style = LivewireTheme.typography.bodySmall,
-                      color = LivewireTheme.colorScheme.onSurfaceVariant,
+                    BreadcrumbChip(
+                      name = breadcrumb,
+                      count = row.breadcrumbCounts.getOrElse(index) { 0 },
+                      action = clickAction(key = "expand_crumb_${row.key}_$originalIndex") {
+                        onBreadcrumbExpansionChanged(row.key, breadcrumbExpansions[row.key].orEmpty() + originalIndex)
+                      },
                     )
                   }
                   Text(
@@ -300,20 +345,18 @@ class RecompositionPlugin(
                 }
               }
 
+              MetricBadge(
+                count = row.recompositionCount,
+                color = recompositionColor(row.recompositionCount, recompositionThresholds),
+              )
+              MetricBadge(
+                count = row.skipCount,
+                color = SkipBadgeText,
+                backgroundColor = SkipBadgeBackground,
+              )
               if (row.isBreadcrumbRow) {
                 Spacer(modifier = LivewireModifier.width(MetricColumnWidth))
-                Spacer(modifier = LivewireModifier.width(MetricColumnWidth))
-                Spacer(modifier = LivewireModifier.width(MetricColumnWidth))
               } else {
-                MetricBadge(
-                  count = row.recompositionCount,
-                  color = recompositionColor(row.recompositionCount, recompositionThresholds),
-                )
-                MetricBadge(
-                  count = row.skipCount,
-                  color = SkipBadgeText,
-                  backgroundColor = SkipBadgeBackground,
-                )
                 MetricBadge(
                   count = row.childRecompositionCount,
                   color = recompositionColor(row.childRecompositionCount, childRecompositionThresholds),
@@ -324,6 +367,98 @@ class RecompositionPlugin(
         }
       }
     }
+  }
+
+  @Composable
+  private fun Wireframe(
+    rows: List<TreeRow>,
+    selectedKey: Any?,
+    now: Long,
+    onRowSelection: (Any?) -> Unit,
+  ) {
+    val root = rows.firstNotNullOfOrNull { it.bounds }
+    if (root == null || root.width <= 0f || root.height <= 0f) {
+      Text(
+        "No layout bounds captured yet",
+        modifier = LivewireModifier.padding(12.dp),
+        style = LivewireTheme.typography.bodySmall,
+        color = DetailValueText,
+      )
+      return
+    }
+
+    val scale = WireframeHeight.value / root.height
+    val canvasWidth = root.width * scale
+
+    Row(modifier = LivewireModifier.fillMaxWidth().horizontalScroll().padding(12.dp)) {
+      Box(
+        modifier = LivewireModifier
+          .width(canvasWidth.dp)
+          .height(WireframeHeight)
+          .clip(RoundedCornerShape(6.dp))
+          .background(LivewireTheme.colorScheme.surfaceContainerLow),
+      ) {
+        rows.take(MaxWireframeRects).forEach { row ->
+          val bounds = row.bounds ?: return@forEach
+          val left = ((bounds.left - root.left) * scale).coerceIn(0f, canvasWidth)
+          val top = ((bounds.top - root.top) * scale).coerceIn(0f, WireframeHeight.value)
+          val width = ((bounds.right - root.left) * scale).coerceIn(0f, canvasWidth) - left
+          val height = ((bounds.bottom - root.top) * scale).coerceIn(0f, WireframeHeight.value) - top
+          if (width < 1f || height < 1f) return@forEach
+
+          val isSelected = row.key == selectedKey
+          val isHot = row.lastRecompositionMillis > 0 && now - row.lastRecompositionMillis < HotWindowMs
+          val color = when {
+            isSelected -> LivewireTheme.colorScheme.primary
+            row.recompositionCount > 0 -> recompositionColor(row.recompositionCount, recompositionThresholds)
+            else -> WireframeIdleOutline
+          }
+          Box(
+            modifier = LivewireModifier
+              .padding(left = left.dp, top = top.dp)
+              .size(width.dp, height.dp)
+              .border(1.dp, color)
+              .thenIf(isSelected) { background(color.copy(alpha = 0.35f)) }
+              .thenIf(isHot && !isSelected) { background(HotChipBackground) }
+              .clickable(action = clickAction(key = "wire_${row.key}") { onRowSelection(if (isSelected) null else row.key) }),
+          )
+        }
+      }
+    }
+  }
+
+  @Composable
+  private fun BreadcrumbChip(
+    name: String,
+    count: Int,
+    action: ClickAction,
+  ) {
+    Row(
+      modifier = LivewireModifier
+        .clip(RoundedCornerShape(12.dp))
+        .clickable(action = action)
+        .background(if (count > 0) HotChipBackground else LivewireTheme.colorScheme.surfaceContainerHigh)
+        .padding(horizontal = 8.dp, vertical = 2.dp),
+      verticalAlignment = Alignment.CenterVertically,
+    ) {
+      Text(
+        text = name,
+        style = LivewireTheme.typography.bodySmall,
+        color = LivewireTheme.colorScheme.onSurfaceVariant,
+      )
+      if (count > 0) {
+        Text(
+          text = " $count",
+          style = LivewireTheme.typography.labelSmall,
+          color = recompositionColor(count, recompositionThresholds),
+        )
+      }
+    }
+    Text(
+      " > ",
+      style = LivewireTheme.typography.bodySmall,
+      color = LivewireTheme.colorScheme.onSurfaceVariant,
+    )
   }
 
   @Composable
@@ -410,108 +545,99 @@ class RecompositionPlugin(
           row.name,
           style = LivewireTheme.typography.titleSmall,
         )
-        if (row.isBreadcrumbRow) {
+      }
+
+      HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
+
+      DetailSection("Metrics") {
+        Column(
+          modifier = LivewireModifier
+            .fillMaxWidth()
+            .padding(top = 4.dp)
+            .clip(RoundedCornerShape(6.dp))
+            .background(CardBackground)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+        ) {
+          DetailMetricRow("Recompositions", "${row.recompositionCount}")
+          DetailMetricRow("Skips", "${row.skipCount}")
+          if (!row.isBreadcrumbRow) {
+            DetailMetricRow("Child Recomps", "${row.childRecompositionCount}")
+            DetailMetricRow("Rate", if (row.recompositionRate < 0.1f) "idle" else "${formatOneDecimal(row.recompositionRate)}/s")
+          }
+        }
+      }
+
+      HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
+
+      DetailSection("Recent Invalidations") {
+        if (row.invalidationReasons.isNotEmpty()) {
+          for (reason in row.invalidationReasons.reversed()) {
+            Row(
+              modifier = LivewireModifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .background(InvalidationChipBackground)
+                .padding(horizontal = 10.dp, vertical = 6.dp),
+              verticalAlignment = Alignment.CenterVertically,
+            ) {
+              Column(
+                modifier = LivewireModifier
+                  .weight(1f)
+                  .padding(left = 8.dp),
+              ) {
+                Row(
+                  modifier = LivewireModifier.fillMaxWidth(),
+                  verticalAlignment = Alignment.CenterVertically,
+                ) {
+                  val elapsed = MonotonicClock.elapsedMillis() - reason.timestamp
+
+                  Text(
+                    text = reason.label,
+                    modifier = LivewireModifier.weight(1f),
+                    style = LivewireTheme.typography.labelSmall,
+                    color = InvalidationStateColor,
+                  )
+                  Text(
+                    text = when {
+                      elapsed < 1000 -> "${elapsed}ms ago"
+                      elapsed < 60000 -> "${elapsed / 1000}s ago"
+                      else -> "${elapsed / 60000}m ago"
+                    },
+                    style = LivewireTheme.typography.labelSmall,
+                    color = TimestampText,
+                  )
+                }
+                if (reason.value != null) {
+                  val isLongValue = reason.value.length > ScrollableContainerThreshold
+                  Column(
+                    modifier = LivewireModifier
+                      .fillMaxWidth()
+                      .padding(top = 2.dp)
+                      .thenIf(isLongValue) {
+                        height(ScrollableContainerHeight).verticalScroll()
+                      },
+                  ) {
+                    Text(
+                      reason.value,
+                      style = LivewireTheme.typography.bodySmall,
+                      color = DetailValueText,
+                    )
+                  }
+                }
+              }
+            }
+          }
+        } else {
           Text(
-            "collapsed container",
-            style = LivewireTheme.typography.labelSmall,
+            "No invalidations recorded",
+            style = LivewireTheme.typography.bodySmall,
             color = DetailValueText,
           )
         }
       }
 
       HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
-
-      if (!row.isBreadcrumbRow) {
-        DetailSection("Metrics") {
-          Column(
-            modifier = LivewireModifier
-              .fillMaxWidth()
-              .padding(top = 4.dp)
-              .clip(RoundedCornerShape(6.dp))
-              .background(CardBackground)
-              .padding(horizontal = 10.dp, vertical = 6.dp),
-          ) {
-            DetailMetricRow("Recompositions", "${row.recompositionCount}")
-            DetailMetricRow("Skips", "${row.skipCount}")
-            DetailMetricRow("Child Recomps", "${row.childRecompositionCount}")
-            DetailMetricRow("Rate", if (row.recompositionRate < 0.1f) "idle" else "${formatOneDecimal(row.recompositionRate)}/s")
-          }
-        }
-
-        HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
-      }
-
-      if (!row.isBreadcrumbRow) {
-        DetailSection("Recent Invalidations") {
-          if (row.invalidationReasons.isNotEmpty()) {
-            for (reason in row.invalidationReasons.reversed()) {
-              Row(
-                modifier = LivewireModifier
-                  .fillMaxWidth()
-                  .padding(top = 6.dp)
-                  .clip(RoundedCornerShape(16.dp))
-                  .background(InvalidationChipBackground)
-                  .padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-              ) {
-                Column(
-                  modifier = LivewireModifier
-                    .weight(1f)
-                    .padding(left = 8.dp),
-                ) {
-                  Row(
-                    modifier = LivewireModifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                  ) {
-                    val elapsed = MonotonicClock.elapsedMillis() - reason.timestamp
-
-                    Text(
-                      text = reason.label,
-                      modifier = LivewireModifier.weight(1f),
-                      style = LivewireTheme.typography.labelSmall,
-                      color = InvalidationStateColor,
-                    )
-                    Text(
-                      text = when {
-                        elapsed < 1000 -> "${elapsed}ms ago"
-                        elapsed < 60000 -> "${elapsed / 1000}s ago"
-                        else -> "${elapsed / 60000}m ago"
-                      },
-                      style = LivewireTheme.typography.labelSmall,
-                      color = TimestampText,
-                    )
-                  }
-                  if (reason.value != null) {
-                    val isLongValue = reason.value.length > ScrollableContainerThreshold
-                    Column(
-                      modifier = LivewireModifier
-                        .fillMaxWidth()
-                        .padding(top = 2.dp)
-                        .thenIf(isLongValue) {
-                          height(ScrollableContainerHeight).verticalScroll()
-                        },
-                    ) {
-                      Text(
-                        reason.value,
-                        style = LivewireTheme.typography.bodySmall,
-                        color = DetailValueText,
-                      )
-                    }
-                  }
-                }
-              }
-            }
-          } else {
-            Text(
-              "No invalidations recorded",
-              style = LivewireTheme.typography.bodySmall,
-              color = DetailValueText,
-            )
-          }
-        }
-
-        HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
-      }
 
       DetailSection("Parameters") {
         if (row.parameters.isNotEmpty()) {
@@ -560,6 +686,7 @@ class RecompositionPlugin(
                     )
                   }
                 }
+
                 else -> {
                   val displayText = value.displayValue
                   val isLongValue = displayText.length > ScrollableContainerThreshold
@@ -660,6 +787,11 @@ private fun formatOneDecimal(value: Float): String {
 }
 
 private const val VersionSampleIntervalMs = 100L
+private const val HotWindowMs = 1500L
+private val WireframeHeight = 260.dp
+private const val MaxWireframeRects = 400
+private val WireframeIdleOutline = Color(0xFF8E8E93).copy(alpha = 0.45f)
+private const val HotTickMs = 250L
 private val MetricColumnWidth = 72.dp
 private const val ScrollableContainerThreshold = 120
 private val ScrollableContainerHeight = 80.dp
@@ -677,3 +809,5 @@ private val InvalidationChipBackground = Color(0xFFFFAB40).copy(alpha = 0.08f)
 private val ParamNameColor = Color(0xFF81D4FA)
 private val CardBackground = Color(0xFFFFFFFF).copy(alpha = 0.04f)
 private val TimestampText = Color(0xFF7A7680)
+private val HotRowBackground = Color(0xFFFFAB40).copy(alpha = 0.12f)
+private val HotChipBackground = Color(0xFFFFAB40).copy(alpha = 0.25f)

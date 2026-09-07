@@ -26,18 +26,7 @@ class TrackerIntegrationTest {
   fun `test from a real composition`() {
     Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.SourceInformation)
 
-    val composedScopes = mutableSetOf<RecomposeScope>()
-    val observer = object : CompositionObserver {
-      override fun onScopeEnter(scope: RecomposeScope) {
-        composedScopes.add(scope)
-      }
-      override fun onBeginComposition(composition: ObservableComposition) = Unit
-      override fun onEndComposition(composition: ObservableComposition) = Unit
-      override fun onScopeExit(scope: RecomposeScope) = Unit
-      override fun onScopeInvalidated(scope: RecomposeScope, value: Any?) = Unit
-      override fun onScopeDisposed(scope: RecomposeScope) = Unit
-      override fun onReadInScope(scope: RecomposeScope, value: Any) = Unit
-    }
+    val observer = RecordingObserver()
 
     val applier = object : AbstractApplier<Any?>(null) {
       override fun insertTopDown(index: Int, instance: Any?) = Unit
@@ -52,7 +41,7 @@ class TrackerIntegrationTest {
     composition.setContent { Root() }
 
     val data = (composition as CompositionImpl).slotStorage as CompositionData
-    val roots = CompositionTreeBuilder(NodeRegistry()).build(data.compositionGroups, composedScopes)!!
+    val roots = CompositionTreeBuilder(NodeRegistry()).build(data.compositionGroups, ScopePass(observer.executed(), observer.skipped()))!!
 
     val root = roots.find("Root")
     val all = descendants(root)

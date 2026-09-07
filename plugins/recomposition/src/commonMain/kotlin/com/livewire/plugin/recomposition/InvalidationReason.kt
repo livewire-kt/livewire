@@ -15,6 +15,14 @@ sealed class InvalidationReason(
 
   class Direct : InvalidationReason("direct invalidation", null, MonotonicClock.elapsedMillis())
 
+  class Parent : InvalidationReason("recomposed with parent", null, MonotonicClock.elapsedMillis())
+
+  class ArgumentsChanged(changes: List<String>) : InvalidationReason(
+    label = "arguments changed",
+    value = changes.joinToString("\n"),
+    timestamp = MonotonicClock.elapsedMillis(),
+  )
+
   class Reason(reason: Any) : InvalidationReason(
     label = when (reason) {
       is MutableState<*> -> "Mutable${reason::class.simpleName!!.substringAfter("Mutable")}"

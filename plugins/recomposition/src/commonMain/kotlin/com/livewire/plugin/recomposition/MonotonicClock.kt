@@ -5,4 +5,5 @@ import kotlin.time.TimeSource
 internal object MonotonicClock {
   private val mark = TimeSource.Monotonic.markNow()
   fun elapsedMillis(): Long = mark.elapsedNow().inWholeMilliseconds
+  fun elapsedNanos(): Long = mark.elapsedNow().inWholeNanoseconds
 }
