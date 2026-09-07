@@ -36,7 +36,7 @@ private fun loadAppIcon(context: Context): ByteArray? = runCatching {
   val bitmap = Bitmap.createBitmap(MaxAppIconSizePx, MaxAppIconSizePx, Bitmap.Config.ARGB_8888)
   val canvas = Canvas(bitmap)
 
-  if (drawable is AdaptiveIconDrawable) {
+  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && drawable is AdaptiveIconDrawable) {
     val overscan = MaxAppIconSizePx / 4
     listOfNotNull(drawable.background, drawable.foreground).forEach { layer ->
       layer.setBounds(-overscan, -overscan, MaxAppIconSizePx + overscan, MaxAppIconSizePx + overscan)
