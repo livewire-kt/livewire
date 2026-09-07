@@ -65,6 +65,11 @@ object RecompositionTracker {
 
   private val captureJobs = ConcurrentMutableMap<ObservableComposition, MutableSet<Job>>()
 
+  // passes waiting for the next slot table read
+  private val pendingPasses = mutableMapOf<ObservableComposition, ScopePass>()
+  private val captureScheduled = mutableSetOf<ObservableComposition>()
+  private val lastCaptureMillis = mutableMapOf<ObservableComposition, Long>()
+
   private val commands = Channel<Command>(Channel.UNLIMITED)
   private val publishSignal = Channel<Unit>(Channel.CONFLATED)
 
@@ -168,6 +173,9 @@ object RecompositionTracker {
     while (commands.tryReceive().isSuccess) { }
 
     compositionRoots.clear()
+    pendingPasses.clear()
+    captureScheduled.clear()
+    lastCaptureMillis.clear()
     baselinePending.block { it.clear() }
     passRecords.block { it.clear() }
     pendingInvalidations.block { it.clear() }
@@ -341,22 +349,28 @@ object RecompositionTracker {
       is Command.DisposeScope -> registry.unbindScope(command.scope)
       is Command.ResetCounts -> {
         registry.forEachNode { it.resetCounts() }
+        pendingPasses.clear()
         requestPublish()
       }
       is Command.Unregister -> {
         captureJobs.remove(command.composition)?.forEach { it.cancel() }
         compositionRoots.remove(command.composition)
         groupCounts.remove(command.composition)
+        pendingPasses.remove(command.composition)
+        captureScheduled.remove(command.composition)
+        lastCaptureMillis.remove(command.composition)
         requestPublish()
       }
     }
   }
 
-  // this is annoying and might have a better solution, but it works for now. so here's why we're doing this:
   // a composition's slot table is only written during its recomposer's frame dispatch, so reading it via withFrameNanos on the
   // compositions's own clock keeps us thread safe. it also keeps the read happening after `apply`
   private fun scheduleCapture(composition: ObservableComposition, pass: ScopePass) {
     if (!compositionObserverHandles.containsKey(composition)) return // disposed while queued
+
+    pendingPasses[composition] = pendingPasses[composition]?.merge(pass) ?: pass
+    if (!captureScheduled.add(composition)) return
 
     val scope = trackingScope
     val frameClock = try {
@@ -367,12 +381,17 @@ object RecompositionTracker {
 
     if (scope == null || frameClock == null) {
       // no clock to use as a trampoline, which _SHOULD_ mean the composition is on the main thread and we can read here
-      captureSnapshot(composition)?.let { rebuild(composition, it, pass) }
+      captureScheduled.remove(composition)
+      val capture = captureSnapshot(composition)?.also { recordCaptureStats(composition, it) }
+      val snapshot = capture?.snapshot ?: return
+      rebuild(composition, snapshot, pendingPasses.remove(composition) ?: ScopePass.Empty)
       return
     }
 
     val job = scope.launch {
-      val snapshot = try {
+      val wait = CaptureThrottleMs - (MonotonicClock.elapsedMillis() - (lastCaptureMillis[composition] ?: 0L))
+      if (wait > 0) delay(wait)
+      val capture = try {
         frameClock.withFrameNanos { captureSnapshot(composition) }
       } catch (e: CancellationException) {
         throw e
@@ -380,9 +399,12 @@ object RecompositionTracker {
         logError("Recomposition", "recomposition tracker failed while capturing a composition", t)
         null
       }
-      if (snapshot != null) {
-        commands.trySend(Command.Rebuild(composition, snapshot, pass))
-      }
+      captureScheduled.remove(composition)
+      lastCaptureMillis[composition] = MonotonicClock.elapsedMillis()
+      capture?.also { recordCaptureStats(composition, it) }
+      // a capture that produced nothing leaves its passes pending so the next one still counts them
+      val snapshot = capture?.snapshot ?: return@launch
+      commands.trySend(Command.Rebuild(composition, snapshot, pendingPasses.remove(composition) ?: ScopePass.Empty))
     }
     captureJobs.block { jobs -> jobs.getOrPut(composition) { mutableSetOf() }.add(job) }
     job.invokeOnCompletion {
@@ -402,12 +424,13 @@ object RecompositionTracker {
     pass: ScopePass,
   ) {
     if (!compositionObserverHandles.containsKey(composition)) return
-    recordCaptureStats(composition, snapshot)
     compositionRoots[composition] = builder.build(snapshot, pass)
     requestPublish()
   }
 
-  private fun captureSnapshot(composition: ObservableComposition): List<GroupSnapshot>? {
+  private class Capture(val snapshot: List<GroupSnapshot>?, val elapsedNanos: Long)
+
+  private fun captureSnapshot(composition: ObservableComposition): Capture? {
     val compositionImpl = composition as? CompositionImpl ?: return null
     val compositionData = try {
       compositionImpl.slotStorage as CompositionData
@@ -416,20 +439,15 @@ object RecompositionTracker {
     }
     val start = MonotonicClock.elapsedNanos()
     val snapshot = builder.snapshot(compositionData.compositionGroups)
-    lastCaptureNanos = MonotonicClock.elapsedNanos() - start
-    return snapshot
+    return Capture(snapshot, MonotonicClock.elapsedNanos() - start)
   }
 
-  // written inside the frame callback, read back by rebuild on the tracker thread
-  @Volatile
-  private var lastCaptureNanos = 0L
-
-  private fun recordCaptureStats(composition: ObservableComposition, snapshot: List<GroupSnapshot>) {
-    val elapsed = lastCaptureNanos
+  // the read runs on the composition's frame thread, so the counters are only touched once it resumes back here
+  private fun recordCaptureStats(composition: ObservableComposition, capture: Capture) {
     captureCount++
-    captureNanosTotal += elapsed
-    if (elapsed > captureNanosMax) captureNanosMax = elapsed
-    groupCounts[composition] = snapshot.sumOf { it.groupCount() }
+    captureNanosTotal += capture.elapsedNanos
+    if (capture.elapsedNanos > captureNanosMax) captureNanosMax = capture.elapsedNanos
+    capture.snapshot?.let { groupCounts[composition] = it.sumOf { group -> group.groupCount() } }
     captureStats.value = CaptureStats(
       captures = captureCount,
       groups = groupCounts.values.sum(),
@@ -484,13 +502,14 @@ internal fun ObservableComposition.isLivewireOwned(): Boolean = try {
   false
 }
 
-private class PassRecord {
+internal class PassRecord {
   val executed = HashSet<RecomposeScope>()
   val skipped = HashSet<RecomposeScope>()
   val paused = HashSet<RecomposeScope>()
   val reread = HashSet<RecomposeScope>()
 
-  fun toPass(baseline: Boolean) = ScopePass(executed, skipped, paused, baseline)
+  fun toPass(baseline: Boolean) =
+    if (baseline) ScopePass(emptySet(), emptySet(), paused) else ScopePass(executed, skipped, paused)
 }
 
 private val UnconditionalInvalidation = Any()
@@ -512,3 +531,4 @@ private sealed interface Command {
 }
 
 private const val PublishThrottleMs = 100L
+private const val CaptureThrottleMs = 100L

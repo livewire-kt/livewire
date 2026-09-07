@@ -38,7 +38,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
         pass = pass,
         collector = this,
         parentNode = null,
-        parentExecuted = false,
+        parentExecutions = 0,
         ancestry = ancestry,
         freshContent = false,
       )
@@ -77,19 +77,18 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
     pass: ScopePass,
     collector: MutableList<ComposableNode>,
     parentNode: ComposableNode?,
-    parentExecuted: Boolean,
+    parentExecutions: Int,
     ancestry: MutableList<String>,
     freshContent: Boolean,
   ): NodeBounds? {
     val sourceInfo = group.sourceInfo?.let { parseSourceInformation(it) }
     val name = parseComposableName(sourceInfo)
     val scope = group.data.firstOrNull { it is RecomposeScope } as? RecomposeScope
-    val selfExecuted = scope != null && scope in pass.executed
-    val selfSkipped = scope != null && scope in pass.skipped
     val selfPaused = scope != null && scope in pass.paused
     // inline groups have no scope of their own and just run when their parent scope runs
-    val reached = if (scope != null) selfExecuted || selfSkipped else parentExecuted
-    val executed = if (scope != null) selfExecuted else parentExecuted
+    val executions = if (scope != null) pass.executed[scope] ?: 0 else parentExecutions
+    val skips = if (scope != null) pass.skipped[scope] ?: 0 else 0
+    val executed = executions > 0
 
     if (name != null) {
       val identity = group.identity ?: group.key
@@ -107,9 +106,12 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
       val fresh = freshContent || (name == LazyItemName && executed && keyChanged(previousParameters, node.parameters))
       if (fresh) node.resetCounts(fresh = true)
 
-      if (reached && !pass.baseline) node.recordEnter()
+      repeat(executions + skips) { node.recordEnter() }
       when {
-        executed && !pass.baseline -> node.recordComposition(parentExecuted, changedArguments(previousParameters, node.parameters))
+        executed -> {
+          val changed = changedArguments(previousParameters, node.parameters)
+          repeat(executions) { node.recordComposition(parentExecutions > 0, if (it == executions - 1) changed else emptyList()) }
+        }
         // a paused scope has been inserted but not run yet
         selfPaused -> Unit
         else -> node.markExisting()
@@ -130,7 +132,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
           pass = pass,
           collector = childNodes,
           parentNode = node,
-          parentExecuted = executed,
+          parentExecutions = executions,
           ancestry = ancestry,
           freshContent = fresh,
         )
@@ -168,7 +170,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
           pass = pass,
           collector = collector,
           parentNode = parentNode,
-          parentExecuted = executed,
+          parentExecutions = executions,
           ancestry = ancestry,
           freshContent = freshContent,
         )
@@ -254,14 +256,33 @@ private const val MaxArgumentPreview = 60
 private const val LazyItemName = "Item"
 private const val LazyItemKeyParameter = "key"
 
+// how often each scope ran or skipped across the passes folded into one capture
 internal class ScopePass(
-  val executed: Set<RecomposeScope>,
-  val skipped: Set<RecomposeScope>,
+  val executed: Map<RecomposeScope, Int>,
+  val skipped: Map<RecomposeScope, Int>,
   val paused: Set<RecomposeScope> = emptySet(),
-  val baseline: Boolean = false,
 ) {
+  constructor(
+    executed: Set<RecomposeScope>,
+    skipped: Set<RecomposeScope>,
+    paused: Set<RecomposeScope> = emptySet(),
+  ) : this(executed.associateWith { 1 }, skipped.associateWith { 1 }, paused)
+
+  fun merge(other: ScopePass): ScopePass = ScopePass(
+    executed = executed.sum(other.executed),
+    skipped = skipped.sum(other.skipped),
+    paused = paused + other.paused,
+  )
+
+  private fun Map<RecomposeScope, Int>.sum(other: Map<RecomposeScope, Int>): Map<RecomposeScope, Int> {
+    if (other.isEmpty()) return this
+    val result = HashMap(this)
+    other.forEach { (scope, count) -> result[scope] = (result[scope] ?: 0) + count }
+    return result
+  }
+
   companion object {
-    val Empty = ScopePass(emptySet(), emptySet())
+    val Empty = ScopePass(emptyMap<RecomposeScope, Int>(), emptyMap())
   }
 }
 
