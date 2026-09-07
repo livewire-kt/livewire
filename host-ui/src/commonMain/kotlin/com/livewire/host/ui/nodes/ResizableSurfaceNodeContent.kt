@@ -14,6 +14,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.delay
+import com.livewire.ui.actions.LocalLivewireActionDispatcher
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +46,18 @@ internal fun ResizableSurfaceNodeContent(
   val density = LocalDensity.current
 
   var currentSize by remember { mutableStateOf(node.initialSize) }
+
+  val dispatcher = LocalLivewireActionDispatcher.current
+  val sizeAction = node.onSizeChange
+  LaunchedEffect(sizeAction?.identifier) {
+    if (sizeAction == null) return@LaunchedEffect
+    snapshotFlow { currentSize }
+      .conflate()
+      .collect { size ->
+        dispatcher.dispatch(sizeAction.copy(size = size.value))
+        delay(SizeReportIntervalMs)
+      }
+  }
 
   val shape = node.shape.toComposeUi()
   val color = node.color ?: MaterialTheme.colorScheme.surface
@@ -81,12 +98,12 @@ internal fun ResizableSurfaceNodeContent(
       anchor = node.anchor,
       onDrag = { dragAmount ->
         with(density) {
-          val newSize = currentSize - if (node.anchor.isHorizontal) {
-            dragAmount.x.toDp()
-          } else {
-            dragAmount.y.toDp()
+          val delta = if (node.anchor.isHorizontal) dragAmount.x.toDp() else dragAmount.y.toDp()
+          val growth = when (node.anchor) {
+            ResizeAnchor.Start, ResizeAnchor.Top -> -delta
+            ResizeAnchor.End, ResizeAnchor.Bottom -> delta
           }
-          currentSize = newSize.coerceIn(node.minSize, node.maxSize)
+          currentSize = (currentSize + growth).coerceIn(node.minSize, node.maxSize)
         }
       },
       modifier = Modifier
@@ -149,3 +166,5 @@ private fun BoxScope.ResizeHandle(
 private val DragHandleSize = 8.dp
 
 expect fun Modifier.cursorForHorizontalResize(isHorizontal: Boolean): Modifier
+
+private const val SizeReportIntervalMs = 50L

@@ -13,11 +13,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.livewire.ui.Plugin
 import com.livewire.ui.PluginInfo
 import com.livewire.ui.actions.ClickAction
 import com.livewire.ui.actions.clickAction
+import com.livewire.ui.actions.sizeChangeAction
 import com.livewire.ui.graphics.RoundedCornerShape
 import com.livewire.ui.layout.Alignment
 import com.livewire.ui.layout.Box
@@ -92,6 +94,7 @@ class RecompositionPlugin(
     val rawRoots = remember(version) { RecompositionTracker.snapshotRoots() }
     var recomposedOnly by remember { mutableStateOf(false) }
     var showWireframe by remember { mutableStateOf(true) }
+    var wireframeHeight by remember { mutableStateOf(InitialWireframeHeight) }
     val collapsed = remember(rawRoots, version, recomposedOnly) {
       collapse(rawRoots).let { if (recomposedOnly) it.onlyRecomposed() else it }
     }
@@ -125,6 +128,8 @@ class RecompositionPlugin(
         onRecomposedOnlyChanged = { recomposedOnly = it },
         showWireframe = showWireframe,
         onShowWireframeChanged = { showWireframe = it },
+        wireframeHeight = wireframeHeight,
+        onWireframeHeightChanged = { wireframeHeight = it },
         expandOverrides = expandOverrides,
         selectedKey = selectedKey,
         breadcrumbExpansions = breadcrumbExpansions,
@@ -164,6 +169,8 @@ class RecompositionPlugin(
     onRecomposedOnlyChanged: (Boolean) -> Unit,
     showWireframe: Boolean,
     onShowWireframeChanged: (Boolean) -> Unit,
+    wireframeHeight: Dp,
+    onWireframeHeightChanged: (Dp) -> Unit,
     expandOverrides: Map<Any, Boolean>,
     selectedKey: Any?,
     breadcrumbExpansions: Map<Any, Set<Int>>,
@@ -210,7 +217,22 @@ class RecompositionPlugin(
       HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
 
       if (showWireframe) {
-        Wireframe(rows = rows, selectedKey = selectedKey, now = now, onRowSelection = onRowSelection)
+        ResizableSurface(
+          anchor = ResizeAnchor.Bottom,
+          initialSize = InitialWireframeHeight,
+          minSize = MinWireframeHeight,
+          maxSize = MaxWireframeHeight,
+          modifier = LivewireModifier.fillMaxWidth(),
+          onSizeChange = sizeChangeAction(key = "wireframe_height") { onWireframeHeightChanged(it) },
+        ) {
+          Wireframe(
+            rows = rows,
+            selectedKey = selectedKey,
+            now = now,
+            height = wireframeHeight - WireframePadding * 2,
+            onRowSelection = onRowSelection,
+          )
+        }
         HorizontalDivider(modifier = LivewireModifier.fillMaxWidth())
       }
 
@@ -374,6 +396,7 @@ class RecompositionPlugin(
     rows: List<TreeRow>,
     selectedKey: Any?,
     now: Long,
+    height: Dp,
     onRowSelection: (Any?) -> Unit,
   ) {
     val root = rows.firstNotNullOfOrNull { it.bounds }
@@ -387,24 +410,24 @@ class RecompositionPlugin(
       return
     }
 
-    val scale = WireframeHeight.value / root.height
+    val scale = height.value / root.height
     val canvasWidth = root.width * scale
 
-    Row(modifier = LivewireModifier.fillMaxWidth().horizontalScroll().padding(12.dp)) {
+    Row(modifier = LivewireModifier.fillMaxWidth().horizontalScroll().padding(WireframePadding)) {
       Box(
         modifier = LivewireModifier
           .width(canvasWidth.dp)
-          .height(WireframeHeight)
+          .height(height)
           .clip(RoundedCornerShape(6.dp))
           .background(LivewireTheme.colorScheme.surfaceContainerLow),
       ) {
         rows.take(MaxWireframeRects).forEach { row ->
           val bounds = row.bounds ?: return@forEach
           val left = ((bounds.left - root.left) * scale).coerceIn(0f, canvasWidth)
-          val top = ((bounds.top - root.top) * scale).coerceIn(0f, WireframeHeight.value)
+          val top = ((bounds.top - root.top) * scale).coerceIn(0f, height.value)
           val width = ((bounds.right - root.left) * scale).coerceIn(0f, canvasWidth) - left
-          val height = ((bounds.bottom - root.top) * scale).coerceIn(0f, WireframeHeight.value) - top
-          if (width < 1f || height < 1f) return@forEach
+          val rectHeight = ((bounds.bottom - root.top) * scale).coerceIn(0f, height.value) - top
+          if (width < 1f || rectHeight < 1f) return@forEach
 
           val isSelected = row.key == selectedKey
           val isHot = row.lastRecompositionMillis > 0 && now - row.lastRecompositionMillis < HotWindowMs
@@ -416,12 +439,21 @@ class RecompositionPlugin(
           Box(
             modifier = LivewireModifier
               .padding(left = left.dp, top = top.dp)
-              .size(width.dp, height.dp)
+              .size(width.dp, rectHeight.dp)
               .border(1.dp, color)
               .thenIf(isSelected) { background(color.copy(alpha = 0.35f)) }
               .thenIf(isHot && !isSelected) { background(HotChipBackground) }
               .clickable(action = clickAction(key = "wire_${row.key}") { onRowSelection(if (isSelected) null else row.key) }),
-          )
+          ) {
+            if (isSelected && width >= MinLabelWidth && rectHeight >= MinLabelHeight) {
+              Text(
+                text = row.name,
+                modifier = LivewireModifier.padding(horizontal = 3.dp, vertical = 1.dp),
+                style = LivewireTheme.typography.labelSmall,
+                color = LivewireTheme.colorScheme.onPrimaryContainer,
+              )
+            }
+          }
         }
       }
     }
@@ -788,8 +820,14 @@ private fun formatOneDecimal(value: Float): String {
 
 private const val VersionSampleIntervalMs = 100L
 private const val HotWindowMs = 1500L
-private val WireframeHeight = 260.dp
 private const val MaxWireframeRects = 400
+private const val MinLabelWidth = 40f
+private const val MinLabelHeight = 14f
+
+private val InitialWireframeHeight = 300.dp
+private val MinWireframeHeight = 120.dp
+private val MaxWireframeHeight = 1200.dp
+private val WireframePadding = 12.dp
 private val WireframeIdleOutline = Color(0xFF8E8E93).copy(alpha = 0.45f)
 private const val HotTickMs = 250L
 private val MetricColumnWidth = 72.dp
