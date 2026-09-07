@@ -1,5 +1,6 @@
 package com.livewire.plugin.recomposition
 
+import androidx.compose.runtime.Composer
 import androidx.compose.runtime.RecomposeScope
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,7 +24,8 @@ class CompositionTreeBuilderTest {
     ),
   )
 
-  private fun build(vararg composed: RecomposeScope) = builder.build(groups, composed.toSet())!!
+  private fun build(vararg executed: RecomposeScope, skipped: Set<RecomposeScope> = emptySet()) =
+    builder.build(groups, ScopePass(executed.toSet(), skipped))!!
 
   @Test
   fun `counts every reached node on initial composition`() {
@@ -38,9 +40,9 @@ class CompositionTreeBuilderTest {
   }
 
   @Test
-  fun `counts skipped children as skips rather when parent recomposes`() {
+  fun `counts skipped children as skips when parent recomposes`() {
     build(appScope, aScope, bScope)
-    val roots = build(appScope)
+    val roots = build(appScope, skipped = setOf(aScope, bScope))
 
     assertEquals(2, roots.find("App").compositionCount)
     assertEquals(1, roots.find("App").recompositionCount)
@@ -55,7 +57,7 @@ class CompositionTreeBuilderTest {
   @Test
   fun `doesn't count retained but untouched nodes as skips`() {
     build(appScope, aScope, bScope)
-    build(appScope)
+    build(appScope, skipped = setOf(aScope, bScope))
     val roots = build(aScope)
 
     assertEquals(2, roots.find("A").compositionCount)
@@ -75,7 +77,7 @@ class CompositionTreeBuilderTest {
       ),
     )
 
-    val roots = CompositionTreeBuilder(NodeRegistry()).build(tree, setOf(appScope))!!
+    val roots = CompositionTreeBuilder(NodeRegistry()).build(tree, ScopePass(setOf(appScope), emptySet()))!!
 
     val inline = roots.find("Inline")
     assertEquals(1, inline.compositionCount)
@@ -95,7 +97,7 @@ class CompositionTreeBuilderTest {
     )
     val builder = CompositionTreeBuilder(NodeRegistry())
 
-    assertEquals(1, builder.build(tree, setOf(appScope, leafScope))!!.find("Leaf").compositionCount)
+    assertEquals(1, builder.build(tree, ScopePass(setOf(appScope, leafScope), emptySet()))!!.find("Leaf").compositionCount)
   }
 
   @Test
@@ -105,11 +107,84 @@ class CompositionTreeBuilderTest {
       composable("App", appScope, children = listOf(composable("Leaf", leafScope))),
     )
 
-    val roots = CompositionTreeBuilder(NodeRegistry()).build(tree, composedScopes = emptySet())!!
+    val roots = CompositionTreeBuilder(NodeRegistry()).build(tree, ScopePass.Empty)!!
 
     val leaf = roots.find("Leaf")
     assertEquals(0, leaf.compositionCount)
     assertEquals(0, leaf.skipCount)
+  }
+
+  @Test
+  fun `a scope entered but skipped does not compose its inline children`() {
+    val tree = listOf(
+      composable(
+        name = "App", appScope,
+        children = listOf(
+          composable("Stable", aScope, children = listOf(composable("Inline", scope = null))),
+        ),
+      ),
+    )
+    val builder = CompositionTreeBuilder(NodeRegistry())
+    builder.build(tree, ScopePass(setOf(appScope, aScope), emptySet()))
+    val roots = builder.build(tree, ScopePass(setOf(appScope), setOf(aScope)))!!
+
+    assertEquals(1, roots.find("Stable").compositionCount)
+    assertEquals(1, roots.find("Stable").skipCount)
+    assertEquals(1, roots.find("Inline").compositionCount)
+    assertEquals(0, roots.find("Inline").skipCount)
+  }
+
+  @Test
+  fun `first execution of a node that predates tracking counts as a recomposition`() {
+    build()
+    val roots = build(appScope, skipped = setOf(aScope, bScope))
+
+    assertEquals(1, roots.find("App").compositionCount)
+    assertEquals(1, roots.find("App").recompositionCount)
+    assertEquals(0, roots.find("A").compositionCount)
+    assertEquals(1, roots.find("A").skipCount)
+  }
+
+  @Test
+  fun `a parked page whose scope was released is flagged deactivated and hidden`() {
+    val page = FakeGroup(
+      key = "page",
+      sourceInfo = "C(CharactersScreen)",
+      data = listOf(Composer.Empty, 3),
+      identity = "page",
+      compositionGroups = listOf(composable("CharacterCard", scope = null)),
+    )
+    val tree = listOf(composable("Pager", appScope, children = listOf(page)))
+
+    val roots = CompositionTreeBuilder(NodeRegistry()).build(tree, ScopePass(setOf(appScope), emptySet()))!!
+
+    assertEquals(true, roots.find("CharactersScreen").deactivated)
+    assertEquals(listOf<String>(), collapse(roots).single().children.map { it.name })
+  }
+
+  @Test
+  fun `a lazy slot reused for a new key starts its subtree from fresh counts`() {
+    val itemScope = FakeScope()
+    val cardScope = FakeScope()
+    fun tree(key: String) = listOf(
+      FakeGroup(
+        key = "slot",
+        sourceInfo = "C(Item)N(index,key)",
+        data = listOf(itemScope, 0, key),
+        identity = "slot",
+        compositionGroups = listOf(composable("Card", cardScope)),
+      ),
+    )
+    val builder = CompositionTreeBuilder(NodeRegistry())
+    builder.build(tree("a"), ScopePass(setOf(itemScope, cardScope), emptySet()))
+    builder.build(tree("a"), ScopePass(setOf(itemScope, cardScope), emptySet()))
+    assertEquals(1, builder.build(tree("a"), ScopePass(setOf(itemScope), setOf(cardScope)))!!.find("Card").recompositionCount)
+
+    val reused = builder.build(tree("b"), ScopePass(setOf(itemScope, cardScope), emptySet()))!!
+    assertEquals(0, reused.find("Item").recompositionCount)
+    assertEquals(1, reused.find("Card").compositionCount)
+    assertEquals(0, reused.find("Card").recompositionCount)
+    assertEquals(0, reused.find("Card").skipCount)
   }
 
   @Test

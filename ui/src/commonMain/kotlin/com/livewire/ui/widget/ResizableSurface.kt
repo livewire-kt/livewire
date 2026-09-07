@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.livewire.annotations.LivewireSerializer
 import com.livewire.ui.composition.LivewireComposable
+import com.livewire.ui.actions.SizeChangeAction
 import com.livewire.ui.graphics.ColorSerializer
 import com.livewire.ui.graphics.RectangleShape
 import com.livewire.ui.graphics.Shape
@@ -35,6 +36,7 @@ fun ResizableSurface(
   contentColor: Color? = null,
   tonalElevation: Dp = 0.dp,
   shadowElevation: Dp = 0.dp,
+  onSizeChange: SizeChangeAction? = null,
   content: @Composable @LivewireComposable () -> Unit,
 ) {
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
@@ -52,6 +54,7 @@ fun ResizableSurface(
       set(contentColor, ResizableSurfaceNode.SetContentColor)
       set(tonalElevation, ResizableSurfaceNode.SetTonalElevation)
       set(shadowElevation, ResizableSurfaceNode.SetShadowElevation)
+      set(onSizeChange, ResizableSurfaceNode.SetOnSizeChange)
     },
     content = { content() },
   )
@@ -69,6 +72,7 @@ class ResizableSurfaceNode(
   @Serializable(with = ColorSerializer::class) var contentColor: Color? = null,
   @Serializable(with = DpSerializer::class) var tonalElevation: Dp = 0.dp,
   @Serializable(with = DpSerializer::class) var shadowElevation: Dp = 0.dp,
+  var onSizeChange: SizeChangeAction? = null,
 ) : LayoutNode() {
 
   companion object {
@@ -81,6 +85,7 @@ class ResizableSurfaceNode(
     val SetContentColor: ResizableSurfaceNode.(Color?) -> Unit = applier { contentColor = it }
     val SetTonalElevation: ResizableSurfaceNode.(Dp) -> Unit = applier { tonalElevation = it }
     val SetShadowElevation: ResizableSurfaceNode.(Dp) -> Unit = applier { shadowElevation = it }
+    val SetOnSizeChange: ResizableSurfaceNode.(SizeChangeAction?) -> Unit = applier { onSizeChange = it }
   }
 }
 

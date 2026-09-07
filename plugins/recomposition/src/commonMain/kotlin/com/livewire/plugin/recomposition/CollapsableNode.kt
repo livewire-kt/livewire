@@ -11,12 +11,18 @@ internal data class CollapsableNode(
   val invalidationReasons: List<InvalidationReason>,
   val parameters: List<ParameterInfo>,
   val recompositionRate: Float,
+  val lastRecompositionMillis: Long = 0L,
+  val bounds: NodeBounds? = null,
 )
 
 internal data class BreadcrumbEntry(
   val name: String,
   val key: Any,
   val parameters: List<ParameterInfo>,
+  val recompositionCount: Int = 0,
+  val skipCount: Int = 0,
+  val invalidationReasons: List<InvalidationReason> = emptyList(),
+  val lastRecompositionMillis: Long = 0L,
 )
 
 internal fun collapse(roots: List<ComposableNode>): List<CollapsableNode> {
@@ -37,6 +43,8 @@ private fun collapseNode(
   inheritedReasons: List<InvalidationReason>,
   isTreeRoot: Boolean = false,
 ): List<CollapsableNode> {
+  if (node.deactivated) return emptyList()
+
   val nodeReasons = node.recentInvalidationReasons()
 
   // hoist children of uninteresting containers to keep hierarchy readout manageable
@@ -82,6 +90,8 @@ private fun collapseBreadcrumbs(
     invalidationReasons = combinedReasons,
     parameters = node.parameters,
     recompositionRate = node.recompositionRate(),
+    lastRecompositionMillis = node.lastRecompositionMillis,
+    bounds = node.bounds,
   )
 
   if (preserveRoot && current.children.size == 1) {
@@ -104,7 +114,17 @@ private fun collapseChain(node: CollapsableNode): CollapsableNode {
     if (collapsed != null) {
       current = collapsed
     } else {
-      breadcrumbs.add(BreadcrumbEntry(name = current.name, key = current.key, parameters = current.parameters))
+      breadcrumbs.add(
+        BreadcrumbEntry(
+          name = current.name,
+          key = current.key,
+          parameters = current.parameters,
+          recompositionCount = current.recompositionCount,
+          skipCount = current.skipCount,
+          invalidationReasons = current.invalidationReasons,
+          lastRecompositionMillis = current.lastRecompositionMillis,
+        ),
+      )
       current = current.children[0]
     }
   }
@@ -129,6 +149,12 @@ private fun collapseTransparentPair(parent: CollapsableNode, child: CollapsableN
   // absorb same-name children (ex MaterialTheme > MaterialTheme)
   parent.name == child.name -> parent.copy(children = child.children)
   else -> null
+}
+
+internal fun List<CollapsableNode>.onlyRecomposed(): List<CollapsableNode> = mapNotNull { node ->
+  val children = node.children.onlyRecomposed()
+  val active = node.recompositionCount > 0 || node.breadcrumbs.any { it.recompositionCount > 0 }
+  if (active || children.isNotEmpty()) node.copy(children = children) else null
 }
 
 // children of these are hoisted to their parent

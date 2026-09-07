@@ -18,7 +18,7 @@ internal actual fun extractParametersFromLambda(
 ): List<ParameterInfo>? {
   val block = try {
     scope.javaClass.accessibleField("block")?.get(scope) ?: return null
-  } catch (_: Exception) {
+  } catch (_: Throwable) {
     return null
   }
 
@@ -38,7 +38,7 @@ internal actual fun extractParametersFromLambda(
         null
       }
     }
-  } catch (_: Exception) {
+  } catch (_: Throwable) {
     null
   }
 }
@@ -48,6 +48,7 @@ private fun extractFromIndyLambdaFields(
   block: Any,
   metadata: List<ParameterSourceInformation>,
 ): List<ParameterInfo> {
+  val blockClass = block.javaClass
   val sortedFields = fields.sortedBy { it.name.substringAfterLast("$").toIntOrNull() ?: Int.MAX_VALUE }
 
   val changedCount = (metadata.size + SlotsPerChangedInt - 1) / SlotsPerChangedInt
@@ -61,7 +62,7 @@ private fun extractFromIndyLambdaFields(
   val leadingSkip = when {
     extraParameters <= 0 -> 0
     extraParameters > maxDefaultCount -> minOf(extraParameters - maxDefaultCount, 1)
-    extraParameters == 1 -> if (isFirstFieldProbablyAReceiver(sortedFields[0], block)) 1 else 0
+    extraParameters == 1 -> if (isFirstFieldProbablyAReceiver(sortedFields[0], block, blockClass)) 1 else 0
     else -> 0
   }
 
@@ -80,12 +81,25 @@ private fun extractFromIndyLambdaFields(
   }
 }
 
-private fun isFirstFieldProbablyAReceiver(field: Field, block: Any): Boolean {
+private fun isFirstFieldProbablyAReceiver(field: Field, block: Any, blockClass: Class<*>): Boolean {
   field.isAccessible = true
   val value = try { field.get(block) } catch (_: Exception) { return false } ?: return false
   val cls = value::class.java
   return cls.interfaces.any { it.simpleName.endsWith("Scope") } ||
-    cls.simpleName.endsWith("ScopeInstance")
+    cls.simpleName.endsWith("ScopeInstance") ||
+    isDispatchReceiver(value, blockClass)
+}
+
+// a member composable's restart lambda is hosted by the declaring class and captures `this` first
+private fun isDispatchReceiver(value: Any, blockClass: Class<*>): Boolean {
+  val hostName = blockClass.name.substringBefore("\$\$Lambda")
+  if (hostName == blockClass.name) return false
+  val host = try {
+    Class.forName(hostName, false, blockClass.classLoader)
+  } catch (_: Throwable) {
+    return false
+  }
+  return host.isInstance(value)
 }
 
 private fun extractFromLegacyFields(

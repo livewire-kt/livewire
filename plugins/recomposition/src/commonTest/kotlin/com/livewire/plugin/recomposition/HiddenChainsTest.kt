@@ -54,7 +54,7 @@ class HiddenChainsTest {
     assertNull(build(overlay(effectVisibility("first"), effectVisibility("second"))).first().find("EffectVisibility"))
   }
 
-  private fun build(root: FakeGroup) = CompositionTreeBuilder(NodeRegistry()).build(listOf(root), emptySet())!!
+  private fun build(root: FakeGroup) = CompositionTreeBuilder(NodeRegistry()).build(listOf(root), ScopePass.Empty)!!
 
   private fun path(vararg names: String, identity: String = names.first()): FakeGroup =
     if (names.size == 1) {

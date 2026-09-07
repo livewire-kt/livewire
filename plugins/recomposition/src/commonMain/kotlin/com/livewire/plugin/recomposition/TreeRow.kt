@@ -6,6 +6,7 @@ internal data class TreeRow(
   val depth: Int,
   val name: String,
   val breadcrumbs: List<String>,
+  val breadcrumbCounts: List<Int> = emptyList(),
   val breadcrumbOriginalIndices: List<Int> = emptyList(),
   val recompositionCount: Int,
   val childRecompositionCount: Int,
@@ -17,6 +18,8 @@ internal data class TreeRow(
   val isBreadcrumbRow: Boolean = false,
   val breadcrumbNodeKey: Any? = null,
   val breadcrumbIndex: Int = 0,
+  val lastRecompositionMillis: Long = 0L,
+  val bounds: NodeBounds? = null,
 )
 
 internal fun flattenTree(
@@ -37,7 +40,7 @@ internal fun flattenTree(
 
       for (expandedIndex in sortedExpanded) {
         val crumb = node.breadcrumbs[expandedIndex]
-        val precedingChips = (lastSplitEnd until expandedIndex).map { node.breadcrumbs[it].name }
+        val preceding = (lastSplitEnd until expandedIndex).map { node.breadcrumbs[it] }
         val precedingIndices = (lastSplitEnd until expandedIndex).toList()
 
         accumulator.add(
@@ -46,24 +49,27 @@ internal fun flattenTree(
             key = "${node.key}#crumb#$expandedIndex",
             depth = depth + depthOffset,
             name = crumb.name,
-            breadcrumbs = precedingChips,
+            breadcrumbs = preceding.map { it.name },
+            breadcrumbCounts = preceding.map { it.recompositionCount },
             breadcrumbOriginalIndices = precedingIndices,
-            recompositionCount = 0,
+            recompositionCount = crumb.recompositionCount,
             childRecompositionCount = 0,
-            skipCount = 0,
+            skipCount = crumb.skipCount,
             hasChildren = true,
-            invalidationReasons = emptyList(),
+            invalidationReasons = crumb.invalidationReasons,
             parameters = crumb.parameters,
             isBreadcrumbRow = true,
             breadcrumbNodeKey = node.key,
             breadcrumbIndex = expandedIndex,
+            lastRecompositionMillis = crumb.lastRecompositionMillis,
+            bounds = node.bounds,
           ),
         )
         depthOffset++
         lastSplitEnd = expandedIndex + 1
       }
 
-      val remainingChips = (lastSplitEnd until node.breadcrumbs.size).map { node.breadcrumbs[it].name }
+      val remaining = (lastSplitEnd until node.breadcrumbs.size).map { node.breadcrumbs[it] }
       val remainingIndices = (lastSplitEnd until node.breadcrumbs.size).toList()
 
       val nodeDepth = depth + depthOffset
@@ -73,7 +79,8 @@ internal fun flattenTree(
           key = node.key,
           depth = nodeDepth,
           name = node.name,
-          breadcrumbs = remainingChips,
+          breadcrumbs = remaining.map { it.name },
+          breadcrumbCounts = remaining.map { it.recompositionCount },
           breadcrumbOriginalIndices = remainingIndices,
           recompositionCount = node.recompositionCount,
           childRecompositionCount = node.childRecompositionCount,
@@ -82,6 +89,8 @@ internal fun flattenTree(
           invalidationReasons = node.invalidationReasons,
           parameters = node.parameters,
           recompositionRate = node.recompositionRate,
+          lastRecompositionMillis = node.lastRecompositionMillis,
+          bounds = node.bounds,
         ),
       )
       if (expanded && node.children.isNotEmpty()) {
@@ -101,6 +110,7 @@ internal fun flattenTree(
           depth = depth,
           name = node.name,
           breadcrumbs = node.breadcrumbs.map { it.name },
+          breadcrumbCounts = node.breadcrumbs.map { it.recompositionCount },
           breadcrumbOriginalIndices = node.breadcrumbs.indices.toList(),
           recompositionCount = node.recompositionCount,
           childRecompositionCount = node.childRecompositionCount,
@@ -109,6 +119,8 @@ internal fun flattenTree(
           invalidationReasons = node.invalidationReasons,
           parameters = node.parameters,
           recompositionRate = node.recompositionRate,
+          lastRecompositionMillis = node.lastRecompositionMillis,
+          bounds = node.bounds,
         ),
       )
       if (expanded && node.children.isNotEmpty()) {

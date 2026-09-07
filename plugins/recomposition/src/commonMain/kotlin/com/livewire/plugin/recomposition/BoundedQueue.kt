@@ -9,6 +9,10 @@ internal class BoundedQueue<T : Any>(private val maxSize: Int) {
   @Volatile
   private var written = 0L
 
+  fun clear() {
+    written = 0L
+  }
+
   fun add(item: T) {
     ringBuffer[(written % maxSize).toInt()] = item
     written += 1

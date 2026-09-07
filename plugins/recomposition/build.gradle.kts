@@ -47,7 +47,18 @@ kotlin {
       }
     }
 
+    val jvmSharedTest by creating {
+      dependencies {
+        implementation(libs.kotlin.test)
+      }
+    }
+
+    jvmTest {
+      dependsOn(jvmSharedTest)
+    }
+
     getByName("androidDeviceTest") {
+      dependsOn(jvmSharedTest)
       dependencies {
         implementation(libs.kotlin.test)
         implementation(libs.androidx.test.runner)

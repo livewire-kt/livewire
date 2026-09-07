@@ -15,21 +15,35 @@ sealed class InvalidationReason(
 
   class Direct : InvalidationReason("direct invalidation", null, MonotonicClock.elapsedMillis())
 
+  class Parent : InvalidationReason("recomposed with parent", null, MonotonicClock.elapsedMillis())
+
+  class ArgumentsChanged(changes: List<String>) : InvalidationReason(
+    label = "arguments changed",
+    value = changes.joinToString("\n"),
+    timestamp = MonotonicClock.elapsedMillis(),
+  )
+
   class Reason(reason: Any) : InvalidationReason(
     label = when (reason) {
-      is MutableState<*> -> "Mutable${reason::class.simpleName!!.substringAfter("Mutable")}"
+      is MutableState<*> -> "Mutable${(reason::class.simpleName ?: "State").substringAfter("Mutable")}"
       is SnapshotStateList<*> -> "SnapshotStateList"
       is SnapshotStateMap<*, *> -> "SnapshotStateMap"
       is StateFlow<*> -> "StateFlow"
       else -> reason::class.simpleName ?: "Unknown"
     },
-    value = when (val value = if (reason is State<*>) reason.value else reason) {
-      null -> "null"
-      is String -> "\"$value\""
-      is Collection<*> -> "${value::class.simpleName}(size=${value.size})"
-      is Map<*, *> -> "${value::class.simpleName}(size=${value.size})"
-      else -> value.toString()
-    },
+    value = describe(reason),
     timestamp = MonotonicClock.elapsedMillis(),
   )
+}
+
+private fun describe(reason: Any): String = try {
+  when (val value = if (reason is State<*>) reason.value else reason) {
+    null -> "null"
+    is String -> "\"$value\""
+    is Collection<*> -> "${value::class.simpleName}(size=${value.size})"
+    is Map<*, *> -> "${value::class.simpleName}(size=${value.size})"
+    else -> value.toString()
+  }
+} catch (t: Throwable) {
+  "<${t::class.simpleName} while describing value>"
 }

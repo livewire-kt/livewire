@@ -43,6 +43,23 @@ class ComposableNodeTest {
   }
 
   @Test
+  fun `an execution after markExisting counts as a recomposition`() {
+    val node = ComposableNode("k", "N")
+    node.markExisting()
+    node.recordEnter(); node.recordComposition()
+    assertEquals(1, node.compositionCount)
+    assertEquals(1, node.recompositionCount)
+  }
+
+  @Test
+  fun `records a parent reason when recomposing because the parent executed`() {
+    val node = ComposableNode("k", "N")
+    node.recordEnter(); node.recordComposition()
+    node.recordEnter(); node.recordComposition(parentExecuted = true)
+    assertTrue(node.recentInvalidationReasons().single() is InvalidationReason.Parent)
+  }
+
+  @Test
   fun `records an unknown invalidation reason when recomposing without a known invalidation`() {
     val node = ComposableNode("k", "N")
     node.recordEnter(); node.recordComposition()
