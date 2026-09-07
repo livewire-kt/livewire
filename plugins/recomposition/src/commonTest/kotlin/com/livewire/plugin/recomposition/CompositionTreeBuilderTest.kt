@@ -163,6 +163,31 @@ class CompositionTreeBuilderTest {
   }
 
   @Test
+  fun `a lazy slot reused for a new key starts its subtree from fresh counts`() {
+    val itemScope = FakeScope()
+    val cardScope = FakeScope()
+    fun tree(key: String) = listOf(
+      FakeGroup(
+        key = "slot",
+        sourceInfo = "C(Item)N(index,key)",
+        data = listOf(itemScope, 0, key),
+        identity = "slot",
+        compositionGroups = listOf(composable("Card", cardScope)),
+      ),
+    )
+    val builder = CompositionTreeBuilder(NodeRegistry())
+    builder.build(tree("a"), ScopePass(setOf(itemScope, cardScope), emptySet()))
+    builder.build(tree("a"), ScopePass(setOf(itemScope, cardScope), emptySet()))
+    assertEquals(1, builder.build(tree("a"), ScopePass(setOf(itemScope), setOf(cardScope)))!!.find("Card").recompositionCount)
+
+    val reused = builder.build(tree("b"), ScopePass(setOf(itemScope, cardScope), emptySet()))!!
+    assertEquals(0, reused.find("Item").recompositionCount)
+    assertEquals(1, reused.find("Card").compositionCount)
+    assertEquals(0, reused.find("Card").recompositionCount)
+    assertEquals(0, reused.find("Card").skipCount)
+  }
+
+  @Test
   fun `node tree matches hierarchy`() {
     val roots = build(appScope, aScope, bScope)
     assertEquals(1, roots.size)

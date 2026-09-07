@@ -40,6 +40,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
         parentNode = null,
         parentExecuted = false,
         ancestry = ancestry,
+        freshContent = false,
       )
     }
   }
@@ -78,6 +79,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
     parentNode: ComposableNode?,
     parentExecuted: Boolean,
     ancestry: MutableList<String>,
+    freshContent: Boolean,
   ): NodeBounds? {
     val sourceInfo = group.sourceInfo?.let { parseSourceInformation(it) }
     val name = parseComposableName(sourceInfo)
@@ -99,7 +101,11 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
       if (scope != null) registry.bindScope(scope, node)
 
       val previousParameters = node.parameters
-      node.parameters = extractParameters(group.data, sourceInfo)
+      if (!node.deactivated) node.parameters = extractParameters(group.data, sourceInfo)
+
+      // a lazy slot taking on a different key is composing a new item, not recomposing the old one
+      val fresh = freshContent || (name == LazyItemName && executed && keyChanged(previousParameters, node.parameters))
+      if (fresh) node.resetCounts(fresh = true)
 
       if (reached && !pass.baseline) node.recordEnter()
       when {
@@ -126,6 +132,7 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
           parentNode = node,
           parentExecuted = executed,
           ancestry = ancestry,
+          freshContent = fresh,
         )
         bounds = bounds union childBounds
       }
@@ -163,11 +170,18 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
           parentNode = parentNode,
           parentExecuted = executed,
           ancestry = ancestry,
+          freshContent = freshContent,
         )
         bounds = bounds union childBounds
       }
       return bounds
     }
+  }
+
+  private fun keyChanged(previous: List<ParameterInfo>, current: List<ParameterInfo>): Boolean {
+    val before = previous.firstOrNull { it.name == LazyItemKeyParameter } ?: return false
+    val after = current.firstOrNull { it.name == LazyItemKeyParameter } ?: return false
+    return before.value != after.value
   }
 
   private fun changedArguments(previous: List<ParameterInfo>, current: List<ParameterInfo>): List<String> {
@@ -237,6 +251,8 @@ internal class CompositionTreeBuilder(private val registry: NodeRegistry) {
 }
 
 private const val MaxArgumentPreview = 60
+private const val LazyItemName = "Item"
+private const val LazyItemKeyParameter = "key"
 
 internal class ScopePass(
   val executed: Set<RecomposeScope>,

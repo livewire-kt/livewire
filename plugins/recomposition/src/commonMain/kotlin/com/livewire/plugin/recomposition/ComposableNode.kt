@@ -111,7 +111,8 @@ internal class ComposableNode(
     if (timestampCount < MaxRateSamples) timestampCount += 1
   }
 
-  fun resetCounts() {
+  // fresh means the node is about to hold new content, so its next execution is an initial composition
+  fun resetCounts(fresh: Boolean = false) {
     enterCount = 0
     compositionCount = 0
     recompositionCount = 0
@@ -120,7 +121,7 @@ internal class ComposableNode(
     timestampCount = 0
     invalidationReasons.clear()
     invalidatedSinceLastComposition = false
-    seen = true
+    seen = !fresh
   }
 
   fun recordInvalidation(value: Any?) {
