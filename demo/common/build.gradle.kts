@@ -1,3 +1,4 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
 
 plugins {
@@ -18,6 +19,11 @@ sqldelight {
 }
 
 kotlin {
+  @OptIn(ExperimentalWasmDsl::class)
+  wasmJs {
+    browser()
+  }
+
   compilerOptions {
     freeCompilerArgs.addAll(
       "-Xcontext-parameters",
@@ -84,6 +90,11 @@ kotlin {
       implementation(libs.compose.ui)
       implementation(libs.ktor.clientDarwin)
       implementation(libs.sqldelight.native.driver)
+    }
+    // No sqldelight driver on web: the demo database exists for the DatabasePlugin to
+    // inspect, which isn't available in browsers (no filesystem to scan).
+    wasmJsMain.dependencies {
+      implementation(libs.ktor.clientJs)
     }
   }
 }

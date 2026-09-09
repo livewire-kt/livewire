@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
+
 plugins {
   id("livewire.kmp.library")
   id("livewire.publish")
@@ -6,6 +8,11 @@ plugins {
 }
 
 kotlin {
+  @OptIn(ExperimentalWasmDsl::class)
+  wasmJs {
+    browser()
+  }
+
   sourceSets {
     androidMain.dependencies {
       api(libs.kotlinx.coroutines.android)
