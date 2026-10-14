@@ -9,7 +9,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.ObserverHandle
+import androidx.compose.runtime.snapshots.Snapshot
 import app.cash.molecule.RecompositionMode
+import app.cash.molecule.SnapshotNotifier
 import app.cash.molecule.launchMolecule
 import com.livewire.LivewireLog
 import com.livewire.logDebug
@@ -46,7 +49,10 @@ import kotlinx.coroutines.IO
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consumeEach
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -69,6 +75,7 @@ class LivewireClient private constructor(
   private var scope = CoroutineScope(baseContext + SupervisorJob() + exceptionHandler)
   private val darkMode = MutableStateFlow(true)
   private val discoveryBroadcaster = DiscoveryBroadcaster()
+  private var snapshotWriteObserver: ObserverHandle? = null
 
   val server = LivewireServer(
     decoders = configuration.decoders + DefaultDecoders + UiDecoders,
@@ -103,7 +110,13 @@ class LivewireClient private constructor(
       instanceId = connectionId,
     )
 
-    scope.launchMolecule(RecompositionMode.Immediate, context = LivewireComposition) {
+    startMainThreadSnapshotNotifier()
+
+    scope.launchMolecule(
+      mode = RecompositionMode.Immediate,
+      context = LivewireComposition,
+      snapshotNotifier = SnapshotNotifier.External,
+    ) {
       var activePluginInfo by remember { mutableStateOf<PluginInfo?>(null) }
 
       val actionController = rememberLivewireActionController()
@@ -133,7 +146,11 @@ class LivewireClient private constructor(
         server.connectionState.collectLatest { state ->
           if (state != ConnectionState.Connected) return@collectLatest
           try {
-            livewireFlow(server.codec.serializationStrategy, resyncRequests) {
+            livewireFlow(
+              serializationStrategy = server.codec.serializationStrategy,
+              resyncRequests = resyncRequests,
+              snapshotNotifier = SnapshotNotifier.External,
+            ) {
               DisposableEffect(Unit) {
                 logDebug("LivewireCompose", "Plugin Entered Composition: ${plugin.info.pluginId}")
                 onDispose {
@@ -167,7 +184,18 @@ class LivewireClient private constructor(
     }
   }
 
+  private fun startMainThreadSnapshotNotifier() {
+    snapshotWriteObserver?.dispose()
+    val pendingWrites = Channel<Unit>(Channel.CONFLATED)
+    snapshotWriteObserver = Snapshot.registerGlobalWriteObserver { pendingWrites.trySend(Unit) }
+    scope.launch(Dispatchers.Main) {
+      pendingWrites.consumeEach { Snapshot.sendApplyNotifications() }
+    }
+  }
+
   fun stop() {
+    snapshotWriteObserver?.dispose()
+    snapshotWriteObserver = null
     scope.cancel()
     server.stop()
   }
