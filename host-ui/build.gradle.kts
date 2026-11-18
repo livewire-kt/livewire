@@ -11,7 +11,14 @@ kotlin {
       implementation(libs.coil.compose)
       implementation(libs.coil.network.ktor3)
       implementation(libs.jsontree)
-      implementation(libs.jsonpath4k)
+      val jsonPath = libs.jsonpath4k.get()
+      implementation("${jsonPath.group}:${jsonPath.name}:${jsonPath.version}") {
+        exclude(group = "io.github.aakira", module = "napier")
+      }
+    }
+    iosMain.dependencies {
+      // The published JSONPath4K iOS KLIB declares Napier as a linker dependency.
+      implementation(libs.napier)
     }
     commonTest.dependencies {
       implementation(libs.kotlin.test)

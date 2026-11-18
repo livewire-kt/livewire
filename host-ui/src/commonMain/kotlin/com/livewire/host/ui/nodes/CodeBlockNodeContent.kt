@@ -60,6 +60,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import at.asitplus.jsonpath.JsonPath
+import at.asitplus.jsonpath.implementation.AntlrJsonPathCompiler
 import com.livewire.host.ui.debugFrame
 import com.livewire.host.ui.nodes.icons.HostIcons
 import com.livewire.host.ui.nodes.icons.Info
@@ -268,8 +269,11 @@ private fun String.asTextQuery(): String? = when {
   else -> this
 }
 
+// The field reports invalid queries itself, so skip JSONPath4K's Napier-backed listener.
+private val jsonPathCompiler = AntlrJsonPathCompiler()
+
 internal fun queryJsonPath(document: JsonElement, query: String): JsonArray =
-  JsonArray(JsonPath(query).query(document).map { it.value })
+  JsonArray(JsonPath(query, compiler = jsonPathCompiler).query(document).map { it.value })
 
 @Composable
 private fun SearchRow(
