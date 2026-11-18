@@ -21,8 +21,9 @@ import kotlinx.serialization.Serializable
  * from the content itself.
  * @param searchable Shows a compact search field for JSON content.
  * Queries starting with `$` select JSONPath results, displayed as an array
- * with matching objects and arrays fully expanded. Other queries search
- * keys and values with result navigation. The query stays on the host and
+ * with small result trees fully expanded. Other queries search keys and
+ * values with result navigation. Start a query with `\$` to search for a
+ * literal leading dollar sign. The query stays on the host and
  * is re-applied when the content changes; it never round-trips to the guest.
  * @param initialTreeState How the tree starts out expanded when the host
  * renders the content as a collapsible tree. Currently supported for JSON

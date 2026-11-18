@@ -33,6 +33,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +63,7 @@ import at.asitplus.jsonpath.JsonPath
 import com.livewire.host.ui.debugFrame
 import com.livewire.host.ui.nodes.icons.HostIcons
 import com.livewire.host.ui.nodes.icons.Info
+import com.livewire.logError
 import com.livewire.ui.widget.CodeBlockNode
 import com.livewire.ui.widget.CodeBlockSearchPlacement
 import com.livewire.ui.widget.CodeLanguage
@@ -72,11 +74,17 @@ import com.sebastianneubauer.jsontree.TreeState
 import com.sebastianneubauer.jsontree.search.SearchState
 import com.sebastianneubauer.jsontree.search.rememberSearchState
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+
+private const val JSON_PATH_DEBOUNCE_MS = 200L
+private const val MAX_AUTO_EXPAND_CHARS = 16_384
+private const val JSON_PATH_HELP = "https://github.com/livewire-kt/livewire/blob/main/docs/reference/ui.md#json-search-in-codeblock"
 
 @Composable
 internal fun CodeBlockNodeContent(
@@ -115,6 +123,7 @@ private fun detectLanguage(content: String): CodeLanguage {
   }
 }
 
+@OptIn(FlowPreview::class)
 @Composable
 private fun JsonContent(
   json: String,
@@ -127,25 +136,50 @@ private fun JsonContent(
   val searchState = rememberSearchState()
   var query by remember { mutableStateOf("") }
   val pathQuery = query.takeIf { searchable && it.startsWith("$") }
-  val lazyListState = key(json, pathQuery) { rememberLazyListState() }
-  var document by remember(json) { mutableStateOf<Result<JsonElement>?>(null) }
-  var pathResult by remember(json, pathQuery) { mutableStateOf<Result<String>?>(null) }
+  val isJsonPath = pathQuery != null
+  val textListState = rememberLazyListState()
+  val pathListState = key(isJsonPath) { rememberLazyListState() }
+  val pathSearchState = rememberSearchState()
+  // Parsing and evaluation are synchronous. Even if an effect is cancelled, let only
+  // one job per CodeBlock run at a time so rapid payload changes cannot pile up work.
+  val pathDispatcher = remember { Dispatchers.Default.limitedParallelism(1) }
+  var document by remember(json) { mutableStateOf<JsonElement?>(null) }
+  var pathResult by remember(json, isJsonPath) { mutableStateOf<String?>(null) }
+  var invalidPath by remember(json, isJsonPath) { mutableStateOf<String?>(null) }
   var parseGeneration by remember { mutableStateOf(0) }
 
-  LaunchedEffect(json, pathQuery) {
-    if (pathQuery != null) {
-      val parsed = document ?: withContext(Dispatchers.Default) {
+  LaunchedEffect(json, isJsonPath) {
+    if (!isJsonPath) return@LaunchedEffect
+
+    // Keep this collector running across edits. It caches the parse and processes one
+    // debounced query at a time, dropping results if the input changed during evaluation.
+    snapshotFlow { query }.debounce(JSON_PATH_DEBOUNCE_MS).collect { requestedQuery ->
+      if (!requestedQuery.startsWith("$") || query != requestedQuery) return@collect
+      val parsed = document ?: withContext(pathDispatcher) {
         runCatching { Json.parseToJsonElement(json) }
+      }.getOrElse {
+        onError(it)
+        return@collect
       }.also { document = it }
-      parsed.onFailure(onError)
-      pathResult = withContext(Dispatchers.Default) {
-        parsed.mapCatching { queryJsonPath(it, pathQuery).toString() }
+      if (query != requestedQuery) return@collect
+
+      // JsonTree currently takes a string, so encode only the selected values for display.
+      val result = withContext(pathDispatcher) {
+        runCatching { queryJsonPath(parsed, requestedQuery).toString() }
+      }
+      if (query == requestedQuery) {
+        result.onSuccess {
+          pathResult = it
+          invalidPath = null
+        }.onFailure {
+          invalidPath = requestedQuery
+        }
       }
     }
   }
 
   LaunchedEffect(searchState.selectedResultListIndex) {
-    searchState.selectedResultListIndex?.let { lazyListState.animateScrollToItem(it) }
+    searchState.selectedResultListIndex?.let { textListState.animateScrollToItem(it) }
   }
 
   // A query typed while the tree is still parsing searches an empty tree
@@ -157,21 +191,21 @@ private fun JsonContent(
     if (parseGeneration > 0) {
       searchState.query = null
       withFrameNanos {}
-      searchState.query = query.takeIf { searchable && it.isNotEmpty() && !it.startsWith("$") }
+      searchState.query = if (searchable) query.asTextQuery() else null
     }
   }
 
-  val treeJson = if (pathQuery == null) json else pathResult?.getOrNull()
-  val pathError = pathResult?.isFailure == true
+  val displayedPath = pathResult
+  val pathError = pathQuery != null && invalidPath == pathQuery
   val searchControls: @Composable () -> Unit = {
     SearchRow(
       query = query,
       onQueryChange = {
         query = it
-        searchState.query = it.takeIf { it.isNotEmpty() && !it.startsWith("$") }
+        searchState.query = it.asTextQuery()
       },
       searchState = searchState,
-      isJsonPath = pathQuery != null,
+      isJsonPath = isJsonPath,
       isError = pathError,
       modifier = Modifier.fillMaxWidth(),
     )
@@ -189,30 +223,32 @@ private fun JsonContent(
       Spacer(Modifier.height(4.dp))
     }
     Box(Modifier.weight(1f).fillMaxWidth()) {
-      if (treeJson != null) {
-        SelectionContainer {
-          JsonTree(
-            json = treeJson,
-            onLoading = {
+      key(displayedPath != null) {
+        JsonTree(
+          json = displayedPath ?: json,
+          onLoading = {
+            if (displayedPath == null) {
               DisposableEffect(Unit) {
                 onDispose { parseGeneration++ }
               }
-              Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
-              }
-            },
-            colors = MaterialTheme.colorScheme.asTreeColors,
-            initialState = if (pathQuery != null) TreeState.EXPANDED else initialState,
-            textStyle = codeTextStyle(),
-            showItemCount = true,
-            searchState = searchState,
-            lazyListState = lazyListState,
-            onError = onError,
-            modifier = Modifier.fillMaxSize(),
-          )
-        }
-      } else if (!pathError) {
-        CircularProgressIndicator(Modifier.align(Alignment.Center))
+            }
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+              CircularProgressIndicator()
+            }
+          },
+          colors = MaterialTheme.colorScheme.asTreeColors,
+          initialState = when {
+            displayedPath == null -> initialState
+            displayedPath.length <= MAX_AUTO_EXPAND_CHARS -> TreeState.EXPANDED
+            else -> TreeState.FIRST_ITEM_EXPANDED
+          },
+          textStyle = codeTextStyle(),
+          showItemCount = true,
+          searchState = if (displayedPath == null) searchState else pathSearchState,
+          lazyListState = if (displayedPath == null) textListState else pathListState,
+          onError = onError,
+          modifier = Modifier.fillMaxSize(),
+        )
       }
     }
     if (searchable && searchPlacement == CodeBlockSearchPlacement.Bottom) {
@@ -220,6 +256,12 @@ private fun JsonContent(
       searchControls()
     }
   }
+}
+
+private fun String.asTextQuery(): String? = when {
+  isEmpty() || startsWith("$") -> null
+  startsWith("\\$") -> drop(1)
+  else -> this
 }
 
 internal fun queryJsonPath(document: JsonElement, query: String): JsonArray =
@@ -317,7 +359,9 @@ private fun SearchRow(
     }
     IconButton(
       onClick = {
-        uriHandler.openUri("https://notes.hamatti.org/technology/recipes/jsonpath-cheat-sheet")
+        runCatching { uriHandler.openUri(JSON_PATH_HELP) }.onFailure {
+          logError("CodeBlock", "Could not open the JSONPath reference", it)
+        }
       },
       modifier = Modifier.size(28.dp),
     ) {

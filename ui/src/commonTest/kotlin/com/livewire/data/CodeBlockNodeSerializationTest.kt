@@ -82,6 +82,18 @@ class CodeBlockNodeSerializationTest {
   }
 
   @Test
+  fun jsonCodeBlockCanCarryFieldsAddedByNewerClients() {
+    val strategy = LayoutNodeSerialization.Json.toStrategy()
+    val node = CodeBlockNode(content = "{}", searchPlacement = CodeBlockSearchPlacement.Bottom)
+    val encoded = strategy.encodeToByteArray(node).decodeToString()
+    val withUnknownField = encoded.replaceFirst("{", "{\"futureField\":true,")
+    val decoded = assertIs<CodeBlockNode>(strategy.decodeFromByteArray(withUnknownField.encodeToByteArray()))
+
+    assertEquals(node.content, decoded.content)
+    assertEquals(node.searchPlacement, decoded.searchPlacement)
+  }
+
+  @Test
   fun composableEmitsFullTreeAndPropertyUpdates() = runTest {
     LayoutNodeSerialization.entries.forEach { serialization ->
       val strategy = serialization.toStrategy()
