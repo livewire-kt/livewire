@@ -64,12 +64,13 @@ class CodeBlockSearchTest {
       block.clickRow("nested")
       block.await("expanded match") { hasText("Alice") }
 
-      block.enter("$.users[")
+      block.enter("$.users.nested.missing[")
       block.render()
       assertTrue(block.hasText("Alice"))
       assertFalse(block.hasText("Invalid JSONPath"))
       block.await("error with previous result still visible") {
-        hasText("Invalid JSONPath") && hasText("Alice") && !hasText("Bob")
+        hasText("Invalid JSONPath. Trying to search? Escape with \\\u2060$.u…") &&
+          hasText("Alice") && !hasText("Bob")
       }
 
       block.enter("$.excluded")

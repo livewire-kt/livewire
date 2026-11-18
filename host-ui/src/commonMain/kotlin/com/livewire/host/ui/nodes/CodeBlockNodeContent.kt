@@ -196,7 +196,11 @@ private fun JsonContent(
   }
 
   val displayedPath = pathResult
-  val pathError = pathQuery != null && invalidPath == pathQuery
+  val pathError = pathQuery?.takeIf { it == invalidPath }?.let { invalidQuery ->
+    val preview = invalidQuery.take(3)
+    val suffix = if (invalidQuery.length > preview.length) "…" else ""
+    "Invalid JSONPath. Trying to search? Escape with \\\u2060$preview$suffix"
+  }
   val searchControls: @Composable () -> Unit = {
     SearchRow(
       query = query,
@@ -206,12 +210,12 @@ private fun JsonContent(
       },
       searchState = searchState,
       isJsonPath = isJsonPath,
-      isError = pathError,
+      pathError = pathError,
       modifier = Modifier.fillMaxWidth(),
     )
-    if (pathError) {
+    if (pathError != null) {
       Text(
-        text = "Invalid JSONPath",
+        text = pathError,
         color = MaterialTheme.colorScheme.error,
         style = MaterialTheme.typography.bodySmall,
       )
@@ -273,7 +277,7 @@ private fun SearchRow(
   onQueryChange: (String) -> Unit,
   searchState: SearchState,
   isJsonPath: Boolean,
-  isError: Boolean,
+  pathError: String?,
   modifier: Modifier = Modifier,
 ) {
   val scope = rememberCoroutineScope()
@@ -283,7 +287,7 @@ private fun SearchRow(
   val textStyle = codeTextStyle().copy(color = colors.onSurface)
   var isFocused by remember { mutableStateOf(false) }
   val borderColor = when {
-    isError -> colors.error
+    pathError != null -> colors.error
     isFocused -> colors.primary
     else -> colors.outlineVariant.copy(alpha = 0.45f)
   }
@@ -308,7 +312,7 @@ private fun SearchRow(
         .onFocusChanged { isFocused = it.isFocused }
         .semantics {
           contentDescription = "Search JSON or enter JSONPath"
-          if (isError) error("Invalid JSONPath")
+          if (pathError != null) error(pathError)
         }
         .onPreviewKeyEvent { event ->
           if (!isJsonPath && event.type == KeyEventType.KeyDown &&
