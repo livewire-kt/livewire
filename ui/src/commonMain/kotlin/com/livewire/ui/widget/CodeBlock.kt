@@ -19,12 +19,15 @@ import kotlinx.serialization.Serializable
  *
  * @param language The content language, or null to let the host detect it
  * from the content itself.
- * @param searchable Shows a host-rendered search bar above the content.
- * Search runs entirely on the host — the query never round-trips to the
- * guest. Currently supported for JSON content only.
+ * @param searchable Shows a compact search field for JSON content.
+ * Queries starting with `$` select JSONPath results, displayed as an array
+ * with matching objects and arrays fully expanded. Other queries search
+ * keys and values with result navigation. The query stays on the host and
+ * is re-applied when the content changes; it never round-trips to the guest.
  * @param initialTreeState How the tree starts out expanded when the host
  * renders the content as a collapsible tree. Currently supported for JSON
  * content only.
+ * @param searchPlacement Where the search field appears, above the content by default.
  */
 @LivewireComposable
 @Composable
@@ -34,6 +37,7 @@ fun CodeBlock(
   language: CodeLanguage? = null,
   searchable: Boolean = false,
   initialTreeState: CodeTreeState = CodeTreeState.FirstItemExpanded,
+  searchPlacement: CodeBlockSearchPlacement = CodeBlockSearchPlacement.Top,
 ) {
   val compositeKeyHash = currentCompositeKeyHashCode.toLong()
   ReusableComposeNode<CodeBlockNode, Applier<LayoutNode>>(
@@ -45,6 +49,7 @@ fun CodeBlock(
       set(language, CodeBlockNode.SetLanguage)
       set(searchable, CodeBlockNode.SetSearchable)
       set(initialTreeState, CodeBlockNode.SetInitialTreeState)
+      set(searchPlacement, CodeBlockNode.SetSearchPlacement)
     },
   )
 }
@@ -56,6 +61,7 @@ class CodeBlockNode(
   var language: CodeLanguage? = null,
   var searchable: Boolean = false,
   var initialTreeState: CodeTreeState = CodeTreeState.FirstItemExpanded,
+  var searchPlacement: CodeBlockSearchPlacement = CodeBlockSearchPlacement.Top,
 ) : LayoutNode() {
 
   companion object {
@@ -63,7 +69,14 @@ class CodeBlockNode(
     val SetLanguage: CodeBlockNode.(CodeLanguage?) -> Unit = applier { language = it }
     val SetSearchable: CodeBlockNode.(Boolean) -> Unit = applier { searchable = it }
     val SetInitialTreeState: CodeBlockNode.(CodeTreeState) -> Unit = applier { initialTreeState = it }
+    val SetSearchPlacement: CodeBlockNode.(CodeBlockSearchPlacement) -> Unit = applier { searchPlacement = it }
   }
+}
+
+/** Placement of the host-rendered search field within a CodeBlock. */
+enum class CodeBlockSearchPlacement {
+  Bottom,
+  Top,
 }
 
 /**
