@@ -45,10 +45,20 @@ The complete catalog of composables and modifiers available to plugin authors, a
 | `Text` | `text`, `color`, `style` (full M3 type scale: `DisplayLarge` … `LabelSmall`), `fontWeight`, `minLines`/`maxLines` |
 | `Icon` | any Compose `ImageVector` — vectors serialize across the wire |
 | `Image` | raw encoded `ByteArray` + `contentDescription` |
-| `CodeBlock` | `content`, `language` (`Json`, `Xml`, `Html`, `PlainText`), `searchable`, `initialTreeState` (`Collapsed`, `FirstItemExpanded`, `Expanded`) |
+| `CodeBlock` | `content`, `language` (`Json`, `Xml`, `Html`, `PlainText`), `searchable`, `initialTreeState` (`Collapsed`, `FirstItemExpanded`, `Expanded`), `searchPlacement` (`Top`, `Bottom`) |
 | `Table` | `columns`, `rows`, built-in pagination (`pageSize = 10`) |
 | `ProgressIndicator` | `progress` (`null` = indeterminate), `style` (`Linear`, `Circular`) |
 | `HorizontalDivider` / `VerticalDivider` | `thickness` |
+
+### JSON search in CodeBlock
+
+Set `searchable = true` on a JSON `CodeBlock` to show the search field. The field defaults to `CodeBlockSearchPlacement.Top`. Set `searchPlacement = CodeBlockSearchPlacement.Bottom` to put it below the tree.
+
+Type text to highlight matching keys and values. Use the arrows or Enter and Shift+Enter to move between matches. Start with `$` to run a JSONPath query, such as `$.users[*].name`. Start with `\$` to search for a literal leading dollar sign, such as `\$ref`.
+
+JSONPath results appear as an array of matching values. Small results open fully expanded. In larger results, expand individual nodes to explore them. Livewire runs searches on the host.
+
+For query syntax and examples, see [RFC 9535](https://www.rfc-editor.org/rfc/rfc9535) and the [JSONPath cheat sheet](https://notes.hamatti.org/technology/recipes/jsonpath-cheat-sheet).
 
 ## Modifiers
 

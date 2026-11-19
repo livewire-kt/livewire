@@ -10,6 +10,7 @@ import kotlinx.serialization.protobuf.ProtoBuf
 
 internal val LivewireUiJson = Json {
   classDiscriminator = "__type"
+  ignoreUnknownKeys = true
   // allow Dp.Infinity
   allowSpecialFloatingPointValues = true
   serializersModule =

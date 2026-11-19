@@ -35,6 +35,8 @@ import com.livewire.ui.widget.ButtonStyle
 import com.livewire.ui.widget.Checkbox
 import com.livewire.ui.widget.Chip
 import com.livewire.ui.widget.ChipStyle
+import com.livewire.ui.widget.CodeBlock
+import com.livewire.ui.widget.CodeLanguage
 import com.livewire.ui.widget.DropdownMenu
 import com.livewire.ui.widget.DropdownMenuItem
 import com.livewire.ui.widget.FabSize
@@ -769,6 +771,13 @@ class PlaygroundPlugin : Plugin {
         AnimatedVisibility(visible = contentVisible) {
           Text("Hello, AnimatedVisibility!")
         }
+      }
+
+      Text("CodeBlock: search text, or try $.users[?(@.active == true)].name")
+      Row(LivewireModifier.fillMaxWidth().height(260.dp).padding(16.dp)) {
+        val json = """{"users":[{"name":"Alice","active":true},{"name":"Bob","active":false}]}"""
+        CodeBlock(json, modifier = LivewireModifier.weight(1f), language = CodeLanguage.Json, searchable = true)
+        CodeBlock(json, modifier = LivewireModifier.weight(1f), language = CodeLanguage.Json)
       }
 
       Table(

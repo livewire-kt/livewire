@@ -134,6 +134,11 @@ class LivewireHostConnection(
   )
 
   suspend fun connect(app: HostApp): Unit = connectMutex.withLock {
+    if (app.protocolVersion != LivewireConstants.ProtocolVersion) {
+      logDebug("ignoring incompatible protocol ${app.protocolVersion} for ${app.id}")
+      return@withLock
+    }
+
     if (app.instanceId == expectedInstanceId && connectionState.value.isLive()) {
       logDebug("already targeting ${app.id} (${connectionState.value}); ignoring connect")
       return@withLock
