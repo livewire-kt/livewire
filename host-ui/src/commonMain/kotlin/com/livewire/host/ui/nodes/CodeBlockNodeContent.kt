@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -32,6 +33,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
@@ -49,6 +51,7 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.error
@@ -75,6 +78,8 @@ import com.sebastianneubauer.jsontree.search.SearchState
 import com.sebastianneubauer.jsontree.search.rememberSearchState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -138,36 +143,40 @@ private fun JsonContent(
   val pathQuery = query.takeIf { searchable && it.startsWith("$") }
   val isJsonPath = pathQuery != null
   val textListState = rememberLazyListState()
-  val pathListState = key(isJsonPath) { rememberLazyListState() }
-  val pathSearchState = rememberSearchState()
   // Parsing and evaluation are synchronous. Even if an effect is cancelled, let only
   // one job per CodeBlock run at a time so rapid payload changes cannot pile up work.
   val pathDispatcher = remember { Dispatchers.Default.limitedParallelism(1) }
-  var document by remember(json) { mutableStateOf<JsonElement?>(null) }
-  var pathResult by remember(json, isJsonPath) { mutableStateOf<String?>(null) }
-  var invalidPath by remember(json, isJsonPath) { mutableStateOf<String?>(null) }
+  val currentJson by rememberUpdatedState(json)
+  val currentOnError by rememberUpdatedState(onError)
+  var pathResult by remember(isJsonPath) { mutableStateOf<String?>(null) }
+  var invalidPath by remember(isJsonPath) { mutableStateOf<String?>(null) }
   var parseGeneration by remember { mutableStateOf(0) }
 
-  LaunchedEffect(json, isJsonPath) {
+  LaunchedEffect(isJsonPath) {
     if (!isJsonPath) return@LaunchedEffect
 
-    // Keep this collector running across edits. It caches the parse and processes one
-    // debounced query at a time, dropping results if the input changed during evaluation.
-    snapshotFlow { query }.debounce(JSON_PATH_DEBOUNCE_MS).collect { requestedQuery ->
-      if (!requestedQuery.startsWith("$") || query != requestedQuery) return@collect
-      val parsed = document ?: withContext(pathDispatcher) {
-        runCatching { Json.parseToJsonElement(json) }
-      }.getOrElse {
-        onError(it)
-        return@collect
-      }.also { document = it }
-      if (query != requestedQuery) return@collect
+    var cachedDocument: Pair<String, JsonElement>? = null
+    val settledQueries = snapshotFlow { query }.debounce(JSON_PATH_DEBOUNCE_MS)
+    val payloads = snapshotFlow { currentJson }
+    // Debounce typing. If payloads arrive during evaluation, process the latest one next.
+    combine(settledQueries, payloads) { requestedQuery, payload -> requestedQuery to payload }
+      .conflate()
+      .collect { (requestedQuery, payload) ->
+        if (!requestedQuery.startsWith("$") || query != requestedQuery) return@collect
+        val parsed = cachedDocument?.takeIf { it.first == payload }?.second ?: withContext(pathDispatcher) {
+          runCatching { Json.parseToJsonElement(payload) }
+        }.getOrElse {
+          if (currentJson == payload && query == requestedQuery) currentOnError(it)
+          return@collect
+        }.also { cachedDocument = payload to it }
+        if (query != requestedQuery) return@collect
 
-      // JsonTree currently takes a string, so encode only the selected values for display.
-      val result = withContext(pathDispatcher) {
-        runCatching { queryJsonPath(parsed, requestedQuery).toString() }
-      }
-      if (query == requestedQuery) {
+        // JsonTree currently takes a string, so encode only the selected values for display.
+        val result = withContext(pathDispatcher) {
+          runCatching { queryJsonPath(parsed, requestedQuery).toString() }
+        }
+        // Publish completed results for the active query even if another payload is waiting.
+        if (query != requestedQuery) return@collect
         result.onSuccess {
           pathResult = it
           invalidPath = null
@@ -175,7 +184,6 @@ private fun JsonContent(
           invalidPath = requestedQuery
         }
       }
-    }
   }
 
   LaunchedEffect(searchState.selectedResultListIndex) {
@@ -227,38 +235,87 @@ private fun JsonContent(
       Spacer(Modifier.height(4.dp))
     }
     Box(Modifier.weight(1f).fillMaxWidth()) {
-      key(displayedPath != null) {
-        JsonTree(
-          json = displayedPath ?: json,
+      when {
+        !isJsonPath -> JsonTree(
+          json = json,
           onLoading = {
-            if (displayedPath == null) {
-              DisposableEffect(Unit) {
-                onDispose { parseGeneration++ }
-              }
+            DisposableEffect(Unit) {
+              onDispose { parseGeneration++ }
             }
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-              CircularProgressIndicator()
-            }
+            JsonTreeLoading()
           },
           colors = MaterialTheme.colorScheme.asTreeColors,
-          initialState = when {
-            displayedPath == null -> initialState
-            displayedPath.length <= MAX_AUTO_EXPAND_CHARS -> TreeState.EXPANDED
-            else -> TreeState.FIRST_ITEM_EXPANDED
-          },
+          initialState = initialState,
           textStyle = codeTextStyle(),
           showItemCount = true,
-          searchState = if (displayedPath == null) searchState else pathSearchState,
-          lazyListState = if (displayedPath == null) textListState else pathListState,
+          searchState = searchState,
+          lazyListState = textListState,
           onError = onError,
           modifier = Modifier.fillMaxSize(),
         )
+        displayedPath != null -> FilteredJsonTree(displayedPath, onError)
+        pathError == null -> JsonTreeLoading()
       }
     }
     if (searchable && searchPlacement == CodeBlockSearchPlacement.Bottom) {
       Spacer(Modifier.height(4.dp))
       searchControls()
     }
+  }
+}
+
+private class PathTree(val json: String, val listState: LazyListState = LazyListState())
+
+@Composable
+private fun FilteredJsonTree(json: String, onError: (Throwable) -> Unit) {
+  var visibleTree by remember { mutableStateOf<PathTree?>(null) }
+  var pendingTree by remember { mutableStateOf(PathTree(json)) }
+
+  // JsonTree parses each new string itself. Keep the old tree on screen until the next
+  // one finishes loading, and only prepare one replacement at a time.
+  LaunchedEffect(json, visibleTree) {
+    val visible = visibleTree
+    if (visible != null && visible === pendingTree && visible.json != json) {
+      pendingTree = PathTree(
+        json,
+        LazyListState(visible.listState.firstVisibleItemIndex, visible.listState.firstVisibleItemScrollOffset),
+      )
+    }
+  }
+
+  val visible = visibleTree
+  for (tree in listOfNotNull(visible, pendingTree.takeUnless { it === visible })) {
+    key(tree) {
+      JsonTree(
+        json = tree.json,
+        onLoading = {
+          DisposableEffect(Unit) {
+            onDispose {
+              if (pendingTree === tree) visibleTree = tree
+            }
+          }
+          if (visible == null) JsonTreeLoading()
+        },
+        modifier = Modifier.fillMaxSize().layout { measurable, constraints ->
+          val child = measurable.measure(constraints)
+          layout(child.width, child.height) {
+            if (tree === visible) child.placeRelative(0, 0)
+          }
+        },
+        colors = MaterialTheme.colorScheme.asTreeColors,
+        initialState = if (tree.json.length <= MAX_AUTO_EXPAND_CHARS) TreeState.EXPANDED else TreeState.FIRST_ITEM_EXPANDED,
+        textStyle = codeTextStyle(),
+        lazyListState = tree.listState,
+        onError = onError,
+      )
+    }
+  }
+}
+
+@Composable
+private fun JsonTreeLoading() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    CircularProgressIndicator()
   }
 }
 

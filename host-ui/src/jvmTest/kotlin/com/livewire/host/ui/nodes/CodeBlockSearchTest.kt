@@ -96,6 +96,32 @@ class CodeBlockSearchTest {
   }
 
   @Test
+  fun settledPathKeepsShowingFilteredResultsDuringRapidPayloadUpdates() = runBlocking(Dispatchers.Swing) {
+    fun json(tick: Int) = """{"tick":"tick-$tick","unfilteredOnly":"unfiltered marker"}"""
+    CodeBlockScene(coroutineContext, json(0)).use { block ->
+      block.await("initial JSON") { hasText("unfiltered marker") }
+      block.enter("$.tick")
+      block.render()
+      assertFalse(block.hasText("unfiltered marker"), "Unfiltered JSON remained during the first query")
+      block.await("first filtered result") { hasText("\"tick-0\"") && !hasText("unfiltered marker") }
+
+      var advanced = false
+      for (tick in 1..16) {
+        block.payload = json(tick)
+        repeat(3) {
+          block.render()
+          assertFalse(block.hasText("unfiltered marker"), "Unfiltered JSON appeared at tick $tick")
+          assertTrue(block.hasText("\"tick-"), "Filtered result disappeared at tick $tick")
+          advanced = advanced || !block.hasText("\"tick-0\"")
+          delay(16)
+        }
+      }
+      assertTrue(advanced, "The filter made no progress while payloads were arriving")
+      block.await("latest filtered result") { hasText("\"tick-16\"") && !hasText("unfiltered marker") }
+    }
+  }
+
+  @Test
   fun ordinaryTreeKeepsItsScrollPositionAcrossPayloadUpdates() = runBlocking(Dispatchers.Swing) {
     fun json(label: String) = (0..99).joinToString(prefix = "[", postfix = "]") { "\"$label-$it\"" }
     CodeBlockScene(coroutineContext, json("old"), searchable = false).use { block ->
