@@ -37,6 +37,7 @@ sealed class LivewireOutput {
 fun livewireFlow(
   serializationStrategy: LayoutNodeSerializationStrategy,
   resyncRequests: Flow<Unit> = emptyFlow(),
+  snapshotNotifier: SnapshotNotifier = SnapshotNotifier.WhileActive,
   body: @LivewireComposable @Composable () -> Unit,
 ): Flow<LivewireOutput> = flow {
   coroutineScope {
@@ -52,6 +53,7 @@ fun livewireFlow(
         mode = RecompositionMode.ContextClock,
         strategy = serializationStrategy,
         rootNode = rootNode,
+        snapshotNotifier = snapshotNotifier,
         emitter = {
           clock.isRunning = false
           outputBuffer.trySend(it).getOrThrow()

@@ -28,6 +28,7 @@ kotlin {
     }
     androidMain.dependencies {
       implementation(libs.kotlin.reflect)
+      implementation(libs.kotlinx.coroutines.android)
       implementation(libs.ktor.clientCio)
     }
     iosMain.dependencies {
