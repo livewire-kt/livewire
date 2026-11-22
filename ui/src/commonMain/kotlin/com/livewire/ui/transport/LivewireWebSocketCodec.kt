@@ -22,7 +22,7 @@ class LivewireWebSocketCodec(
 
   var secureSession: SecureSession? = null
 
-  fun decryptFrame(frame: Frame): Frame? {
+  suspend fun decryptFrame(frame: Frame): Frame? {
     if (secureSession == null) {
       return when (frame) {
         is Frame.Text, is Frame.Binary -> frame
@@ -52,7 +52,7 @@ class LivewireWebSocketCodec(
     }
   }
 
-  fun decode(frame: Frame): LivewireIncoming? {
+  suspend fun decode(frame: Frame): LivewireIncoming? {
     val plaintextFrame = decryptFrame(frame) ?: return null
     return when (plaintextFrame) {
       is Frame.Text -> decodeTextPayload(plaintextFrame)
@@ -61,7 +61,7 @@ class LivewireWebSocketCodec(
     }
   }
 
-  fun encodePayload(payload: Any): Frame {
+  suspend fun encodePayload(payload: Any): Frame {
     val json = when (payload) {
       is UiProtocol -> EnvelopeJson.encodeToString(UiProtocol.serializer(), payload)
       is LivewireAction -> EnvelopeJson.encodeToString(LivewireAction.serializer(), payload)
@@ -70,7 +70,7 @@ class LivewireWebSocketCodec(
     return tryEncryptFrame(Frame.Text(json))
   }
 
-  fun encodeLayout(node: LayoutNode): Frame {
+  suspend fun encodeLayout(node: LayoutNode): Frame {
     val nodeBytes = serializationStrategy.encodeToByteArray(node)
     val nodeWithFrameType = ByteArray(nodeBytes.size + 1).also { buf ->
       buf[0] = FrameTypeFullTree
@@ -80,7 +80,7 @@ class LivewireWebSocketCodec(
     return tryEncryptFrame(Frame.Binary(true, nodeWithFrameType))
   }
 
-  fun encodePatches(patches: List<LayoutNodePatch>): Frame {
+  suspend fun encodePatches(patches: List<LayoutNodePatch>): Frame {
     val patchBytes = serializationStrategy.encodePatchList(patches)
     val patchesWithFrame = ByteArray(patchBytes.size + 1).also { buf ->
       buf[0] = FrameTypePatches
@@ -90,7 +90,7 @@ class LivewireWebSocketCodec(
     return tryEncryptFrame(Frame.Binary(true, patchesWithFrame))
   }
 
-  private fun tryEncryptFrame(frame: Frame): Frame {
+  private suspend fun tryEncryptFrame(frame: Frame): Frame {
     if (secureSession == null) return frame
 
     val encrypted = when (frame) {

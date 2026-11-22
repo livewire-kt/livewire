@@ -1,7 +1,6 @@
 package com.livewire.plugin.database.data
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.IO
+import com.livewire.LivewireIoDispatcher
 import kotlinx.coroutines.withContext
 import kotlin.time.TimeSource
 
@@ -19,7 +18,7 @@ interface DatabaseInspector {
     block: (DatabaseConnection) -> T,
   ): Result<T>
 
-  suspend fun getTables(databasePath: String): Result<List<TableInfo>> = withContext(Dispatchers.IO) {
+  suspend fun getTables(databasePath: String): Result<List<TableInfo>> = withContext(LivewireIoDispatcher) {
     withDatabase(databasePath) { connection ->
       buildList {
         val masterResult = connection.rawQuery(
@@ -48,7 +47,7 @@ interface DatabaseInspector {
     }
   }
 
-  suspend fun executeQuery(databasePath: String, sql: String): Result<QueryResult> = withContext(Dispatchers.IO) {
+  suspend fun executeQuery(databasePath: String, sql: String): Result<QueryResult> = withContext(LivewireIoDispatcher) {
     val trimmed = sql.trim()
     val isReadOnly = trimmed.startsWith("SELECT", ignoreCase = true)
       || trimmed.startsWith("PRAGMA", ignoreCase = true)
@@ -79,7 +78,7 @@ interface DatabaseInspector {
     databasePath: String,
     tableName: String,
     limit: Int = 500,
-  ): Result<QueryResult> = withContext(Dispatchers.IO) {
+  ): Result<QueryResult> = withContext(LivewireIoDispatcher) {
     withDatabase(databasePath) { conn ->
       val mark = TimeSource.Monotonic.markNow()
       conn.rawQuery("SELECT * FROM \"$tableName\" LIMIT $limit")
