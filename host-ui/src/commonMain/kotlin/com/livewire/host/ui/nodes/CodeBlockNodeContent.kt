@@ -1,6 +1,7 @@
 package com.livewire.host.ui.nodes
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -27,14 +29,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -45,14 +51,24 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.error
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
+import at.asitplus.jsonpath.JsonPath
 import com.livewire.host.ui.debugFrame
+import com.livewire.host.ui.nodes.icons.HostIcons
+import com.livewire.host.ui.nodes.icons.Info
+import com.livewire.logError
 import com.livewire.ui.widget.CodeBlockNode
+import com.livewire.ui.widget.CodeBlockSearchPlacement
 import com.livewire.ui.widget.CodeLanguage
 import com.livewire.ui.widget.CodeTreeState
 import com.sebastianneubauer.jsontree.JsonTree
@@ -60,7 +76,20 @@ import com.sebastianneubauer.jsontree.TreeColors
 import com.sebastianneubauer.jsontree.TreeState
 import com.sebastianneubauer.jsontree.search.SearchState
 import com.sebastianneubauer.jsontree.search.rememberSearchState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+
+private const val JSON_PATH_DEBOUNCE_MS = 200L
+private const val MAX_AUTO_EXPAND_CHARS = 16_384
+private const val JSON_PATH_HELP = "https://github.com/livewire-kt/livewire/blob/main/docs/reference/ui.md#json-search-in-codeblock"
 
 @Composable
 internal fun CodeBlockNodeContent(
@@ -74,6 +103,7 @@ internal fun CodeBlockNodeContent(
     language == CodeLanguage.Json && !jsonParseFailed -> JsonContent(
       json = node.content,
       searchable = node.searchable,
+      searchPlacement = node.searchPlacement,
       initialState = node.initialTreeState.asTreeState,
       onError = { jsonParseFailed = true },
       modifier = modifier.debugFrame(),
@@ -98,146 +128,311 @@ private fun detectLanguage(content: String): CodeLanguage {
   }
 }
 
+@OptIn(FlowPreview::class)
 @Composable
 private fun JsonContent(
   json: String,
   searchable: Boolean,
+  searchPlacement: CodeBlockSearchPlacement,
   initialState: TreeState,
   onError: (Throwable) -> Unit,
   modifier: Modifier = Modifier,
 ) {
   val searchState = rememberSearchState()
-  val lazyListState = rememberLazyListState()
   var query by remember { mutableStateOf("") }
+  val pathQuery = query.takeIf { searchable && it.startsWith("$") }
+  val isJsonPath = pathQuery != null
+  val textListState = rememberLazyListState()
+  // Parsing and evaluation are synchronous. Even if an effect is cancelled, let only
+  // one job per CodeBlock run at a time so rapid payload changes cannot pile up work.
+  val pathDispatcher = remember { Dispatchers.Default.limitedParallelism(1) }
+  val currentJson by rememberUpdatedState(json)
+  val currentOnError by rememberUpdatedState(onError)
+  var pathResult by remember(isJsonPath) { mutableStateOf<String?>(null) }
+  var invalidPath by remember(isJsonPath) { mutableStateOf<String?>(null) }
   var parseGeneration by remember { mutableStateOf(0) }
 
+  LaunchedEffect(isJsonPath) {
+    if (!isJsonPath) return@LaunchedEffect
+
+    var cachedDocument: Pair<String, JsonElement>? = null
+    val settledQueries = snapshotFlow { query }.debounce(JSON_PATH_DEBOUNCE_MS)
+    val payloads = snapshotFlow { currentJson }
+    // Debounce typing. If payloads arrive during evaluation, process the latest one next.
+    combine(settledQueries, payloads) { requestedQuery, payload -> requestedQuery to payload }
+      .conflate()
+      .collect { (requestedQuery, payload) ->
+        if (!requestedQuery.startsWith("$") || query != requestedQuery) return@collect
+        val parsed = cachedDocument?.takeIf { it.first == payload }?.second ?: withContext(pathDispatcher) {
+          runCatching { Json.parseToJsonElement(payload) }
+        }.getOrElse {
+          if (currentJson == payload && query == requestedQuery) currentOnError(it)
+          return@collect
+        }.also { cachedDocument = payload to it }
+        if (query != requestedQuery) return@collect
+
+        // JsonTree currently takes a string, so encode only the selected values for display.
+        val result = withContext(pathDispatcher) {
+          runCatching { queryJsonPath(parsed, requestedQuery).toString() }
+        }
+        // Publish completed results for the active query even if another payload is waiting.
+        if (query != requestedQuery) return@collect
+        result.onSuccess {
+          pathResult = it
+          invalidPath = null
+        }.onFailure {
+          invalidPath = requestedQuery
+        }
+      }
+  }
+
   LaunchedEffect(searchState.selectedResultListIndex) {
-    searchState.selectedResultListIndex?.let { lazyListState.animateScrollToItem(it) }
+    searchState.selectedResultListIndex?.let { textListState.animateScrollToItem(it) }
   }
 
   // A query typed while the tree is still parsing searches an empty tree
   // and is not re-run by JsonTree, so re-apply it once parsing finishes.
   // The intermediate null (plus a frame in between, so the writes don't
   // coalesce into one snapshot) forces JsonTree's search effect to restart.
+  // Only do this after parsing: resetting on every keystroke races that effect.
   LaunchedEffect(parseGeneration) {
-    if (parseGeneration > 0 && query.isNotEmpty()) {
+    if (parseGeneration > 0) {
       searchState.query = null
       withFrameNanos {}
-      searchState.query = query
+      searchState.query = if (searchable) query.asTextQuery() else null
     }
   }
 
-  Column(modifier) {
-    if (searchable) {
-      SearchRow(
-        query = query,
-        onQueryChange = {
-          query = it
-          searchState.query = it.ifEmpty { null }
-        },
-        searchState = searchState,
-        modifier = Modifier.fillMaxWidth(),
-      )
-      Spacer(Modifier.height(8.dp))
-    }
-    JsonTree(
-      json = json,
-      onLoading = {
-        DisposableEffect(Unit) {
-          onDispose { parseGeneration++ }
-        }
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-          CircularProgressIndicator()
-        }
+  val displayedPath = pathResult
+  val pathError = pathQuery?.takeIf { it == invalidPath }?.let { invalidQuery ->
+    val preview = invalidQuery.take(3)
+    val suffix = if (invalidQuery.length > preview.length) "…" else ""
+    "Invalid JSONPath. Trying to search? Escape with \\\u2060$preview$suffix"
+  }
+  val searchControls: @Composable () -> Unit = {
+    SearchRow(
+      query = query,
+      onQueryChange = {
+        query = it
+        searchState.query = it.asTextQuery()
       },
-      colors = MaterialTheme.colorScheme.asTreeColors,
-      initialState = initialState,
-      textStyle = codeTextStyle(),
-      showItemCount = true,
       searchState = searchState,
-      lazyListState = lazyListState,
-      onError = onError,
-      modifier = Modifier.weight(1f).fillMaxWidth(),
+      isJsonPath = isJsonPath,
+      pathError = pathError,
+      modifier = Modifier.fillMaxWidth(),
     )
+    if (pathError != null) {
+      Text(
+        text = pathError,
+        color = MaterialTheme.colorScheme.error,
+        style = MaterialTheme.typography.bodySmall,
+      )
+    }
+  }
+  Column(modifier) {
+    if (searchable && searchPlacement == CodeBlockSearchPlacement.Top) {
+      searchControls()
+      Spacer(Modifier.height(4.dp))
+    }
+    Box(Modifier.weight(1f).fillMaxWidth()) {
+      when {
+        !isJsonPath -> JsonTree(
+          json = json,
+          onLoading = {
+            DisposableEffect(Unit) {
+              onDispose { parseGeneration++ }
+            }
+            JsonTreeLoading()
+          },
+          colors = MaterialTheme.colorScheme.asTreeColors,
+          initialState = initialState,
+          textStyle = codeTextStyle(),
+          showItemCount = true,
+          searchState = searchState,
+          lazyListState = textListState,
+          onError = onError,
+          modifier = Modifier.fillMaxSize(),
+        )
+        displayedPath != null -> FilteredJsonTree(displayedPath, onError)
+        pathError == null -> JsonTreeLoading()
+      }
+    }
+    if (searchable && searchPlacement == CodeBlockSearchPlacement.Bottom) {
+      Spacer(Modifier.height(4.dp))
+      searchControls()
+    }
   }
 }
+
+private class PathTree(val json: String, val listState: LazyListState = LazyListState())
+
+@Composable
+private fun FilteredJsonTree(json: String, onError: (Throwable) -> Unit) {
+  var visibleTree by remember { mutableStateOf<PathTree?>(null) }
+  var pendingTree by remember { mutableStateOf(PathTree(json)) }
+
+  // JsonTree parses each new string itself. Keep the old tree on screen until the next
+  // one finishes loading, and only prepare one replacement at a time.
+  LaunchedEffect(json, visibleTree) {
+    val visible = visibleTree
+    if (visible != null && visible === pendingTree && visible.json != json) {
+      pendingTree = PathTree(
+        json,
+        LazyListState(visible.listState.firstVisibleItemIndex, visible.listState.firstVisibleItemScrollOffset),
+      )
+    }
+  }
+
+  val visible = visibleTree
+  for (tree in listOfNotNull(visible, pendingTree.takeUnless { it === visible })) {
+    key(tree) {
+      JsonTree(
+        json = tree.json,
+        onLoading = {
+          DisposableEffect(Unit) {
+            onDispose {
+              if (pendingTree === tree) visibleTree = tree
+            }
+          }
+          if (visible == null) JsonTreeLoading()
+        },
+        modifier = Modifier.fillMaxSize().layout { measurable, constraints ->
+          val child = measurable.measure(constraints)
+          layout(child.width, child.height) {
+            if (tree === visible) child.placeRelative(0, 0)
+          }
+        },
+        colors = MaterialTheme.colorScheme.asTreeColors,
+        initialState = if (tree.json.length <= MAX_AUTO_EXPAND_CHARS) TreeState.EXPANDED else TreeState.FIRST_ITEM_EXPANDED,
+        textStyle = codeTextStyle(),
+        lazyListState = tree.listState,
+        onError = onError,
+      )
+    }
+  }
+}
+
+@Composable
+private fun JsonTreeLoading() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    CircularProgressIndicator()
+  }
+}
+
+private fun String.asTextQuery(): String? = when {
+  isEmpty() || startsWith("$") -> null
+  startsWith("\\$") -> drop(1)
+  else -> this
+}
+
+internal fun queryJsonPath(document: JsonElement, query: String): JsonArray =
+  JsonArray(JsonPath(query).query(document).map { it.value })
 
 @Composable
 private fun SearchRow(
   query: String,
   onQueryChange: (String) -> Unit,
   searchState: SearchState,
+  isJsonPath: Boolean,
+  pathError: String?,
   modifier: Modifier = Modifier,
 ) {
   val scope = rememberCoroutineScope()
+  val uriHandler = LocalUriHandler.current
+  val colors = MaterialTheme.colorScheme
+  val shape = RoundedCornerShape(6.dp)
+  val textStyle = codeTextStyle().copy(color = colors.onSurface)
+  var isFocused by remember { mutableStateOf(false) }
+  val borderColor = when {
+    pathError != null -> colors.error
+    isFocused -> colors.primary
+    else -> colors.outlineVariant.copy(alpha = 0.45f)
+  }
 
   Row(
     verticalAlignment = Alignment.CenterVertically,
-    modifier = modifier,
+    modifier = modifier
+      .height(32.dp)
+      .clip(shape)
+      .background(colors.surfaceContainerLow)
+      .border(1.dp, borderColor, shape)
+      .padding(start = 8.dp, end = 2.dp),
   ) {
-    Box(
+    BasicTextField(
+      value = query,
+      onValueChange = onQueryChange,
+      singleLine = true,
+      textStyle = textStyle,
+      cursorBrush = SolidColor(colors.primary),
       modifier = Modifier
         .weight(1f)
-        .clip(RoundedCornerShape(6.dp))
-        .background(MaterialTheme.colorScheme.surfaceVariant)
-        .padding(horizontal = 8.dp, vertical = 6.dp),
-    ) {
-      if (query.isEmpty()) {
+        .onFocusChanged { isFocused = it.isFocused }
+        .semantics {
+          contentDescription = "Search JSON or enter JSONPath"
+          if (pathError != null) error(pathError)
+        }
+        .onPreviewKeyEvent { event ->
+          if (!isJsonPath && event.type == KeyEventType.KeyDown &&
+            event.key == Key.Enter && searchState.totalResults > 0
+          ) {
+            scope.launch {
+              if (event.isShiftPressed) searchState.selectPrevious() else searchState.selectNext()
+            }
+            true
+          } else {
+            false
+          }
+        },
+      decorationBox = { innerTextField ->
+        Box {
+          if (query.isEmpty()) {
+            Text("Search or JSONPath ($…)", style = textStyle, color = colors.onSurfaceVariant)
+          }
+          innerTextField()
+        }
+      },
+    )
+    if (!isJsonPath) {
+      if (query.isNotEmpty()) {
         Text(
-          text = "Search",
-          style = MaterialTheme.typography.bodySmall,
-          color = MaterialTheme.colorScheme.onSurfaceVariant,
+          text = if (searchState.totalResults > 0) {
+            "${(searchState.selectedResultIndex ?: 0) + 1} / ${searchState.totalResults}"
+          } else {
+            "0 / 0"
+          },
+          style = MaterialTheme.typography.labelSmall,
+          color = colors.onSurfaceVariant,
+          modifier = Modifier.padding(horizontal = 8.dp),
         )
       }
-      BasicTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodySmall.copy(
-          color = MaterialTheme.colorScheme.onSurface,
-        ),
-        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-        modifier = Modifier
-          .fillMaxWidth()
-          .onPreviewKeyEvent { event ->
-            if (event.type == KeyEventType.KeyDown &&
-              event.key == Key.Enter &&
-              searchState.totalResults > 0
-            ) {
-              scope.launch {
-                if (event.isShiftPressed) searchState.selectPrevious() else searchState.selectNext()
-              }
-              true
-            } else {
-              false
-            }
-          },
+      SearchArrowButton(
+        icon = chevronUp,
+        contentDescription = "Previous result",
+        enabled = searchState.totalResults > 0,
+        onClick = { scope.launch { searchState.selectPrevious() } },
+      )
+      SearchArrowButton(
+        icon = chevronDown,
+        contentDescription = "Next result",
+        enabled = searchState.totalResults > 0,
+        onClick = { scope.launch { searchState.selectNext() } },
       )
     }
-    if (query.isNotEmpty()) {
-      Text(
-        text = if (searchState.totalResults > 0) {
-          "${(searchState.selectedResultIndex ?: 0) + 1} / ${searchState.totalResults}"
-        } else {
-          "0 / 0"
-        },
-        style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 8.dp),
+    IconButton(
+      onClick = {
+        runCatching { uriHandler.openUri(JSON_PATH_HELP) }.onFailure {
+          logError("CodeBlock", "Could not open the JSONPath reference", it)
+        }
+      },
+      modifier = Modifier.size(28.dp),
+    ) {
+      Icon(
+        HostIcons.Info,
+        contentDescription = "Open JSONPath reference",
+        tint = colors.onSurfaceVariant,
+        modifier = Modifier.size(18.dp),
       )
     }
-    SearchArrowButton(
-      icon = chevronUp,
-      contentDescription = "Previous result",
-      enabled = searchState.totalResults > 0,
-      onClick = { scope.launch { searchState.selectPrevious() } },
-    )
-    SearchArrowButton(
-      icon = chevronDown,
-      contentDescription = "Next result",
-      enabled = searchState.totalResults > 0,
-      onClick = { scope.launch { searchState.selectNext() } },
-    )
   }
 }
 
